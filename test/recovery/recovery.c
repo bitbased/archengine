@@ -1,6 +1,6 @@
 /*-
  * Public Domain 2014-2015 MongoDB, Inc.
- * Public Domain 2008-2014 WiredTiger, Inc.
+ * Public Domain 2008-2014 ArchEngine, Inc.
  *
  * This is free and unencumbered software released into the public domain.
  *
@@ -36,7 +36,7 @@
 #include <unistd.h>
 #endif
 
-#include <wiredtiger.h>
+#include <archengine.h>
 
 #include "test_util.i"
 
@@ -67,38 +67,38 @@ static void
 fill_db(void)
 {
 	FILE *fp;
-	WT_CONNECTION *conn;
-	WT_CURSOR *cursor;
-	WT_ITEM data;
-	WT_RAND_STATE rnd;
-	WT_SESSION *session;
+	AE_CONNECTION *conn;
+	AE_CURSOR *cursor;
+	AE_ITEM data;
+	AE_RAND_STATE rnd;
+	AE_SESSION *session;
 	uint64_t i;
 	int ret;
 	uint8_t buf[MAX_VAL];
 
-	__wt_random_init(&rnd);
+	__ae_random_init(&rnd);
 	memset(buf, 0, sizeof(buf));
 	/*
 	 * Initialize the first 25% to random values.  Leave a bunch of data
 	 * space at the end to emphasize zero data.
 	 */
 	for (i = 0; i < MAX_VAL/4; i++)
-		buf[i] = (uint8_t)__wt_random(&rnd);
+		buf[i] = (uint8_t)__ae_random(&rnd);
 
 	/*
 	 * Run in the home directory so that the records file is in there too.
 	 */
 	chdir(home);
-	if ((ret = wiredtiger_open(NULL, NULL, ENV_CONFIG, &conn)) != 0)
-		testutil_die(ret, "wiredtiger_open");
+	if ((ret = archengine_open(NULL, NULL, ENV_CONFIG, &conn)) != 0)
+		testutil_die(ret, "archengine_open");
 	if ((ret = conn->open_session(conn, NULL, NULL, &session)) != 0)
-		testutil_die(ret, "WT_CONNECTION:open_session");
+		testutil_die(ret, "AE_CONNECTION:open_session");
 	if ((ret = session->create(session,
 	    uri, "key_format=Q,value_format=u")) != 0)
-		testutil_die(ret, "WT_SESSION.create: %s", uri);
+		testutil_die(ret, "AE_SESSION.create: %s", uri);
 	if ((ret =
 	    session->open_cursor(session, uri, NULL, NULL, &cursor)) != 0)
-		testutil_die(ret, "WT_SESSION.open_cursor: %s", uri);
+		testutil_die(ret, "AE_SESSION.open_cursor: %s", uri);
 
 	/*
 	 * Keep a separate file with the records we wrote for checking.
@@ -117,32 +117,32 @@ fill_db(void)
 	 */
 	data.data = buf;
 	for (i = 0;; ++i) {
-		data.size = __wt_random(&rnd) % MAX_VAL;
+		data.size = __ae_random(&rnd) % MAX_VAL;
 		cursor->set_key(cursor, i);
 		cursor->set_value(cursor, &data);
 		if ((ret = cursor->insert(cursor)) != 0)
-			testutil_die(ret, "WT_CURSOR.insert");
+			testutil_die(ret, "AE_CURSOR.insert");
 		/*
 		 * Save the key separately for checking later.
 		 */
 		if (fprintf(fp, "%" PRIu64 "\n", i) == -1)
 			testutil_die(errno, "fprintf");
 		if (i % 5000)
-			__wt_yield();
+			__ae_yield();
 	}
 }
 
-extern int __wt_optind;
-extern char *__wt_optarg;
+extern int __ae_optind;
+extern char *__ae_optarg;
 
 int
 main(int argc, char *argv[])
 {
 	FILE *fp;
-	WT_CONNECTION *conn;
-	WT_CURSOR *cursor;
-	WT_SESSION *session;
-	WT_RAND_STATE rnd;
+	AE_CONNECTION *conn;
+	AE_CURSOR *cursor;
+	AE_SESSION *session;
+	AE_RAND_STATE rnd;
 	uint64_t key;
 	uint32_t absent, count, timeout;
 	int ch, status, ret;
@@ -156,19 +156,19 @@ main(int argc, char *argv[])
 
 	working_dir = NULL;
 	timeout = 10;
-	while ((ch = __wt_getopt(progname, argc, argv, "h:t:")) != EOF)
+	while ((ch = __ae_getopt(progname, argc, argv, "h:t:")) != EOF)
 		switch (ch) {
 		case 'h':
-			working_dir = __wt_optarg;
+			working_dir = __ae_optarg;
 			break;
 		case 't':
-			timeout = (uint32_t)atoi(__wt_optarg);
+			timeout = (uint32_t)atoi(__ae_optarg);
 			break;
 		default:
 			usage();
 		}
-	argc -= __wt_optind;
-	argv += __wt_optind;
+	argc -= __ae_optind;
+	argv += __ae_optind;
 	if (argc != 0)
 		usage();
 
@@ -189,7 +189,7 @@ main(int argc, char *argv[])
 	}
 
 	/* parent */
-	__wt_random_init(&rnd);
+	__ae_random_init(&rnd);
 	/* Sleep for the configured amount of time before killing the child. */
 	printf("Parent: sleep %" PRIu32 " seconds, then kill child\n", timeout);
 	sleep(timeout);
@@ -209,13 +209,13 @@ main(int argc, char *argv[])
 	 */
 	chdir(home);
 	printf("Open database, run recovery and verify content\n");
-	if ((ret = wiredtiger_open(NULL, NULL, ENV_CONFIG_REC, &conn)) != 0)
-		testutil_die(ret, "wiredtiger_open");
+	if ((ret = archengine_open(NULL, NULL, ENV_CONFIG_REC, &conn)) != 0)
+		testutil_die(ret, "archengine_open");
 	if ((ret = conn->open_session(conn, NULL, NULL, &session)) != 0)
-		testutil_die(ret, "WT_CONNECTION:open_session");
+		testutil_die(ret, "AE_CONNECTION:open_session");
 	if ((ret =
 	    session->open_cursor(session, uri, NULL, NULL, &cursor)) != 0)
-		testutil_die(ret, "WT_SESSION.open_cursor: %s", uri);
+		testutil_die(ret, "AE_SESSION.open_cursor: %s", uri);
 
 	if ((fp = fopen(RECORDS_FILE, "r")) == NULL)
 		testutil_die(errno, "fopen");
@@ -233,7 +233,7 @@ main(int argc, char *argv[])
 			break;
 		cursor->set_key(cursor, key);
 		if ((ret = cursor->search(cursor)) != 0) {
-			if (ret != WT_NOTFOUND)
+			if (ret != AE_NOTFOUND)
 				testutil_die(ret, "search");
 			printf("no record with key %" PRIu64 "\n", key);
 			++absent;
@@ -241,7 +241,7 @@ main(int argc, char *argv[])
 	}
 	fclose(fp);
 	if ((ret = conn->close(conn, NULL)) != 0)
-		testutil_die(ret, "WT_CONNECTION:close");
+		testutil_die(ret, "AE_CONNECTION:close");
 	if (absent) {
 		printf("%u record(s) absent from %u\n", absent, count);
 		return (EXIT_FAILURE);

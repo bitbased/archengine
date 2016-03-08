@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Public Domain 2014-2015 MongoDB, Inc.
-# Public Domain 2008-2014 WiredTiger, Inc.
+# Public Domain 2008-2014 ArchEngine, Inc.
 #
 # This is free and unencumbered software released into the public domain.
 #
@@ -30,13 +30,13 @@
 # Test configuring and reconfiguring sweep options.
 #
 
-import wiredtiger, wttest
-from wiredtiger import wiredtiger_open
-from wttest import unittest
+import archengine, aetest
+from archengine import archengine_open
+from aetest import unittest
 
-class test_sweep02(wttest.WiredTigerTestCase):
+class test_sweep02(aetest.ArchEngineTestCase):
     base_config = 'create,'
-    dir = 'WT_TEST'
+    dir = 'AE_TEST'
     tablebase = 'test_sweep02'
     uri = 'table:' + tablebase
 
@@ -49,24 +49,24 @@ class test_sweep02(wttest.WiredTigerTestCase):
         return None
 
     def test_config01(self):
-        self.conn = wiredtiger_open(self.dir,
+        self.conn = archengine_open(self.dir,
             self.base_config + "file_manager=()")
 
     def test_config02(self):
-        self.conn = wiredtiger_open(self.dir,
+        self.conn = archengine_open(self.dir,
             self.base_config + "file_manager=(close_scan_interval=1)")
 
     def test_config03(self):
-        self.conn = wiredtiger_open(self.dir,
+        self.conn = archengine_open(self.dir,
             self.base_config + "file_manager=(close_idle_time=1)")
 
     def test_config04(self):
-        self.conn = wiredtiger_open(self.dir,
+        self.conn = archengine_open(self.dir,
             self.base_config + "file_manager=(close_handle_minimum=500)")
 
     def test_config05(self):
-        self.conn = wiredtiger_open(self.dir, self.base_config + \
+        self.conn = archengine_open(self.dir, self.base_config + \
             "file_manager=(close_scan_interval=1,close_idle_time=1)")
 
 if __name__ == '__main__':
-    wttest.run()
+    aetest.run()

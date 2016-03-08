@@ -23,7 +23,7 @@ AddOption("--enable-attach", dest="attach", action="store_true", default=False,
           help="Configure for debugger attach on failure.")
 
 AddOption("--enable-diagnostic", dest="diagnostic", action="store_true", default=False,
-          help="Configure WiredTiger to perform various run-time diagnostic tests. DO NOT configure this option in production environments.")
+          help="Configure ArchEngine to perform various run-time diagnostic tests. DO NOT configure this option in production environments.")
 
 AddOption("--enable-lz4", dest="lz4", type="string", nargs=1, action="store",
           help="Use LZ4 compression")
@@ -38,7 +38,7 @@ AddOption("--enable-tcmalloc", dest="tcmalloc", type="string", nargs=1, action="
           help="Use TCMalloc for memory allocation")
 
 AddOption("--enable-verbose", dest="verbose", action="store_true", default=False,
-          help="Configure WiredTiger to support the verbose configuration string to wiredtiger_open")
+          help="Configure ArchEngine to support the verbose configuration string to archengine_open")
 
 AddOption("--enable-zlib", dest="zlib", type="string", nargs=1, action="store",
           help="Use zlib compression")
@@ -117,7 +117,7 @@ useSnappy = GetOption("snappy")
 useLz4 = GetOption("lz4")
 useBdb = GetOption("bdb")
 useTcmalloc = GetOption("tcmalloc")
-wtlibs = []
+aelibs = []
 
 conf = Configure(env)
 if not conf.CheckCHeader('stdlib.h'):
@@ -129,7 +129,7 @@ if useZlib:
     conf.env.Append(LIBPATH=[useZlib + "/lib"])
     if conf.CheckCHeader('zlib.h'):
         conf.env.Append(CPPDEFINES=["HAVE_BUILTIN_EXTENSION_ZLIB"])
-        wtlibs.append("zlib")
+        aelibs.append("zlib")
     else:
         print 'zlib.h must be installed!'
         Exit(1)
@@ -139,7 +139,7 @@ if useSnappy:
     conf.env.Append(LIBPATH=[useSnappy + "/lib"])
     if conf.CheckCHeader('snappy-c.h'):
         conf.env.Append(CPPDEFINES=['HAVE_BUILTIN_EXTENSION_SNAPPY'])
-        wtlibs.append("snappy")
+        aelibs.append("snappy")
     else:
         print 'snappy-c.h must be installed!'
         Exit(1)
@@ -149,7 +149,7 @@ if useLz4:
     conf.env.Append(LIBPATH=[useLz4 + "/lib"])
     if conf.CheckCHeader('lz4.h'):
         conf.env.Append(CPPDEFINES=['HAVE_BUILTIN_EXTENSION_LZ4'])
-        wtlibs.append("lz4")
+        aelibs.append("lz4")
     else:
         print 'lz4.h must be installed!'
         Exit(1)
@@ -165,7 +165,7 @@ if useTcmalloc:
     conf.env.Append(CPPPATH=[useTcmalloc + "/include"])
     conf.env.Append(LIBPATH=[useTcmalloc + "/lib"])
     if conf.CheckCHeader('gperftools/tcmalloc.h'):
-        wtlibs.append("libtcmalloc_minimal")
+        aelibs.append("libtcmalloc_minimal")
         conf.env.Append(CPPDEFINES=['HAVE_LIBTCMALLOC'])
         conf.env.Append(CPPDEFINES=['HAVE_POSIX_MEMALIGN'])
     else:
@@ -190,7 +190,7 @@ if GetOption("verbose"):
     env.Append(CPPDEFINES = ["HAVE_VERBOSE"])
 
 
-# Build WiredTiger.h file
+# Build ArchEngine.h file
 #
 version_file = 'build_posix/aclocal/version-set.m4'
 
@@ -211,13 +211,13 @@ if (VERSION_MAJOR == None or
     print "Failed to find version variables in " + version_file
     Exit(1)
 
-wiredtiger_includes = """
+archengine_includes = """
         #include <sys/types.h>
         #include <stdarg.h>
         #include <stdint.h>
         #include <stdio.h>
     """
-wiredtiger_includes = textwrap.dedent(wiredtiger_includes)
+archengine_includes = textwrap.dedent(archengine_includes)
 replacements = {
     '@VERSION_MAJOR@' : VERSION_MAJOR,
     '@VERSION_MINOR@' : VERSION_MINOR,
@@ -225,57 +225,57 @@ replacements = {
     '@VERSION_STRING@' : VERSION_STRING,
     '@uintmax_t_decl@': "",
     '@uintptr_t_decl@': "",
-    '@off_t_decl@' : 'typedef int64_t wt_off_t;',
-    '@wiredtiger_includes_decl@': wiredtiger_includes
+    '@off_t_decl@' : 'typedef int64_t ae_off_t;',
+    '@archengine_includes_decl@': archengine_includes
 }
 
-wtheader = env.Substfile(
-    target='wiredtiger.h',
+aeheader = env.Substfile(
+    target='archengine.h',
     source=[
-        'src/include/wiredtiger.in',
+        'src/include/archengine.in',
     ],
     SUBST_DICT=replacements)
 
 #
-# WiredTiger library
+# ArchEngine library
 #
 filelistfile = r'build_win\filelist.win'
 filelist = open(filelistfile)
-wtsources = [line.strip()
+aesources = [line.strip()
              for line in filelist
              if not line.startswith("#") and len(line) > 1]
 filelist.close()
 
 if useZlib:
-    wtsources.append("ext/compressors/zlib/zlib_compress.c")
+    aesources.append("ext/compressors/zlib/zlib_compress.c")
 
 if useSnappy:
-    wtsources.append("ext/compressors/snappy/snappy_compress.c")
+    aesources.append("ext/compressors/snappy/snappy_compress.c")
 
 if useLz4:
-    wtsources.append("ext/compressors/lz4/lz4_compress.c")
+    aesources.append("ext/compressors/lz4/lz4_compress.c")
 
-wt_objs = [env.Object(a) for a in wtsources]
+ae_objs = [env.Object(a) for a in aesources]
 
-# Static Library - libwiredtiger.lib
+# Static Library - libarchengine.lib
 #
-wtlib = env.Library(
-    target="libwiredtiger",
-    source=wt_objs, LIBS=wtlibs)
+aelib = env.Library(
+    target="libarchengine",
+    source=ae_objs, LIBS=aelibs)
 
-env.Depends(wtlib, [filelistfile, version_file])
+env.Depends(aelib, [filelistfile, version_file])
 
-# Dynamically Loaded Library - wiredtiger.dll
+# Dynamically Loaded Library - archengine.dll
 #
-wtdll = env.SharedLibrary(
-    target="wiredtiger",
-    source=wt_objs + ['build_win/wiredtiger.def'], LIBS=wtlibs)
+aedll = env.SharedLibrary(
+    target="archengine",
+    source=ae_objs + ['build_win/archengine.def'], LIBS=aelibs)
 
-env.Depends(wtdll, [filelistfile, version_file])
+env.Depends(aedll, [filelistfile, version_file])
 
-Default(wtlib, wtdll)
+Default(aelib, aedll)
 
-wtbin = env.Program("wt", [
+aebin = env.Program("ae", [
     "src/utilities/util_backup.c",
     "src/utilities/util_cpyright.c",
     "src/utilities/util_compact.c",
@@ -297,11 +297,11 @@ wtbin = env.Program("wt", [
     "src/utilities/util_verbose.c",
     "src/utilities/util_verify.c",
     "src/utilities/util_write.c"],
-    LIBS=[wtlib] + wtlibs)
+    LIBS=[aelib] + aelibs)
 
-Default(wtbin)
+Default(aebin)
 
-# Python SWIG wrapper for WiredTiger
+# Python SWIG wrapper for ArchEngine
 if GetOption("lang-python"):
     # Check that this version of python is 64-bit
     #
@@ -318,18 +318,18 @@ if GetOption("lang-python"):
             "-nodefaultdtor",
             ])
 
-    swiglib = pythonEnv.SharedLibrary('_wiredtiger',
-                      [ 'lang\python\wiredtiger.i'],
+    swiglib = pythonEnv.SharedLibrary('_archengine',
+                      [ 'lang\python\archengine.i'],
                       SHLIBSUFFIX=".pyd",
-                      LIBS=[wtlib] + wtlibs)
+                      LIBS=[aelib] + aelibs)
 
     copySwig = pythonEnv.Command(
-        'lang/python/wiredtiger/__init__.py',
-        'lang/python/wiredtiger.py',
+        'lang/python/archengine/__init__.py',
+        'lang/python/archengine.py',
         Copy('$TARGET', '$SOURCE'))
     pythonEnv.Depends(copySwig, swiglib)
 
-    swiginstall = pythonEnv.Install('lang/python/wiredtiger/', swiglib)
+    swiginstall = pythonEnv.Install('lang/python/archengine/', swiglib)
 
     Default(swiginstall, copySwig)
 
@@ -360,17 +360,17 @@ examples = [
     "ex_thread",
     ]
 
-# WiredTiger Smoke Test support
+# ArchEngine Smoke Test support
 # Runs each test in a custom temporary directory
 def run_smoke_test(x):
     print "Running Smoke Test: " + x
 
     # Make temp dir
-    temp_dir = tempfile.mkdtemp(prefix="wt_home")
+    temp_dir = tempfile.mkdtemp(prefix="ae_home")
 
     try:
-        # Set WT_HOME environment variable for test
-        os.environ["WIREDTIGER_HOME"] = temp_dir
+        # Set AE_HOME environment variable for test
+        os.environ["ARCHENGINE_HOME"] = temp_dir
 
         # Run the test
         ret = subprocess.call(x);
@@ -394,7 +394,7 @@ env.Append(BUILDERS={'SmokeTest' : Builder(action = builder_smoke_test)})
 #Don't test bloom on Windows, its broken
 t = env.Program("t_bloom",
     "test/bloom/test_bloom.c",
-    LIBS=[wtlib] + wtlibs)
+    LIBS=[aelib] + aelibs)
 #env.Alias("check", env.SmokeTest(t))
 Default(t)
 
@@ -402,22 +402,22 @@ Default(t)
     #["test/checkpoint/checkpointer.c",
     #"test/checkpoint/test_checkpoint.c",
     #"test/checkpoint/workers.c"],
-    #LIBS=[wtlib])
+    #LIBS=[aelib])
 
 t = env.Program("t_huge",
     "test/huge/huge.c",
-    LIBS=[wtlib] + wtlibs)
+    LIBS=[aelib] + aelibs)
 
 #t = env.Program("t_recovery",
 #    "test/recovery/recovery.c",
-#    LIBS=[wtlib] + wtlibs)
+#    LIBS=[aelib] + aelibs)
 #Default(t)
 
 t = env.Program("t_fops",
     ["test/fops/file.c",
     "test/fops/fops.c",
     "test/fops/t.c"],
-    LIBS=[wtlib, shim] + wtlibs)
+    LIBS=[aelib, shim] + aelibs)
 env.Append(CPPPATH=["test/utility"])
 env.Alias("check", env.SmokeTest(t))
 Default(t)
@@ -437,8 +437,8 @@ if useBdb:
         "test/format/salvage.c",
         "test/format/t.c",
         "test/format/util.c",
-        "test/format/wts.c"],
-         LIBS=[wtlib, shim, "libdb61"] + wtlibs)
+        "test/format/aes.c"],
+         LIBS=[aelib, shim, "libdb61"] + aelibs)
     env.Alias("test", env.SmokeTest(t))
     Default(t)
 
@@ -447,30 +447,30 @@ if useBdb:
     #"test/thread/rw.c",
     #"test/thread/stats.c",
     #"test/thread/t.c"],
-    #LIBS=[wtlib])
+    #LIBS=[aelib])
 
 #env.Program("t_salvage",
     #["test/salvage/salvage.c"],
-    #LIBS=[wtlib])
+    #LIBS=[aelib])
 
-t = env.Program("wtperf", [
-    "bench/wtperf/config.c",
-    "bench/wtperf/misc.c",
-    "bench/wtperf/track.c",
-    "bench/wtperf/wtperf.c",
-    "bench/wtperf/wtperf_truncate.c",
+t = env.Program("aeperf", [
+    "bench/aeperf/config.c",
+    "bench/aeperf/misc.c",
+    "bench/aeperf/track.c",
+    "bench/aeperf/aeperf.c",
+    "bench/aeperf/aeperf_truncate.c",
     ],
-    LIBS=[wtlib, shim]  + wtlibs)
+    LIBS=[aelib, shim]  + aelibs)
 Default(t)
 
 #Build the Examples
 for ex in examples:
     if(ex in ['ex_all', 'ex_async', 'ex_thread', 'ex_encrypt']):
-        exp = env.Program(ex, "examples/c/" + ex + ".c", LIBS=[wtlib, shim] + wtlibs)
+        exp = env.Program(ex, "examples/c/" + ex + ".c", LIBS=[aelib, shim] + aelibs)
         Default(exp)
         env.Alias("check", env.SmokeTest(exp))
     else:
-        exp = env.Program(ex, "examples/c/" + ex + ".c", LIBS=[wtdll[1]] + wtlibs)
+        exp = env.Program(ex, "examples/c/" + ex + ".c", LIBS=[aedll[1]] + aelibs)
         Default(exp)
         if not ex == 'ex_log':
             env.Alias("check", env.SmokeTest(exp))
@@ -478,8 +478,8 @@ for ex in examples:
 # Install Target
 #
 prefix = GetOption("prefix")
-env.Alias("install", env.Install(os.path.join(prefix, "bin"), wtbin))
-env.Alias("install", env.Install(os.path.join(prefix, "bin"), wtdll[0])) # Just the dll
-env.Alias("install", env.Install(os.path.join(prefix, "include"), wtheader))
-env.Alias("install", env.Install(os.path.join(prefix, "lib"), wtdll[1])) # Just the import lib
-env.Alias("install", env.Install(os.path.join(prefix, "lib"), wtlib))
+env.Alias("install", env.Install(os.path.join(prefix, "bin"), aebin))
+env.Alias("install", env.Install(os.path.join(prefix, "bin"), aedll[0])) # Just the dll
+env.Alias("install", env.Install(os.path.join(prefix, "include"), aeheader))
+env.Alias("install", env.Install(os.path.join(prefix, "lib"), aedll[1])) # Just the import lib
+env.Alias("install", env.Install(os.path.join(prefix, "lib"), aelib))

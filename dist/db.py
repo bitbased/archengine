@@ -1,5 +1,5 @@
 # A simple python script to build a file that can be bulk-loaded into a
-# WiredTiger database for smoke-testing.
+# ArchEngine database for smoke-testing.
 
 import getopt, random, sys
 

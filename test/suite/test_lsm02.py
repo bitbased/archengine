@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Public Domain 2014-2015 MongoDB, Inc.
-# Public Domain 2008-2014 WiredTiger, Inc.
+# Public Domain 2008-2014 ArchEngine, Inc.
 #
 # This is free and unencumbered software released into the public domain.
 #
@@ -26,12 +26,12 @@
 # ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 # OTHER DEALINGS IN THE SOFTWARE.
 
-import wiredtiger, wtscenario, wttest
+import archengine, aescenario, aetest
 from helper import simple_populate
 
 # test_lsm02.py
 #    Test LSM schema level operations
-class test_lsm02(wttest.WiredTigerTestCase):
+class test_lsm02(aetest.ArchEngineTestCase):
     uri = 'lsm:test_lsm02'
 
     def add_key(self, uri, key, value):
@@ -81,4 +81,4 @@ class test_lsm02(wttest.WiredTigerTestCase):
         self.verify_key_exists(self.uri, 'b', 'b')
 
 if __name__ == '__main__':
-    wttest.run()
+    aetest.run()

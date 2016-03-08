@@ -1,6 +1,6 @@
 /*-
  * Public Domain 2014-2015 MongoDB, Inc.
- * Public Domain 2008-2014 WiredTiger, Inc.
+ * Public Domain 2008-2014 ArchEngine, Inc.
  *
  * This is free and unencumbered software released into the public domain.
  *
@@ -46,9 +46,9 @@ typedef int u_int;
 
 /* snprintf does not exist on <= VS 2013 */
 #if _MSC_VER < 1900
-#define	snprintf _wt_snprintf
+#define	snprintf _ae_snprintf
 
-_Check_return_opt_ int __cdecl _wt_snprintf(
+_Check_return_opt_ int __cdecl _ae_snprintf(
     _Out_writes_(_MaxCount) char * _DstBuf,
     _In_ size_t _MaxCount,
     _In_z_ _Printf_format_string_ const char * _Format, ...);

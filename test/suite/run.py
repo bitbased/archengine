@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Public Domain 2014-2015 MongoDB, Inc.
-# Public Domain 2008-2014 WiredTiger, Inc.
+# Public Domain 2008-2014 ArchEngine, Inc.
 #
 # This is free and unencumbered software released into the public domain.
 #
@@ -34,41 +34,41 @@ import glob, json, os, re, sys
 
 # Set paths
 suitedir = sys.path[0]
-wt_disttop = os.path.dirname(os.path.dirname(suitedir))
-wt_3rdpartydir = os.path.join(wt_disttop, 'test', '3rdparty')
+ae_disttop = os.path.dirname(os.path.dirname(suitedir))
+ae_3rdpartydir = os.path.join(ae_disttop, 'test', '3rdparty')
 
-# Check for a local build that contains the wt utility. First check in
+# Check for a local build that contains the ae utility. First check in
 # current working directory, then in build_posix and finally in the disttop
 # directory. This isn't ideal - if a user has multiple builds in a tree we
 # could pick the wrong one.
-if os.path.isfile(os.path.join(os.getcwd(), 'wt')):
-    wt_builddir = os.getcwd()
-elif os.path.isfile(os.path.join(wt_disttop, 'wt')):
-    wt_builddir = wt_disttop
-elif os.path.isfile(os.path.join(wt_disttop, 'build_posix', 'wt')):
-    wt_builddir = os.path.join(wt_disttop, 'build_posix')
-elif os.path.isfile(os.path.join(wt_disttop, 'wt.exe')):
-    wt_builddir = wt_disttop
+if os.path.isfile(os.path.join(os.getcwd(), 'ae')):
+    ae_builddir = os.getcwd()
+elif os.path.isfile(os.path.join(ae_disttop, 'ae')):
+    ae_builddir = ae_disttop
+elif os.path.isfile(os.path.join(ae_disttop, 'build_posix', 'ae')):
+    ae_builddir = os.path.join(ae_disttop, 'build_posix')
+elif os.path.isfile(os.path.join(ae_disttop, 'ae.exe')):
+    ae_builddir = ae_disttop
 else:
-    print 'Unable to find useable WiredTiger build'
+    print 'Unable to find useable ArchEngine build'
     sys.exit(False)
 
-# Cannot import wiredtiger and supporting utils until we set up paths
-# We want our local tree in front of any installed versions of WiredTiger.
+# Cannot import archengine and supporting utils until we set up paths
+# We want our local tree in front of any installed versions of ArchEngine.
 # Don't change sys.path[0], it's the dir containing the invoked python script.
-sys.path.insert(1, os.path.join(wt_builddir, 'lang', 'python'))
-sys.path.insert(1, os.path.join(wt_disttop, 'lang', 'python'))
+sys.path.insert(1, os.path.join(ae_builddir, 'lang', 'python'))
+sys.path.insert(1, os.path.join(ae_disttop, 'lang', 'python'))
 
 # Add all 3rd party directories: some have code in subdirectories
-for d in os.listdir(wt_3rdpartydir):
+for d in os.listdir(ae_3rdpartydir):
     for subdir in ('lib', 'python', ''):
-        if os.path.exists(os.path.join(wt_3rdpartydir, d, subdir)):
-            sys.path.insert(1, os.path.join(wt_3rdpartydir, d, subdir))
+        if os.path.exists(os.path.join(ae_3rdpartydir, d, subdir)):
+            sys.path.insert(1, os.path.join(ae_3rdpartydir, d, subdir))
             break
 
-import wttest
-# Use the same version of unittest found by wttest.py
-unittest = wttest.unittest
+import aetest
+# Use the same version of unittest found by aetest.py
+unittest = aetest.unittest
 from testscenarios.scenarios import generate_scenarios
 
 def usage():
@@ -79,15 +79,15 @@ def usage():
 Options:\n\
   -C file | --configcreate file  create a config file for controlling tests\n\
   -c file | --config file        use a config file for controlling tests\n\
-  -D dir  | --dir dir            use dir rather than WT_TEST.\n\
+  -D dir  | --dir dir            use dir rather than AE_TEST.\n\
                                  dir is removed/recreated as a first step.\n\
   -d      | --debug              run with \'pdb\', the python debugger\n\
-  -g      | --gdb                all subprocesses (like calls to wt) use gdb\n\
+  -g      | --gdb                all subprocesses (like calls to ae) use gdb\n\
   -h      | --help               show this message\n\
   -j N    | --parallel N         run all tests in parallel using N processes\n\
   -l      | --long               run the entire test suite\n\
-  -p      | --preserve           preserve output files in WT_TEST/<testname>\n\
-  -t      | --timestamp          name WT_TEST according to timestamp\n\
+  -p      | --preserve           preserve output files in AE_TEST/<testname>\n\
+  -t      | --timestamp          name AE_TEST according to timestamp\n\
   -v N    | --verbose N          set verboseness to N (0<=N<=3, default=1)\n\
 \n\
 Tests:\n\
@@ -175,7 +175,7 @@ def configApply(suites, configfilename, configwrite):
     newsuite = configApplyInner(suites, configmap, configwrite)
     if configwrite:
         with open(configfilename, 'w') as f:
-            f.write("""# Configuration file for wiredtiger test/suite/run.py,
+            f.write("""# Configuration file for archengine test/suite/run.py,
 # generated with '-C filename' and consumed with '-c filename'.
 # This shows the hierarchy of tests, and can be used to rerun with
 # a specific subset of tests.  The value of "run" controls whether
@@ -298,7 +298,7 @@ if __name__ == '__main__':
 
     # All global variables should be set before any test classes are loaded.
     # That way, verbose printing can be done at the class definition level.
-    wttest.WiredTigerTestCase.globalSetup(preserve, timestamp, gdbSub,
+    aetest.ArchEngineTestCase.globalSetup(preserve, timestamp, gdbSub,
                                           verbose, dirarg, longtest)
 
     # Without any tests listed as arguments, do discovery
@@ -317,5 +317,5 @@ if __name__ == '__main__':
         import pdb
         pdb.set_trace()
 
-    result = wttest.runsuite(tests, parallel)
+    result = aetest.runsuite(tests, parallel)
     sys.exit(not result.wasSuccessful())

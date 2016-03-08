@@ -26,7 +26,7 @@ DOXYFILE_ENCODING      = UTF-8
 # identify the project. Note that if you do not use Doxywizard you need 
 # to put quotes around the project name if it contains spaces.
 
-PROJECT_NAME           = WiredTiger
+PROJECT_NAME           = ArchEngine
 
 # The PROJECT_NUMBER tag can be used to enter a project or revision number. 
 # This could be handy for archiving the generated documentation or 
@@ -205,7 +205,7 @@ TAB_SIZE               = 8
 # will result in a user-defined paragraph with heading "Side Effects:". 
 # You can put \n's in the value part of an alias to insert newlines.
 
-ALIASES                = "notyet{1}=Note: <b>"\1"</b> not yet supported in WiredTiger.\n@todo fix when \1 supported\n\n" \
+ALIASES                = "notyet{1}=Note: <b>"\1"</b> not yet supported in ArchEngine.\n@todo fix when \1 supported\n\n" \
                          "errors=@returns zero on success and a non-zero error code on failure.  See @ref error_returns \"Error Returns\" for details." \
                          "ebusy_errors=@returns zero on success, EBUSY if there are open cursors on the object and a non-zero error code on failure.  See @ref error_returns \"Error Returns\" for details." \
                          "ex_ref{1}=@ref \1 \"\1\"" \
@@ -678,8 +678,8 @@ WARN_LOGFILE           = doxygen.log
 # directories like "/usr/src/myproject". Separate the files or directories 
 # with spaces.
 
-INPUT                  = ../include/wiredtiger.in \
-                         ../include/wiredtiger_ext.h \
+INPUT                  = ../include/archengine.in \
+                         ../include/archengine_ext.h \
                          .
 
 # This tag can be used to specify the character encoding of the source files 
@@ -778,7 +778,7 @@ EXCLUDE_SYMBOLS        = __F \
 # the \include command).
 
 EXAMPLE_PATH           = ../../examples/c \
-			 ../../examples/java/com/wiredtiger/examples/ \
+			 ../../examples/java/com/archengine/examples/ \
 			 ../../ext/compressors/nop \
 			 ../../ext/encryptors/nop \
 			 ../../ext/encryptors/rotn
@@ -913,7 +913,7 @@ COLS_IN_ALPHA_INDEX    = 5
 # The IGNORE_PREFIX tag can be used to specify one or more prefixes that 
 # should be ignored while generating the index headers.
 
-IGNORE_PREFIX          = WT_
+IGNORE_PREFIX          = AE_
 
 #---------------------------------------------------------------------------
 # configuration options related to the HTML output
@@ -972,7 +972,7 @@ HTML_STYLESHEET        =
 # robust against future updates. Doxygen will copy the style sheet file to 
 # the output directory.
 
-HTML_EXTRA_STYLESHEET  = style/wiredtiger.css
+HTML_EXTRA_STYLESHEET  = style/archengine.css
 
 # The HTML_EXTRA_FILES tag can be used to specify one or more extra images or 
 # other source files which should be copied to the HTML output directory. Note 
@@ -1555,27 +1555,27 @@ INCLUDE_FILE_PATTERNS  =
 # instead of the = operator.
 
 PREDEFINED             = DOXYGEN \
-                         __wt_async_callback:=WT_ASYNC_CALLBACK \
-                         __wt_async_op:=WT_ASYNC_OP \
-                         __wt_collator:=WT_COLLATOR \
-                         __wt_compressor:=WT_COMPRESSOR \
-                         __wt_config_arg:=WT_CONFIG_ARG \
-                         __wt_config_item:=WT_CONFIG_ITEM \
-                         __wt_config_parser:=WT_CONFIG_PARSER \
-                         __wt_config_scan:=WT_CONFIG_SCAN \
-                         __wt_connection:=WT_CONNECTION \
-                         __wt_cursor:=WT_CURSOR \
-                         __wt_data_source:=WT_DATA_SOURCE \
-                         __wt_encryptor:=WT_ENCRYPTOR \
-                         __wt_event_handler:=WT_EVENT_HANDLER \
-                         __wt_extension_api:=WT_EXTENSION_API \
-                         __wt_extractor:=WT_EXTRACTOR \
-                         __wt_item:=WT_ITEM \
-                         __wt_lsn:=WT_LSN \
-                         __wt_session:=WT_SESSION \
-                         __wt_txn_notify:=WT_TXN_NOTIFY \
-                         WT_HANDLE_CLOSED(x):=x \
-                         WT_HANDLE_NULLABLE(x):=x
+                         __ae_async_callback:=AE_ASYNC_CALLBACK \
+                         __ae_async_op:=AE_ASYNC_OP \
+                         __ae_collator:=AE_COLLATOR \
+                         __ae_compressor:=AE_COMPRESSOR \
+                         __ae_config_arg:=AE_CONFIG_ARG \
+                         __ae_config_item:=AE_CONFIG_ITEM \
+                         __ae_config_parser:=AE_CONFIG_PARSER \
+                         __ae_config_scan:=AE_CONFIG_SCAN \
+                         __ae_connection:=AE_CONNECTION \
+                         __ae_cursor:=AE_CURSOR \
+                         __ae_data_source:=AE_DATA_SOURCE \
+                         __ae_encryptor:=AE_ENCRYPTOR \
+                         __ae_event_handler:=AE_EVENT_HANDLER \
+                         __ae_extension_api:=AE_EXTENSION_API \
+                         __ae_extractor:=AE_EXTRACTOR \
+                         __ae_item:=AE_ITEM \
+                         __ae_lsn:=AE_LSN \
+                         __ae_session:=AE_SESSION \
+                         __ae_txn_notify:=AE_TXN_NOTIFY \
+                         AE_HANDLE_CLOSED(x):=x \
+                         AE_HANDLE_NULLABLE(x):=x
 
 # If the MACRO_EXPANSION and EXPAND_ONLY_PREDEF tags are set to YES then 
 # this tag can be used to specify a list of macro names that should be expanded. 

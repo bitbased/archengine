@@ -1,6 +1,6 @@
 /*-
  * Copyright (c) 2014-2015 MongoDB, Inc.
- * Copyright (c) 2008-2014 WiredTiger, Inc.
+ * Copyright (c) 2008-2014 ArchEngine, Inc.
  *	All rights reserved.
  *
  * See the file LICENSE for redistribution information.
@@ -9,7 +9,7 @@
 #include "util.h"
 
 int
-util_cerr(WT_CURSOR *cursor, const char *op, int ret)
+util_cerr(AE_CURSOR *cursor, const char *op, int ret)
 {
 	return (
 	    util_err(cursor->session, ret, "%s: cursor.%s", cursor->uri, op));
@@ -20,7 +20,7 @@ util_cerr(WT_CURSOR *cursor, const char *op, int ret)
  * 	Report an error.
  */
 int
-util_err(WT_SESSION *session, int e, const char *fmt, ...)
+util_err(AE_SESSION *session, int e, const char *fmt, ...)
 {
 	va_list ap;
 
@@ -34,7 +34,7 @@ util_err(WT_SESSION *session, int e, const char *fmt, ...)
 	}
 	if (e != 0)
 		(void)fprintf(stderr, "%s", session == NULL ?
-		    wiredtiger_strerror(e) : session->strerror(session, e));
+		    archengine_strerror(e) : session->strerror(session, e));
 	(void)fprintf(stderr, "\n");
 	return (1);
 }
@@ -44,7 +44,7 @@ util_err(WT_SESSION *session, int e, const char *fmt, ...)
  *	Read a line from stdin into a ULINE.
  */
 int
-util_read_line(WT_SESSION *session, ULINE *l, bool eof_expected, bool *eofp)
+util_read_line(AE_SESSION *session, ULINE *l, bool eof_expected, bool *eofp)
 {
 	static uint64_t line = 0;
 	size_t len;
@@ -98,7 +98,7 @@ util_read_line(WT_SESSION *session, ULINE *l, bool eof_expected, bool *eofp)
  *	Convert a string to a record number.
  */
 int
-util_str2recno(WT_SESSION *session, const char *p, uint64_t *recnop)
+util_str2recno(AE_SESSION *session, const char *p, uint64_t *recnop)
 {
 	uint64_t recno;
 	char *endptr;
@@ -112,7 +112,7 @@ util_str2recno(WT_SESSION *session, const char *p, uint64_t *recnop)
 		goto format;
 
 	errno = 0;
-	recno = __wt_strtouq(p, &endptr, 0);
+	recno = __ae_strtouq(p, &endptr, 0);
 	if (recno == ULLONG_MAX && errno == ERANGE)
 		return (
 		    util_err(session, ERANGE, "%s: invalid record number", p));
@@ -130,9 +130,9 @@ format:		return (
  *	Flush the file successfully, or drop it.
  */
 int
-util_flush(WT_SESSION *session, const char *uri)
+util_flush(AE_SESSION *session, const char *uri)
 {
-	WT_DECL_RET;
+	AE_DECL_RET;
 	size_t len;
 	char *buf;
 

@@ -1,6 +1,6 @@
 /*! @m_page{{c,java},compression,Compressors}
 
-This section explains how to configure WiredTiger's builtin support for
+This section explains how to configure ArchEngine's builtin support for
 the bzip2, lz4, snappy and zlib compression engines.
 
 @section compression_bzip2 Using bzip2 compression
@@ -21,13 +21,13 @@ would run configure with the following additional arguments:
 --enable-bzip2 CPPFLAGS="-I/usr/local/include" LDFLAGS="-L/usr/local/include"
 @endcode
 
-When opening the WiredTiger database, load the bzip2 shared library as
-an extension.  For example, with the WiredTiger library installed in
+When opening the ArchEngine database, load the bzip2 shared library as
+an extension.  For example, with the ArchEngine library installed in
 \c /usr/local/lib, you would use the following extension:
 
 @snippet ex_all.c Configure bzip2 extension
 
-Finally, when creating the WiredTiger object, set \c block_compressor
+Finally, when creating the ArchEngine object, set \c block_compressor
 to \c bzip2:
 
 @snippet ex_all.c Create a bzip2 compressed table
@@ -50,13 +50,13 @@ would run configure with the following additional arguments:
 --enable-lz4 CPPFLAGS="-I/usr/local/include" LDFLAGS="-L/usr/local/include"
 @endcode
 
-When opening the WiredTiger database, load the LZ4 shared library as
-an extension.  For example, with the WiredTiger library installed in
+When opening the ArchEngine database, load the LZ4 shared library as
+an extension.  For example, with the ArchEngine library installed in
 \c /usr/local/lib, you would use the following extension:
 
 @snippet ex_all.c Configure lz4 extension
 
-Finally, when creating the WiredTiger object, set \c block_compressor
+Finally, when creating the ArchEngine object, set \c block_compressor
 to \c lz4:
 
 @snippet ex_all.c Create a lz4 compressed table
@@ -79,13 +79,13 @@ would run configure with the following additional arguments:
 --enable-snappy CPPFLAGS="-I/usr/local/include" LDFLAGS="-L/usr/local/include"
 @endcode
 
-When opening the WiredTiger database, load the snappy shared library as
-an extension.  For example, with the WiredTiger library installed in
+When opening the ArchEngine database, load the snappy shared library as
+an extension.  For example, with the ArchEngine library installed in
 \c /usr/local/lib, you would use the following extension:
 
 @snippet ex_all.c Configure snappy extension
 
-Finally, when creating the WiredTiger object, set \c block_compressor
+Finally, when creating the ArchEngine object, set \c block_compressor
 to \c snappy:
 
 @snippet ex_all.c Create a snappy compressed table
@@ -108,20 +108,20 @@ would run configure with the following additional arguments:
 --enable-zlib CPPFLAGS="-I/usr/local/include" LDFLAGS="-L/usr/local/include"
 @endcode
 
-When opening the WiredTiger database, load the zlib shared library as
-an extension.  For example, with the WiredTiger library installed in
+When opening the ArchEngine database, load the zlib shared library as
+an extension.  For example, with the ArchEngine library installed in
 \c /usr/local/lib, you would use the following extension:
 
 @snippet ex_all.c Configure zlib extension
 
-Finally, when creating the WiredTiger object, set \c block_compressor
+Finally, when creating the ArchEngine object, set \c block_compressor
 to \c zlib:
 
 @snippet ex_all.c Create a zlib compressed table
 
 @section compression_upgrading Upgrading compression engines
 
-WiredTiger does not store information with file blocks to identify the
+ArchEngine does not store information with file blocks to identify the
 compression engine used to compressed the block.  Applications wanting
 to upgrade to some future compression engine (without requiring a file
 dump and re-load), should ensure each compressed block includes enough
@@ -130,7 +130,7 @@ code can correctly decompress old and new blocks.
 
 @section compression_custom Custom compression engines
 
-WiredTiger may be extended by adding custom compression engines; see
-WT_COMPRESSOR for more information.
+ArchEngine may be extended by adding custom compression engines; see
+AE_COMPRESSOR for more information.
 
  */

@@ -1,26 +1,26 @@
 /*-
  * Copyright (c) 2014-2015 MongoDB, Inc.
- * Copyright (c) 2008-2014 WiredTiger, Inc.
+ * Copyright (c) 2008-2014 ArchEngine, Inc.
  *	All rights reserved.
  *
  * See the file LICENSE for redistribution information.
  */
 
-#include "wt_internal.h"
+#include "ae_internal.h"
 
 /*
  * __curbulk_insert_fix --
  *	Fixed-length column-store bulk cursor insert.
  */
 static int
-__curbulk_insert_fix(WT_CURSOR *cursor)
+__curbulk_insert_fix(AE_CURSOR *cursor)
 {
-	WT_BTREE *btree;
-	WT_CURSOR_BULK *cbulk;
-	WT_DECL_RET;
-	WT_SESSION_IMPL *session;
+	AE_BTREE *btree;
+	AE_CURSOR_BULK *cbulk;
+	AE_DECL_RET;
+	AE_SESSION_IMPL *session;
 
-	cbulk = (WT_CURSOR_BULK *)cursor;
+	cbulk = (AE_CURSOR_BULK *)cursor;
 	btree = cbulk->cbt.btree;
 
 	/*
@@ -30,11 +30,11 @@ __curbulk_insert_fix(WT_CURSOR *cursor)
 	 */
 	CURSOR_API_CALL(cursor, session, insert, btree);
 
-	WT_CURSOR_NEEDVALUE(cursor);
+	AE_CURSOR_NEEDVALUE(cursor);
 
-	WT_ERR(__wt_bulk_insert_fix(session, cbulk));
+	AE_ERR(__ae_bulk_insert_fix(session, cbulk));
 
-	WT_STAT_FAST_DATA_INCR(session, cursor_insert_bulk);
+	AE_STAT_FAST_DATA_INCR(session, cursor_insert_bulk);
 
 err:	API_END_RET(session, ret);
 }
@@ -44,15 +44,15 @@ err:	API_END_RET(session, ret);
  *	Variable-length column-store bulk cursor insert.
  */
 static int
-__curbulk_insert_var(WT_CURSOR *cursor)
+__curbulk_insert_var(AE_CURSOR *cursor)
 {
-	WT_BTREE *btree;
-	WT_CURSOR_BULK *cbulk;
-	WT_DECL_RET;
-	WT_SESSION_IMPL *session;
+	AE_BTREE *btree;
+	AE_CURSOR_BULK *cbulk;
+	AE_DECL_RET;
+	AE_SESSION_IMPL *session;
 	bool duplicate;
 
-	cbulk = (WT_CURSOR_BULK *)cursor;
+	cbulk = (AE_CURSOR_BULK *)cursor;
 	btree = cbulk->cbt.btree;
 
 	/*
@@ -62,7 +62,7 @@ __curbulk_insert_var(WT_CURSOR *cursor)
 	 */
 	CURSOR_API_CALL(cursor, session, insert, btree);
 
-	WT_CURSOR_NEEDVALUE(cursor);
+	AE_CURSOR_NEEDVALUE(cursor);
 
 	/*
 	 * If this isn't the first value inserted, compare it against the last
@@ -79,7 +79,7 @@ __curbulk_insert_var(WT_CURSOR *cursor)
 			++cbulk->rle;
 			duplicate = true;
 		} else
-			WT_ERR(__wt_bulk_insert_var(session, cbulk));
+			AE_ERR(__ae_bulk_insert_var(session, cbulk));
 	}
 
 	/*
@@ -87,12 +87,12 @@ __curbulk_insert_var(WT_CURSOR *cursor)
 	 * counter.
 	 */
 	if (!duplicate) {
-		WT_ERR(__wt_buf_set(session,
+		AE_ERR(__ae_buf_set(session,
 		    &cbulk->last, cursor->value.data, cursor->value.size));
 		cbulk->rle = 1;
 	}
 
-	WT_STAT_FAST_DATA_INCR(session, cursor_insert_bulk);
+	AE_STAT_FAST_DATA_INCR(session, cursor_insert_bulk);
 
 err:	API_END_RET(session, ret);
 }
@@ -102,33 +102,33 @@ err:	API_END_RET(session, ret);
  *	Error routine when keys inserted out-of-order.
  */
 static int
-__bulk_row_keycmp_err(WT_CURSOR_BULK *cbulk)
+__bulk_row_keycmp_err(AE_CURSOR_BULK *cbulk)
 {
-	WT_CURSOR *cursor;
-	WT_DECL_ITEM(a);
-	WT_DECL_ITEM(b);
-	WT_DECL_RET;
-	WT_SESSION_IMPL *session;
+	AE_CURSOR *cursor;
+	AE_DECL_ITEM(a);
+	AE_DECL_ITEM(b);
+	AE_DECL_RET;
+	AE_SESSION_IMPL *session;
 
-	session = (WT_SESSION_IMPL *)cbulk->cbt.iface.session;
+	session = (AE_SESSION_IMPL *)cbulk->cbt.iface.session;
 	cursor = &cbulk->cbt.iface;
 
-	WT_ERR(__wt_scr_alloc(session, 512, &a));
-	WT_ERR(__wt_scr_alloc(session, 512, &b));
+	AE_ERR(__ae_scr_alloc(session, 512, &a));
+	AE_ERR(__ae_scr_alloc(session, 512, &b));
 
-	WT_ERR(__wt_buf_set_printable(
+	AE_ERR(__ae_buf_set_printable(
 	    session, a, cursor->key.data, cursor->key.size));
-	WT_ERR(__wt_buf_set_printable(
+	AE_ERR(__ae_buf_set_printable(
 	    session, b, cbulk->last.data, cbulk->last.size));
 
-	WT_ERR_MSG(session, EINVAL,
+	AE_ERR_MSG(session, EINVAL,
 	    "bulk-load presented with out-of-order keys: %.*s compares smaller "
 	    "than previously inserted key %.*s",
 	    (int)a->size, (const char *)a->data,
 	    (int)b->size, (const char *)b->data);
 
-err:	__wt_scr_free(session, &a);
-	__wt_scr_free(session, &b);
+err:	__ae_scr_free(session, &a);
+	__ae_scr_free(session, &b);
 	return (ret);
 }
 
@@ -137,15 +137,15 @@ err:	__wt_scr_free(session, &a);
  *	Row-store bulk cursor insert, with key-sort checks.
  */
 static int
-__curbulk_insert_row(WT_CURSOR *cursor)
+__curbulk_insert_row(AE_CURSOR *cursor)
 {
-	WT_BTREE *btree;
-	WT_CURSOR_BULK *cbulk;
-	WT_DECL_RET;
-	WT_SESSION_IMPL *session;
+	AE_BTREE *btree;
+	AE_CURSOR_BULK *cbulk;
+	AE_DECL_RET;
+	AE_SESSION_IMPL *session;
 	int cmp;
 
-	cbulk = (WT_CURSOR_BULK *)cursor;
+	cbulk = (AE_CURSOR_BULK *)cursor;
 	btree = cbulk->cbt.btree;
 
 	/*
@@ -155,8 +155,8 @@ __curbulk_insert_row(WT_CURSOR *cursor)
 	 */
 	CURSOR_API_CALL(cursor, session, insert, btree);
 
-	WT_CURSOR_CHECKKEY(cursor);
-	WT_CURSOR_CHECKVALUE(cursor);
+	AE_CURSOR_CHECKKEY(cursor);
+	AE_CURSOR_CHECKVALUE(cursor);
 
 	/*
 	 * If this isn't the first key inserted, compare it against the last key
@@ -166,23 +166,23 @@ __curbulk_insert_row(WT_CURSOR *cursor)
 	 * it is only zero before the first row is inserted.
 	 */
 	if (cbulk->rle != 0) {
-		WT_ERR(__wt_compare(session,
+		AE_ERR(__ae_compare(session,
 		    btree->collator, &cursor->key, &cbulk->last, &cmp));
 		if (cmp <= 0)
-			WT_ERR(__bulk_row_keycmp_err(cbulk));
+			AE_ERR(__bulk_row_keycmp_err(cbulk));
 	}
 
 	/*
 	 * Save a copy of the key for the next comparison and set the RLE
 	 * counter.
 	 */
-	WT_ERR(__wt_buf_set(session,
+	AE_ERR(__ae_buf_set(session,
 	    &cbulk->last, cursor->key.data, cursor->key.size));
 	cbulk->rle = 1;
 
-	WT_ERR(__wt_bulk_insert_row(session, cbulk));
+	AE_ERR(__ae_bulk_insert_row(session, cbulk));
 
-	WT_STAT_FAST_DATA_INCR(session, cursor_insert_bulk);
+	AE_STAT_FAST_DATA_INCR(session, cursor_insert_bulk);
 
 err:	API_END_RET(session, ret);
 }
@@ -192,14 +192,14 @@ err:	API_END_RET(session, ret);
  *	Row-store bulk cursor insert, without key-sort checks.
  */
 static int
-__curbulk_insert_row_skip_check(WT_CURSOR *cursor)
+__curbulk_insert_row_skip_check(AE_CURSOR *cursor)
 {
-	WT_BTREE *btree;
-	WT_CURSOR_BULK *cbulk;
-	WT_DECL_RET;
-	WT_SESSION_IMPL *session;
+	AE_BTREE *btree;
+	AE_CURSOR_BULK *cbulk;
+	AE_DECL_RET;
+	AE_SESSION_IMPL *session;
 
-	cbulk = (WT_CURSOR_BULK *)cursor;
+	cbulk = (AE_CURSOR_BULK *)cursor;
 	btree = cbulk->cbt.btree;
 
 	/*
@@ -209,32 +209,32 @@ __curbulk_insert_row_skip_check(WT_CURSOR *cursor)
 	 */
 	CURSOR_API_CALL(cursor, session, insert, btree);
 
-	WT_CURSOR_NEEDKEY(cursor);
-	WT_CURSOR_NEEDVALUE(cursor);
+	AE_CURSOR_NEEDKEY(cursor);
+	AE_CURSOR_NEEDVALUE(cursor);
 
-	WT_ERR(__wt_bulk_insert_row(session, cbulk));
+	AE_ERR(__ae_bulk_insert_row(session, cbulk));
 
-	WT_STAT_FAST_DATA_INCR(session, cursor_insert_bulk);
+	AE_STAT_FAST_DATA_INCR(session, cursor_insert_bulk);
 
 err:	API_END_RET(session, ret);
 }
 
 /*
- * __wt_curbulk_init --
+ * __ae_curbulk_init --
  *	Initialize a bulk cursor.
  */
 int
-__wt_curbulk_init(WT_SESSION_IMPL *session,
-    WT_CURSOR_BULK *cbulk, bool bitmap, bool skip_sort_check)
+__ae_curbulk_init(AE_SESSION_IMPL *session,
+    AE_CURSOR_BULK *cbulk, bool bitmap, bool skip_sort_check)
 {
-	WT_CURSOR *c;
-	WT_CURSOR_BTREE *cbt;
+	AE_CURSOR *c;
+	AE_CURSOR_BTREE *cbt;
 
 	c = &cbulk->cbt.iface;
 	cbt = &cbulk->cbt;
 
 	/* Bulk cursors only support insert and close (reset is a no-op). */
-	__wt_cursor_set_notsup(c);
+	__ae_cursor_set_notsup(c);
 	switch (cbt->btree->type) {
 	case BTREE_COL_FIX:
 		c->insert = __curbulk_insert_fix;
@@ -246,12 +246,12 @@ __wt_curbulk_init(WT_SESSION_IMPL *session,
 		c->insert = skip_sort_check ?
 		    __curbulk_insert_row_skip_check : __curbulk_insert_row;
 		break;
-	WT_ILLEGAL_VALUE(session);
+	AE_ILLEGAL_VALUE(session);
 	}
 
 	cbulk->bitmap = bitmap;
 	if (bitmap)
-		F_SET(c, WT_CURSTD_RAW);
+		F_SET(c, AE_CURSTD_RAW);
 
-	return (__wt_bulk_init(session, cbulk));
+	return (__ae_bulk_init(session, cbulk));
 }

@@ -17,7 +17,7 @@ config=
 
 # Assumes we're running in build_*/test/format directory.
 tcmd=./t
-wtcmd=../../wt
+aecmd=../../ae
 rundir2=RUNDIR.SAVE
 count=0
 while true; do
@@ -42,11 +42,11 @@ while true; do
 	#
 	isfile=`grep data_source RUNDIR/CONFIG | grep -c file || exit 0`
 	if test "$isfile" -ne 0; then
-		uri="file:wt"
+		uri="file:ae"
 	else
-		uri="table:wt"
+		uri="table:ae"
 	fi
 
 	# We know we aborted, so force recovery to run.
-	$wtcmd -R -h RUNDIR verify $uri || exit 1
+	$aecmd -R -h RUNDIR verify $uri || exit 1
 done

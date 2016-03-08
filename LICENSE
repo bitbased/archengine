@@ -1,5 +1,5 @@
 Copyright (c) 2014-2015 MongoDB, Inc.
-Copyright (c) 2008-2014 WiredTiger, Inc.
+Copyright (c) 2008-2014 ArchEngine, Inc.
 	All rights reserved.
 
 This program is free software: you can redistribute it and/or modify it under
@@ -11,8 +11,8 @@ ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
 FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
 details.
 
-For a license to use the WiredTiger software under conditions other than those
+For a license to use the ArchEngine software under conditions other than those
 described by the GNU General Public License, or for technical support for this
-software, contact WiredTiger, Inc. at info@wiredtiger.com.
+software, contact ArchEngine, Inc. at info@archengine.com.
 
 For further information, see the licensing section in the documentation.

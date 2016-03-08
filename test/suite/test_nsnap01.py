@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Public Domain 2014-2015 MongoDB, Inc.
-# Public Domain 2008-2014 WiredTiger, Inc.
+# Public Domain 2008-2014 ArchEngine, Inc.
 #
 # This is free and unencumbered software released into the public domain.
 #
@@ -30,11 +30,11 @@
 #   Named snapshots: basic API
 
 from suite_subprocess import suite_subprocess
-from wtscenario import multiply_scenarios, number_scenarios
+from aescenario import multiply_scenarios, number_scenarios
 from helper import simple_populate
-import wiredtiger, wttest
+import archengine, aetest
 
-class test_nsnap01(wttest.WiredTigerTestCase, suite_subprocess):
+class test_nsnap01(aetest.ArchEngineTestCase, suite_subprocess):
     tablename = 'test_nsnap01'
     uri = 'table:' + tablename
     nrows = 300
@@ -85,4 +85,4 @@ class test_nsnap01(wttest.WiredTigerTestCase, suite_subprocess):
                 self.check_named_snapshot(c, snapshot, expected)
 
 if __name__ == '__main__':
-    wttest.run()
+    aetest.run()

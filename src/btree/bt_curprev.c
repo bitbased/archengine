@@ -1,12 +1,12 @@
 /*-
  * Copyright (c) 2014-2015 MongoDB, Inc.
- * Copyright (c) 2008-2014 WiredTiger, Inc.
+ * Copyright (c) 2008-2014 ArchEngine, Inc.
  *	All rights reserved.
  *
  * See the file LICENSE for redistribution information.
  */
 
-#include "wt_internal.h"
+#include "ae_internal.h"
 
 /*
  * Walking backwards through skip lists.
@@ -22,7 +22,7 @@
 #undef	PREV_ITEM
 #define	PREV_ITEM(ins_head, insp, i)					\
 	(((insp) == &(ins_head)->head[i] || (insp) == NULL) ? NULL :	\
-	    (WT_INSERT *)((char *)((insp) - (i)) - offsetof(WT_INSERT, next)))
+	    (AE_INSERT *)((char *)((insp) - (i)) - offsetof(AE_INSERT, next)))
 
 #undef	PREV_INS
 #define	PREV_INS(cbt, i)						\
@@ -33,14 +33,14 @@
  *	Move back one position in a skip list stack (aka "finger").
  */
 static inline int
-__cursor_skip_prev(WT_CURSOR_BTREE *cbt)
+__cursor_skip_prev(AE_CURSOR_BTREE *cbt)
 {
-	WT_INSERT *current, *ins;
-	WT_ITEM key;
-	WT_SESSION_IMPL *session;
+	AE_INSERT *current, *ins;
+	AE_ITEM key;
+	AE_SESSION_IMPL *session;
 	int i;
 
-	session = (WT_SESSION_IMPL *)cbt->iface.session;
+	session = (AE_SESSION_IMPL *)cbt->iface.session;
 
 restart:
 	/*
@@ -49,13 +49,13 @@ restart:
 	 */
 	while ((current = cbt->ins) != PREV_INS(cbt, 0)) {
 		if (cbt->btree->type == BTREE_ROW) {
-			key.data = WT_INSERT_KEY(current);
-			key.size = WT_INSERT_KEY_SIZE(current);
-			WT_RET(__wt_search_insert(session, cbt, &key));
+			key.data = AE_INSERT_KEY(current);
+			key.size = AE_INSERT_KEY_SIZE(current);
+			AE_RET(__ae_search_insert(session, cbt, &key));
 		} else
 			cbt->ins = __col_insert_search(cbt->ins_head,
 			    cbt->ins_stack, cbt->next_stack,
-			    WT_INSERT_RECNO(current));
+			    AE_INSERT_RECNO(current));
 	}
 
 	/*
@@ -69,7 +69,7 @@ restart:
 	 * non-trivial.
 	 */
 	ins = NULL;			/* -Wconditional-uninitialized */
-	for (i = 0; i < WT_SKIP_MAXDEPTH - 1; i++)
+	for (i = 0; i < AE_SKIP_MAXDEPTH - 1; i++)
 		if ((ins = PREV_INS(cbt, i + 1)) != current)
 			break;
 
@@ -124,20 +124,20 @@ restart:
  *	Return the previous fixed-length entry on the append list.
  */
 static inline int
-__cursor_fix_append_prev(WT_CURSOR_BTREE *cbt, bool newpage)
+__cursor_fix_append_prev(AE_CURSOR_BTREE *cbt, bool newpage)
 {
-	WT_ITEM *val;
-	WT_PAGE *page;
-	WT_SESSION_IMPL *session;
-	WT_UPDATE *upd;
+	AE_ITEM *val;
+	AE_PAGE *page;
+	AE_SESSION_IMPL *session;
+	AE_UPDATE *upd;
 
-	session = (WT_SESSION_IMPL *)cbt->iface.session;
+	session = (AE_SESSION_IMPL *)cbt->iface.session;
 	page = cbt->ref->page;
 	val = &cbt->iface.value;
 
 	if (newpage) {
-		if ((cbt->ins = WT_SKIP_LAST(cbt->ins_head)) == NULL)
-			return (WT_NOTFOUND);
+		if ((cbt->ins = AE_SKIP_LAST(cbt->ins_head)) == NULL)
+			return (AE_NOTFOUND);
 	} else {
 		/*
 		 * Handle the special case of leading implicit records, that is,
@@ -149,25 +149,25 @@ __cursor_fix_append_prev(WT_CURSOR_BTREE *cbt, bool newpage)
 		 *    -- call this routine to walk the append list
 		 *    -- call the routine to walk the standard page items
 		 *    -- call the tree walk routine looking for a previous page
-		 * Each of them returns WT_NOTFOUND, at which point our caller
+		 * Each of them returns AE_NOTFOUND, at which point our caller
 		 * checks the cursor record number, and if it's larger than 1,
 		 * returns the implicit records.  Instead, I'm trying to detect
 		 * the case here, mostly because I don't want to put that code
 		 * into our caller.  Anyway, if this code breaks for any reason,
 		 * that's the way I'd go.
 		 *
-		 * If we're not pointing to a WT_INSERT entry, or we can't find
-		 * a WT_INSERT record that precedes our record name-space, check
+		 * If we're not pointing to a AE_INSERT entry, or we can't find
+		 * a AE_INSERT record that precedes our record name-space, check
 		 * if there are any records on the page.  If there aren't, then
 		 * we're in the magic zone, keep going until we get to a record
 		 * number of 1.
 		 */
 		if (cbt->ins != NULL &&
-		    cbt->recno <= WT_INSERT_RECNO(cbt->ins))
-			WT_RET(__cursor_skip_prev(cbt));
+		    cbt->recno <= AE_INSERT_RECNO(cbt->ins))
+			AE_RET(__cursor_skip_prev(cbt));
 		if (cbt->ins == NULL &&
 		    (cbt->recno == 1 || __col_fix_last_recno(page) != 0))
-			return (WT_NOTFOUND);
+			return (AE_NOTFOUND);
 	}
 
 	/*
@@ -179,7 +179,7 @@ __cursor_fix_append_prev(WT_CURSOR_BTREE *cbt, bool newpage)
 	 * the tree.  Otherwise, decrement the record.
 	 */
 	if (newpage)
-		__cursor_set_recno(cbt, WT_INSERT_RECNO(cbt->ins));
+		__cursor_set_recno(cbt, AE_INSERT_RECNO(cbt->ins));
 	else
 		__cursor_set_recno(cbt, cbt->recno - 1);
 
@@ -194,12 +194,12 @@ __cursor_fix_append_prev(WT_CURSOR_BTREE *cbt, bool newpage)
 	 * never seen by a read.
 	 */
 	if (cbt->ins == NULL ||
-	    cbt->recno > WT_INSERT_RECNO(cbt->ins) ||
-	    (upd = __wt_txn_read(session, cbt->ins->upd)) == NULL) {
+	    cbt->recno > AE_INSERT_RECNO(cbt->ins) ||
+	    (upd = __ae_txn_read(session, cbt->ins->upd)) == NULL) {
 		cbt->v = 0;
 		val->data = &cbt->v;
 	} else
-		val->data = WT_UPDATE_DATA(upd);
+		val->data = AE_UPDATE_DATA(upd);
 	val->size = 1;
 	return (0);
 }
@@ -209,15 +209,15 @@ __cursor_fix_append_prev(WT_CURSOR_BTREE *cbt, bool newpage)
  *	Move to the previous, fixed-length column-store item.
  */
 static inline int
-__cursor_fix_prev(WT_CURSOR_BTREE *cbt, bool newpage)
+__cursor_fix_prev(AE_CURSOR_BTREE *cbt, bool newpage)
 {
-	WT_BTREE *btree;
-	WT_ITEM *val;
-	WT_PAGE *page;
-	WT_SESSION_IMPL *session;
-	WT_UPDATE *upd;
+	AE_BTREE *btree;
+	AE_ITEM *val;
+	AE_PAGE *page;
+	AE_SESSION_IMPL *session;
+	AE_UPDATE *upd;
 
-	session = (WT_SESSION_IMPL *)cbt->iface.session;
+	session = (AE_SESSION_IMPL *)cbt->iface.session;
 	page = cbt->ref->page;
 	btree = S2BT(session);
 	val = &cbt->iface.value;
@@ -226,29 +226,29 @@ __cursor_fix_prev(WT_CURSOR_BTREE *cbt, bool newpage)
 	if (newpage) {
 		cbt->last_standard_recno = __col_fix_last_recno(page);
 		if (cbt->last_standard_recno == 0)
-			return (WT_NOTFOUND);
+			return (AE_NOTFOUND);
 		__cursor_set_recno(cbt, cbt->last_standard_recno);
 		goto new_page;
 	}
 
 	/* Move to the previous entry and return the item. */
 	if (cbt->recno == page->pg_fix_recno)
-		return (WT_NOTFOUND);
+		return (AE_NOTFOUND);
 	__cursor_set_recno(cbt, cbt->recno - 1);
 
 new_page:
 	/* Check any insert list for a matching record. */
-	cbt->ins_head = WT_COL_UPDATE_SINGLE(page);
+	cbt->ins_head = AE_COL_UPDATE_SINGLE(page);
 	cbt->ins = __col_insert_search(
 	    cbt->ins_head, cbt->ins_stack, cbt->next_stack, cbt->recno);
-	if (cbt->ins != NULL && cbt->recno != WT_INSERT_RECNO(cbt->ins))
+	if (cbt->ins != NULL && cbt->recno != AE_INSERT_RECNO(cbt->ins))
 		cbt->ins = NULL;
-	upd = cbt->ins == NULL ? NULL : __wt_txn_read(session, cbt->ins->upd);
+	upd = cbt->ins == NULL ? NULL : __ae_txn_read(session, cbt->ins->upd);
 	if (upd == NULL) {
 		cbt->v = __bit_getv_recno(page, cbt->recno, btree->bitcnt);
 		val->data = &cbt->v;
 	} else
-		val->data = WT_UPDATE_DATA(upd);
+		val->data = AE_UPDATE_DATA(upd);
 	val->size = 1;
 	return (0);
 }
@@ -258,34 +258,34 @@ new_page:
  *	Return the previous variable-length entry on the append list.
  */
 static inline int
-__cursor_var_append_prev(WT_CURSOR_BTREE *cbt, bool newpage)
+__cursor_var_append_prev(AE_CURSOR_BTREE *cbt, bool newpage)
 {
-	WT_ITEM *val;
-	WT_SESSION_IMPL *session;
-	WT_UPDATE *upd;
+	AE_ITEM *val;
+	AE_SESSION_IMPL *session;
+	AE_UPDATE *upd;
 
-	session = (WT_SESSION_IMPL *)cbt->iface.session;
+	session = (AE_SESSION_IMPL *)cbt->iface.session;
 	val = &cbt->iface.value;
 
 	if (newpage) {
-		cbt->ins = WT_SKIP_LAST(cbt->ins_head);
+		cbt->ins = AE_SKIP_LAST(cbt->ins_head);
 		goto new_page;
 	}
 
 	for (;;) {
-		WT_RET(__cursor_skip_prev(cbt));
+		AE_RET(__cursor_skip_prev(cbt));
 new_page:	if (cbt->ins == NULL)
-			return (WT_NOTFOUND);
+			return (AE_NOTFOUND);
 
-		__cursor_set_recno(cbt, WT_INSERT_RECNO(cbt->ins));
-		if ((upd = __wt_txn_read(session, cbt->ins->upd)) == NULL)
+		__cursor_set_recno(cbt, AE_INSERT_RECNO(cbt->ins));
+		if ((upd = __ae_txn_read(session, cbt->ins->upd)) == NULL)
 			continue;
-		if (WT_UPDATE_DELETED_ISSET(upd)) {
-			if (__wt_txn_visible_all(session, upd->txnid))
+		if (AE_UPDATE_DELETED_ISSET(upd)) {
+			if (__ae_txn_visible_all(session, upd->txnid))
 				++cbt->page_deleted_count;
 			continue;
 		}
-		val->data = WT_UPDATE_DATA(upd);
+		val->data = AE_UPDATE_DATA(upd);
 		val->size = upd->size;
 		return (0);
 	}
@@ -297,19 +297,19 @@ new_page:	if (cbt->ins == NULL)
  *	Move to the previous, variable-length column-store item.
  */
 static inline int
-__cursor_var_prev(WT_CURSOR_BTREE *cbt, bool newpage)
+__cursor_var_prev(AE_CURSOR_BTREE *cbt, bool newpage)
 {
-	WT_CELL *cell;
-	WT_CELL_UNPACK unpack;
-	WT_COL *cip;
-	WT_INSERT *ins;
-	WT_ITEM *val;
-	WT_PAGE *page;
-	WT_SESSION_IMPL *session;
-	WT_UPDATE *upd;
+	AE_CELL *cell;
+	AE_CELL_UNPACK unpack;
+	AE_COL *cip;
+	AE_INSERT *ins;
+	AE_ITEM *val;
+	AE_PAGE *page;
+	AE_SESSION_IMPL *session;
+	AE_UPDATE *upd;
 	uint64_t rle_start;
 
-	session = (WT_SESSION_IMPL *)cbt->iface.session;
+	session = (AE_SESSION_IMPL *)cbt->iface.session;
 	page = cbt->ref->page;
 	val = &cbt->iface.value;
 
@@ -319,7 +319,7 @@ __cursor_var_prev(WT_CURSOR_BTREE *cbt, bool newpage)
 	if (newpage) {
 		cbt->last_standard_recno = __col_var_last_recno(page);
 		if (cbt->last_standard_recno == 0)
-			return (WT_NOTFOUND);
+			return (AE_NOTFOUND);
 		__cursor_set_recno(cbt, cbt->last_standard_recno);
 		goto new_page;
 	}
@@ -329,27 +329,27 @@ __cursor_var_prev(WT_CURSOR_BTREE *cbt, bool newpage)
 		__cursor_set_recno(cbt, cbt->recno - 1);
 
 new_page:	if (cbt->recno < page->pg_var_recno)
-			return (WT_NOTFOUND);
+			return (AE_NOTFOUND);
 
-		/* Find the matching WT_COL slot. */
+		/* Find the matching AE_COL slot. */
 		if ((cip =
 		    __col_var_search(page, cbt->recno, &rle_start)) == NULL)
-			return (WT_NOTFOUND);
-		cbt->slot = WT_COL_SLOT(page, cip);
+			return (AE_NOTFOUND);
+		cbt->slot = AE_COL_SLOT(page, cip);
 
 		/* Check any insert list for a matching record. */
-		cbt->ins_head = WT_COL_UPDATE_SLOT(page, cbt->slot);
+		cbt->ins_head = AE_COL_UPDATE_SLOT(page, cbt->slot);
 		cbt->ins = __col_insert_search_match(cbt->ins_head, cbt->recno);
 		upd = cbt->ins == NULL ?
-		    NULL : __wt_txn_read(session, cbt->ins->upd);
+		    NULL : __ae_txn_read(session, cbt->ins->upd);
 		if (upd != NULL) {
-			if (WT_UPDATE_DELETED_ISSET(upd)) {
-				if (__wt_txn_visible_all(session, upd->txnid))
+			if (AE_UPDATE_DELETED_ISSET(upd)) {
+				if (__ae_txn_visible_all(session, upd->txnid))
 					++cbt->page_deleted_count;
 				continue;
 			}
 
-			val->data = WT_UPDATE_DATA(upd);
+			val->data = AE_UPDATE_DATA(upd);
 			val->size = upd->size;
 			return (0);
 		}
@@ -362,11 +362,11 @@ new_page:	if (cbt->recno < page->pg_var_recno)
 		 * information.
 		 */
 		if (cbt->cip_saved != cip) {
-			if ((cell = WT_COL_PTR(page, cip)) == NULL)
+			if ((cell = AE_COL_PTR(page, cip)) == NULL)
 				continue;
-			__wt_cell_unpack(cell, &unpack);
-			if (unpack.type == WT_CELL_DEL) {
-				if (__wt_cell_rle(&unpack) == 1)
+			__ae_cell_unpack(cell, &unpack);
+			if (unpack.type == AE_CELL_DEL) {
+				if (__ae_cell_rle(&unpack) == 1)
 					continue;
 				/*
 				 * There can be huge gaps in the variable-length
@@ -392,14 +392,14 @@ new_page:	if (cbt->recno < page->pg_var_recno)
 				 */
 				cbt->recno = rle_start - 1;
 				if (ins != NULL &&
-				    WT_INSERT_RECNO(ins) > cbt->recno)
-					cbt->recno = WT_INSERT_RECNO(ins);
+				    AE_INSERT_RECNO(ins) > cbt->recno)
+					cbt->recno = AE_INSERT_RECNO(ins);
 
 				/* Adjust for the outer loop decrement. */
 				++cbt->recno;
 				continue;
 			}
-			WT_RET(__wt_page_cell_data_ref(
+			AE_RET(__ae_page_cell_data_ref(
 			    session, page, &unpack, cbt->tmp));
 
 			cbt->cip_saved = cip;
@@ -416,16 +416,16 @@ new_page:	if (cbt->recno < page->pg_var_recno)
  *	Move to the previous row-store item.
  */
 static inline int
-__cursor_row_prev(WT_CURSOR_BTREE *cbt, bool newpage)
+__cursor_row_prev(AE_CURSOR_BTREE *cbt, bool newpage)
 {
-	WT_INSERT *ins;
-	WT_ITEM *key, *val;
-	WT_PAGE *page;
-	WT_ROW *rip;
-	WT_SESSION_IMPL *session;
-	WT_UPDATE *upd;
+	AE_INSERT *ins;
+	AE_ITEM *key, *val;
+	AE_PAGE *page;
+	AE_ROW *rip;
+	AE_SESSION_IMPL *session;
+	AE_UPDATE *upd;
 
-	session = (WT_SESSION_IMPL *)cbt->iface.session;
+	session = (AE_SESSION_IMPL *)cbt->iface.session;
 	page = cbt->ref->page;
 	key = &cbt->iface.key;
 	val = &cbt->iface.value;
@@ -433,11 +433,11 @@ __cursor_row_prev(WT_CURSOR_BTREE *cbt, bool newpage)
 	/*
 	 * For row-store pages, we need a single item that tells us the part
 	 * of the page we're walking (otherwise switching from next to prev
-	 * and vice-versa is just too complicated), so we map the WT_ROW and
-	 * WT_INSERT_HEAD insert array slots into a single name space: slot 1
-	 * is the "smallest key insert list", slot 2 is WT_ROW[0], slot 3 is
-	 * WT_INSERT_HEAD[0], and so on.  This means WT_INSERT lists are
-	 * odd-numbered slots, and WT_ROW array slots are even-numbered slots.
+	 * and vice-versa is just too complicated), so we map the AE_ROW and
+	 * AE_INSERT_HEAD insert array slots into a single name space: slot 1
+	 * is the "smallest key insert list", slot 2 is AE_ROW[0], slot 3 is
+	 * AE_INSERT_HEAD[0], and so on.  This means AE_INSERT lists are
+	 * odd-numbered slots, and AE_ROW array slots are even-numbered slots.
 	 *
 	 * New page configuration.
 	 */
@@ -446,15 +446,15 @@ __cursor_row_prev(WT_CURSOR_BTREE *cbt, bool newpage)
 		 * If we haven't instantiated keys on this page, do so, else it
 		 * is a very, very slow traversal.
 		 */
-		if (!F_ISSET_ATOMIC(page, WT_PAGE_BUILD_KEYS))
-			WT_RET(__wt_row_leaf_keys(session, page));
+		if (!F_ISSET_ATOMIC(page, AE_PAGE_BUILD_KEYS))
+			AE_RET(__ae_row_leaf_keys(session, page));
 
 		if (page->pg_row_entries == 0)
-			cbt->ins_head = WT_ROW_INSERT_SMALLEST(page);
+			cbt->ins_head = AE_ROW_INSERT_SMALLEST(page);
 		else
 			cbt->ins_head =
-			    WT_ROW_INSERT_SLOT(page, page->pg_row_entries - 1);
-		cbt->ins = WT_SKIP_LAST(cbt->ins_head);
+			    AE_ROW_INSERT_SLOT(page, page->pg_row_entries - 1);
+		cbt->ins = AE_SKIP_LAST(cbt->ins_head);
 		cbt->row_iteration_slot = page->pg_row_entries * 2 + 1;
 		goto new_insert;
 	}
@@ -467,38 +467,38 @@ __cursor_row_prev(WT_CURSOR_BTREE *cbt, bool newpage)
 		 * next movement.
 		 */
 		if (cbt->ins != NULL)
-			WT_RET(__cursor_skip_prev(cbt));
+			AE_RET(__cursor_skip_prev(cbt));
 
 new_insert:	if ((ins = cbt->ins) != NULL) {
-			if ((upd = __wt_txn_read(session, ins->upd)) == NULL)
+			if ((upd = __ae_txn_read(session, ins->upd)) == NULL)
 				continue;
-			if (WT_UPDATE_DELETED_ISSET(upd)) {
-				if (__wt_txn_visible_all(session, upd->txnid))
+			if (AE_UPDATE_DELETED_ISSET(upd)) {
+				if (__ae_txn_visible_all(session, upd->txnid))
 					++cbt->page_deleted_count;
 				continue;
 			}
-			key->data = WT_INSERT_KEY(ins);
-			key->size = WT_INSERT_KEY_SIZE(ins);
-			val->data = WT_UPDATE_DATA(upd);
+			key->data = AE_INSERT_KEY(ins);
+			key->size = AE_INSERT_KEY_SIZE(ins);
+			val->data = AE_UPDATE_DATA(upd);
 			val->size = upd->size;
 			return (0);
 		}
 
 		/* Check for the beginning of the page. */
 		if (cbt->row_iteration_slot == 1)
-			return (WT_NOTFOUND);
+			return (AE_NOTFOUND);
 		--cbt->row_iteration_slot;
 
 		/*
-		 * Odd-numbered slots configure as WT_INSERT_HEAD entries,
-		 * even-numbered slots configure as WT_ROW entries.
+		 * Odd-numbered slots configure as AE_INSERT_HEAD entries,
+		 * even-numbered slots configure as AE_ROW entries.
 		 */
 		if (cbt->row_iteration_slot & 0x01) {
 			cbt->ins_head = cbt->row_iteration_slot == 1 ?
-			    WT_ROW_INSERT_SMALLEST(page) :
-			    WT_ROW_INSERT_SLOT(
+			    AE_ROW_INSERT_SMALLEST(page) :
+			    AE_ROW_INSERT_SLOT(
 				page, cbt->row_iteration_slot / 2 - 1);
-			cbt->ins = WT_SKIP_LAST(cbt->ins_head);
+			cbt->ins = AE_SKIP_LAST(cbt->ins_head);
 			goto new_insert;
 		}
 		cbt->ins_head = NULL;
@@ -506,9 +506,9 @@ new_insert:	if ((ins = cbt->ins) != NULL) {
 
 		cbt->slot = cbt->row_iteration_slot / 2 - 1;
 		rip = &page->pg_row_d[cbt->slot];
-		upd = __wt_txn_read(session, WT_ROW_UPDATE(page, rip));
-		if (upd != NULL && WT_UPDATE_DELETED_ISSET(upd)) {
-			if (__wt_txn_visible_all(session, upd->txnid))
+		upd = __ae_txn_read(session, AE_ROW_UPDATE(page, rip));
+		if (upd != NULL && AE_UPDATE_DELETED_ISSET(upd)) {
+			if (__ae_txn_visible_all(session, upd->txnid))
 				++cbt->page_deleted_count;
 			continue;
 		}
@@ -519,35 +519,35 @@ new_insert:	if ((ins = cbt->ins) != NULL) {
 }
 
 /*
- * __wt_btcur_prev --
+ * __ae_btcur_prev --
  *	Move to the previous record in the tree.
  */
 int
-__wt_btcur_prev(WT_CURSOR_BTREE *cbt, bool truncating)
+__ae_btcur_prev(AE_CURSOR_BTREE *cbt, bool truncating)
 {
-	WT_DECL_RET;
-	WT_PAGE *page;
-	WT_SESSION_IMPL *session;
+	AE_DECL_RET;
+	AE_PAGE *page;
+	AE_SESSION_IMPL *session;
 	uint32_t flags;
 	bool newpage;
 
-	session = (WT_SESSION_IMPL *)cbt->iface.session;
+	session = (AE_SESSION_IMPL *)cbt->iface.session;
 
-	WT_STAT_FAST_CONN_INCR(session, cursor_prev);
-	WT_STAT_FAST_DATA_INCR(session, cursor_prev);
+	AE_STAT_FAST_CONN_INCR(session, cursor_prev);
+	AE_STAT_FAST_DATA_INCR(session, cursor_prev);
 
-	flags = WT_READ_PREV | WT_READ_SKIP_INTL;	/* Tree walk flags. */
+	flags = AE_READ_PREV | AE_READ_SKIP_INTL;	/* Tree walk flags. */
 	if (truncating)
-		LF_SET(WT_READ_TRUNCATE);
+		LF_SET(AE_READ_TRUNCATE);
 
-	WT_RET(__cursor_func_init(cbt, false));
+	AE_RET(__cursor_func_init(cbt, false));
 
 	/*
 	 * If we aren't already iterating in the right direction, there's
 	 * some setup to do.
 	 */
-	if (!F_ISSET(cbt, WT_CBT_ITERATE_PREV))
-		__wt_btcur_iterate_setup(cbt);
+	if (!F_ISSET(cbt, AE_CBT_ITERATE_PREV))
+		__ae_btcur_iterate_setup(cbt);
 
 	/*
 	 * Walk any page we're holding until the underlying call returns not-
@@ -556,48 +556,48 @@ __wt_btcur_prev(WT_CURSOR_BTREE *cbt, bool truncating)
 	 */
 	for (newpage = false;; newpage = true) {
 		page = cbt->ref == NULL ? NULL : cbt->ref->page;
-		WT_ASSERT(session, page == NULL || !WT_PAGE_IS_INTERNAL(page));
+		AE_ASSERT(session, page == NULL || !AE_PAGE_IS_INTERNAL(page));
 
 		/*
 		 * The last page in a column-store has appended entries.
 		 * We handle it separately from the usual cursor code:
 		 * it's only that one page and it's in a simple format.
 		 */
-		if (newpage && page != NULL && page->type != WT_PAGE_ROW_LEAF &&
-		    (cbt->ins_head = WT_COL_APPEND(page)) != NULL)
-			F_SET(cbt, WT_CBT_ITERATE_APPEND);
+		if (newpage && page != NULL && page->type != AE_PAGE_ROW_LEAF &&
+		    (cbt->ins_head = AE_COL_APPEND(page)) != NULL)
+			F_SET(cbt, AE_CBT_ITERATE_APPEND);
 
-		if (F_ISSET(cbt, WT_CBT_ITERATE_APPEND)) {
+		if (F_ISSET(cbt, AE_CBT_ITERATE_APPEND)) {
 			switch (page->type) {
-			case WT_PAGE_COL_FIX:
+			case AE_PAGE_COL_FIX:
 				ret = __cursor_fix_append_prev(cbt, newpage);
 				break;
-			case WT_PAGE_COL_VAR:
+			case AE_PAGE_COL_VAR:
 				ret = __cursor_var_append_prev(cbt, newpage);
 				break;
-			WT_ILLEGAL_VALUE_ERR(session);
+			AE_ILLEGAL_VALUE_ERR(session);
 			}
 			if (ret == 0)
 				break;
-			F_CLR(cbt, WT_CBT_ITERATE_APPEND);
-			if (ret != WT_NOTFOUND)
+			F_CLR(cbt, AE_CBT_ITERATE_APPEND);
+			if (ret != AE_NOTFOUND)
 				break;
 			newpage = true;
 		}
 		if (page != NULL) {
 			switch (page->type) {
-			case WT_PAGE_COL_FIX:
+			case AE_PAGE_COL_FIX:
 				ret = __cursor_fix_prev(cbt, newpage);
 				break;
-			case WT_PAGE_COL_VAR:
+			case AE_PAGE_COL_VAR:
 				ret = __cursor_var_prev(cbt, newpage);
 				break;
-			case WT_PAGE_ROW_LEAF:
+			case AE_PAGE_ROW_LEAF:
 				ret = __cursor_row_prev(cbt, newpage);
 				break;
-			WT_ILLEGAL_VALUE_ERR(session);
+			AE_ILLEGAL_VALUE_ERR(session);
 			}
-			if (ret != WT_NOTFOUND)
+			if (ret != AE_NOTFOUND)
 				break;
 		}
 
@@ -610,16 +610,16 @@ __wt_btcur_prev(WT_CURSOR_BTREE *cbt, bool truncating)
 		 * are genuinely empty, in new trees.
 		 */
 		if (page != NULL &&
-		    (cbt->page_deleted_count > WT_BTREE_DELETE_THRESHOLD ||
+		    (cbt->page_deleted_count > AE_BTREE_DELETE_THRESHOLD ||
 		    (newpage && cbt->page_deleted_count > 0)))
-			__wt_page_evict_soon(page);
+			__ae_page_evict_soon(page);
 		cbt->page_deleted_count = 0;
 
-		WT_ERR(__wt_tree_walk(session, &cbt->ref, NULL, flags));
-		WT_ERR_TEST(cbt->ref == NULL, WT_NOTFOUND);
+		AE_ERR(__ae_tree_walk(session, &cbt->ref, NULL, flags));
+		AE_ERR_TEST(cbt->ref == NULL, AE_NOTFOUND);
 	}
 
 err:	if (ret != 0)
-		WT_TRET(__cursor_reset(cbt));
+		AE_TRET(__cursor_reset(cbt));
 	return (ret);
 }

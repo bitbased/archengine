@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Public Domain 2014-2015 MongoDB, Inc.
-# Public Domain 2008-2014 WiredTiger, Inc.
+# Public Domain 2008-2014 ArchEngine, Inc.
 #
 # This is free and unencumbered software released into the public domain.
 #
@@ -26,14 +26,14 @@
 # ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 # OTHER DEALINGS IN THE SOFTWARE.
 
-import wiredtiger, wttest
+import archengine, aetest
 
 # test_bug013.py
 #    Test data consistency in LSM with updates. Ensure that overwrite
 #    cursors see all entries in the tree (i.e: they open cursors on all
 #    chunks in the LSM tree).
 #    See JIRA BF-829
-class test_bug013(wttest.WiredTigerTestCase):
+class test_bug013(aetest.ArchEngineTestCase):
     """
     Test LSM data consistency.
     """
@@ -60,7 +60,7 @@ class test_bug013(wttest.WiredTigerTestCase):
         # an EBUSY return
         try:
             self.session.verify(self.uri, None)
-        except wiredtiger.WiredTigerError:
+        except archengine.ArchEngineError:
             pass
 
         # Add a key
@@ -80,4 +80,4 @@ class test_bug013(wttest.WiredTigerTestCase):
         self.check_entries([[2, 6, 1]])
 
 if __name__ == '__main__':
-    wttest.run()
+    aetest.run()

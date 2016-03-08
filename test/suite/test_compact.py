@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Public Domain 2014-2015 MongoDB, Inc.
-# Public Domain 2008-2014 WiredTiger, Inc.
+# Public Domain 2008-2014 ArchEngine, Inc.
 #
 # This is free and unencumbered software released into the public domain.
 #
@@ -26,15 +26,15 @@
 # ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 # OTHER DEALINGS IN THE SOFTWARE.
 
-import wiredtiger, wttest
+import archengine, aetest
 from helper import complex_populate, simple_populate, key_populate
 from suite_subprocess import suite_subprocess
-from wiredtiger import stat
-from wtscenario import multiply_scenarios, number_scenarios
+from archengine import stat
+from aescenario import multiply_scenarios, number_scenarios
 
 # test_compact.py
 #    session level compact operation
-class test_compact(wttest.WiredTigerTestCase, suite_subprocess):
+class test_compact(aetest.ArchEngineTestCase, suite_subprocess):
     name = 'test_compact'
 
     # Use a small page size because we want to create lots of pages.
@@ -55,10 +55,10 @@ class test_compact(wttest.WiredTigerTestCase, suite_subprocess):
     ]
     scenarios = number_scenarios(multiply_scenarios('.', types, compact))
 
-    # Override WiredTigerTestCase, we want a large cache so that eviction
+    # Override ArchEngineTestCase, we want a large cache so that eviction
     # doesn't happen (which could skew our compaction results).
     def setUpConnectionOpen(self, dir):
-        conn = wiredtiger.wiredtiger_open(dir,
+        conn = archengine.archengine_open(dir,
             'create,cache_size=250MB,statistics=(all),' +
             'error_prefix="%s: "' % self.shortid())
         return conn
@@ -90,7 +90,7 @@ class test_compact(wttest.WiredTigerTestCase, suite_subprocess):
         if self.utility == 1:
             self.session.checkpoint(None)
             self.close_conn()
-            self.runWt(["compact", uri])
+            self.runAe(["compact", uri])
         else:
             # Optionally reopen the connection so we do more on-disk tests.
             if self.reopen == 1:
@@ -107,4 +107,4 @@ class test_compact(wttest.WiredTigerTestCase, suite_subprocess):
 
 
 if __name__ == '__main__':
-    wttest.run()
+    aetest.run()

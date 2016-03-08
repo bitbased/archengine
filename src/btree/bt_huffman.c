@@ -1,12 +1,12 @@
 /*-
  * Copyright (c) 2014-2015 MongoDB, Inc.
- * Copyright (c) 2008-2014 WiredTiger, Inc.
+ * Copyright (c) 2008-2014 ArchEngine, Inc.
  *	All rights reserved.
  *
  * See the file LICENSE for redistribution information.
  */
 
-#include "wt_internal.h"
+#include "ae_internal.h"
 
 /*
  * 7-bit ASCII, with English language frequencies.
@@ -21,11 +21,11 @@
  * character in text where it occurs, and tab appears about as frequently as
  * 'a' and 'n' in text where it occurs.
  */
-struct __wt_huffman_table {
+struct __ae_huffman_table {
 	uint32_t symbol;
 	uint32_t frequency;
 };
-static const struct __wt_huffman_table __wt_huffman_nytenglish[] = {
+static const struct __ae_huffman_table __ae_huffman_nytenglish[] = {
 	/* nul */	{ 0x00,       0 },	/* For an escape character. */
 	/*  ht */	{ 0x09, 5263779 },
 	/*  sp */	{ 0x20, 8000000 },
@@ -125,8 +125,8 @@ static const struct __wt_huffman_table __wt_huffman_nytenglish[] = {
 	/*  ~  */	{ 0x7e,       1 }
 };
 
-static int __wt_huffman_read(WT_SESSION_IMPL *,
-    WT_CONFIG_ITEM *, struct __wt_huffman_table **, u_int *, u_int *);
+static int __ae_huffman_read(AE_SESSION_IMPL *,
+    AE_CONFIG_ITEM *, struct __ae_huffman_table **, u_int *, u_int *);
 
 /*
  * __huffman_confchk_file --
@@ -134,10 +134,10 @@ static int __wt_huffman_read(WT_SESSION_IMPL *,
  */
 static int
 __huffman_confchk_file(
-    WT_SESSION_IMPL *session, WT_CONFIG_ITEM *v, bool *is_utf8p, FILE **fpp)
+    AE_SESSION_IMPL *session, AE_CONFIG_ITEM *v, bool *is_utf8p, FILE **fpp)
 {
 	FILE *fp;
-	WT_DECL_RET;
+	AE_DECL_RET;
 	size_t len;
 	char *fname;
 
@@ -145,28 +145,28 @@ __huffman_confchk_file(
 	len = 0;
 	if (is_utf8p != NULL)
 		*is_utf8p = 0;
-	if (WT_PREFIX_MATCH(v->str, "utf8")) {
+	if (AE_PREFIX_MATCH(v->str, "utf8")) {
 		if (is_utf8p != NULL)
 			*is_utf8p = 1;
 		len = strlen("utf8");
-	} else if (WT_PREFIX_MATCH(v->str, "utf16"))
+	} else if (AE_PREFIX_MATCH(v->str, "utf16"))
 		len = strlen("utf16");
 	if (len == 0 || len >= v->len)
-		WT_RET_MSG(session, EINVAL,
+		AE_RET_MSG(session, EINVAL,
 		    "illegal Huffman configuration: %.*s", (int)v->len, v->str);
 
 	/* Check the file exists. */
-	WT_RET(__wt_strndup(session, v->str + len, v->len - len, &fname));
-	WT_ERR(__wt_fopen(session,
-	    fname, WT_FHANDLE_READ, WT_FOPEN_FIXED, &fp));
+	AE_RET(__ae_strndup(session, v->str + len, v->len - len, &fname));
+	AE_ERR(__ae_fopen(session,
+	    fname, AE_FHANDLE_READ, AE_FOPEN_FIXED, &fp));
 
 	/* Optionally return the file handle. */
 	if (fpp == NULL)
-		(void)__wt_fclose(&fp, WT_FHANDLE_READ);
+		(void)__ae_fclose(&fp, AE_FHANDLE_READ);
 	else
 		*fpp = fp;
 
-err:	__wt_free(session, fname);
+err:	__ae_free(session, fname);
 
 	return (ret);
 }
@@ -176,53 +176,53 @@ err:	__wt_free(session, fname);
  *	Verify Huffman configuration.
  */
 static int
-__huffman_confchk(WT_SESSION_IMPL *session, WT_CONFIG_ITEM *v)
+__huffman_confchk(AE_SESSION_IMPL *session, AE_CONFIG_ITEM *v)
 {
 	if (v->len == 0)
 		return (0);
 
 	/* Standard Huffman encodings, no work to be done. */
-	if (WT_STRING_MATCH("english", v->str, v->len))
+	if (AE_STRING_MATCH("english", v->str, v->len))
 		return (0);
-	if (WT_STRING_MATCH("none", v->str, v->len))
+	if (AE_STRING_MATCH("none", v->str, v->len))
 		return (0);
 
 	return (__huffman_confchk_file(session, v, NULL, NULL));
 }
 
 /*
- * __wt_btree_huffman_open --
+ * __ae_btree_huffman_open --
  *	Configure Huffman encoding for the tree.
  */
 int
-__wt_btree_huffman_open(WT_SESSION_IMPL *session)
+__ae_btree_huffman_open(AE_SESSION_IMPL *session)
 {
-	struct __wt_huffman_table *table;
-	WT_BTREE *btree;
-	WT_CONFIG_ITEM key_conf, value_conf;
-	WT_DECL_RET;
+	struct __ae_huffman_table *table;
+	AE_BTREE *btree;
+	AE_CONFIG_ITEM key_conf, value_conf;
+	AE_DECL_RET;
 	const char **cfg;
 	u_int entries, numbytes;
 
 	btree = S2BT(session);
 	cfg = btree->dhandle->cfg;
 
-	WT_RET(__wt_config_gets_none(session, cfg, "huffman_key", &key_conf));
-	WT_RET(__huffman_confchk(session, &key_conf));
-	WT_RET(
-	    __wt_config_gets_none(session, cfg, "huffman_value", &value_conf));
-	WT_RET(__huffman_confchk(session, &value_conf));
+	AE_RET(__ae_config_gets_none(session, cfg, "huffman_key", &key_conf));
+	AE_RET(__huffman_confchk(session, &key_conf));
+	AE_RET(
+	    __ae_config_gets_none(session, cfg, "huffman_value", &value_conf));
+	AE_RET(__huffman_confchk(session, &value_conf));
 	if (key_conf.len == 0 && value_conf.len == 0)
 		return (0);
 
 	switch (btree->type) {		/* Check file type compatibility. */
 	case BTREE_COL_FIX:
-		WT_RET_MSG(session, EINVAL,
+		AE_RET_MSG(session, EINVAL,
 		    "fixed-size column-store files may not be Huffman encoded");
 		/* NOTREACHED */
 	case BTREE_COL_VAR:
 		if (key_conf.len != 0)
-			WT_RET_MSG(session, EINVAL,
+			AE_RET_MSG(session, EINVAL,
 			    "the keys of variable-length column-store files "
 			    "may not be Huffman encoded");
 		break;
@@ -233,13 +233,13 @@ __wt_btree_huffman_open(WT_SESSION_IMPL *session)
 	if (key_conf.len == 0) {
 		;
 	} else if (strncmp(key_conf.str, "english", key_conf.len) == 0) {
-		struct __wt_huffman_table
-		    copy[WT_ELEMENTS(__wt_huffman_nytenglish)];
+		struct __ae_huffman_table
+		    copy[AE_ELEMENTS(__ae_huffman_nytenglish)];
 
 		memcpy(copy,
-		    __wt_huffman_nytenglish, sizeof(__wt_huffman_nytenglish));
-		WT_RET(__wt_huffman_open(
-		    session, copy, WT_ELEMENTS(__wt_huffman_nytenglish),
+		    __ae_huffman_nytenglish, sizeof(__ae_huffman_nytenglish));
+		AE_RET(__ae_huffman_open(
+		    session, copy, AE_ELEMENTS(__ae_huffman_nytenglish),
 		    1, &btree->huffman_key));
 
 		/* Check for a shared key/value table. */
@@ -249,11 +249,11 @@ __wt_btree_huffman_open(WT_SESSION_IMPL *session)
 			return (0);
 		}
 	} else {
-		WT_RET(__wt_huffman_read(
+		AE_RET(__ae_huffman_read(
 		    session, &key_conf, &table, &entries, &numbytes));
-		ret = __wt_huffman_open(
+		ret = __ae_huffman_open(
 		    session, table, entries, numbytes, &btree->huffman_key);
-		__wt_free(session, table);
+		__ae_free(session, table);
 		if (ret != 0)
 			return (ret);
 
@@ -268,20 +268,20 @@ __wt_btree_huffman_open(WT_SESSION_IMPL *session)
 	if (value_conf.len == 0) {
 		;
 	} else if (strncmp(value_conf.str, "english", value_conf.len) == 0) {
-		struct __wt_huffman_table
-		    copy[WT_ELEMENTS(__wt_huffman_nytenglish)];
+		struct __ae_huffman_table
+		    copy[AE_ELEMENTS(__ae_huffman_nytenglish)];
 
 		memcpy(copy,
-		    __wt_huffman_nytenglish, sizeof(__wt_huffman_nytenglish));
-		WT_RET(__wt_huffman_open(
-		    session, copy, WT_ELEMENTS(__wt_huffman_nytenglish),
+		    __ae_huffman_nytenglish, sizeof(__ae_huffman_nytenglish));
+		AE_RET(__ae_huffman_open(
+		    session, copy, AE_ELEMENTS(__ae_huffman_nytenglish),
 		    1, &btree->huffman_value));
 	} else {
-		WT_RET(__wt_huffman_read(
+		AE_RET(__ae_huffman_read(
 		    session, &value_conf, &table, &entries, &numbytes));
-		ret = __wt_huffman_open(
+		ret = __ae_huffman_open(
 		    session, table, entries, numbytes, &btree->huffman_value);
-		__wt_free(session, table);
+		__ae_free(session, table);
 		if (ret != 0)
 			return (ret);
 	}
@@ -290,16 +290,16 @@ __wt_btree_huffman_open(WT_SESSION_IMPL *session)
 }
 
 /*
- * __wt_huffman_read --
+ * __ae_huffman_read --
  *	Read a Huffman table from a file.
  */
 static int
-__wt_huffman_read(WT_SESSION_IMPL *session, WT_CONFIG_ITEM *ip,
-    struct __wt_huffman_table **tablep, u_int *entriesp, u_int *numbytesp)
+__ae_huffman_read(AE_SESSION_IMPL *session, AE_CONFIG_ITEM *ip,
+    struct __ae_huffman_table **tablep, u_int *entriesp, u_int *numbytesp)
 {
-	struct __wt_huffman_table *table, *tp;
+	struct __ae_huffman_table *table, *tp;
 	FILE *fp;
-	WT_DECL_RET;
+	AE_DECL_RET;
 	int64_t symbol, frequency;
 	u_int entries, lineno;
 	bool is_utf8;
@@ -313,7 +313,7 @@ __wt_huffman_read(WT_SESSION_IMPL *session, WT_CONFIG_ITEM *ip,
 	/*
 	 * Try and open the backing file.
 	 */
-	WT_RET(__huffman_confchk_file(session, ip, &is_utf8, &fp));
+	AE_RET(__huffman_confchk_file(session, ip, &is_utf8, &fp));
 
 	/*
 	 * UTF-8 table is 256 bytes, with a range of 0-255.
@@ -322,34 +322,34 @@ __wt_huffman_read(WT_SESSION_IMPL *session, WT_CONFIG_ITEM *ip,
 	if (is_utf8) {
 		entries = UINT8_MAX;
 		*numbytesp = 1;
-		WT_ERR(__wt_calloc_def(session, entries, &table));
+		AE_ERR(__ae_calloc_def(session, entries, &table));
 	} else {
 		entries = UINT16_MAX;
 		*numbytesp = 2;
-		WT_ERR(__wt_calloc_def(session, entries, &table));
+		AE_ERR(__ae_calloc_def(session, entries, &table));
 	}
 
 	for (tp = table, lineno = 1; (ret =
 	    fscanf(fp, "%" SCNi64 " %" SCNi64, &symbol, &frequency)) != EOF;
 	    ++tp, ++lineno) {
 		if (lineno > entries)
-			WT_ERR_MSG(session, EINVAL,
+			AE_ERR_MSG(session, EINVAL,
 			    "Huffman table file %.*s is corrupted, "
 			    "more than %" PRIu32 " entries",
 			    (int)ip->len, ip->str, entries);
 		if (ret != 2)
-			WT_ERR_MSG(session, EINVAL,
+			AE_ERR_MSG(session, EINVAL,
 			    "line %u of Huffman table file %.*s is corrupted: "
 			    "expected two unsigned integral values",
 			    lineno, (int)ip->len, ip->str);
 		if (symbol < 0 || symbol > entries)
-			WT_ERR_MSG(session, EINVAL,
+			AE_ERR_MSG(session, EINVAL,
 			    "line %u of Huffman file %.*s is corrupted; "
 			    "symbol %" PRId64 " not in range, maximum "
 			    "value is %u",
 			    lineno, (int)ip->len, ip->str, symbol, entries);
 		if (frequency < 0 || frequency > UINT32_MAX)
-			WT_ERR_MSG(session, EINVAL,
+			AE_ERR_MSG(session, EINVAL,
 			    "line %u of Huffman file %.*s is corrupted; "
 			    "frequency %" PRId64 " not in range, maximum "
 			    "value is %" PRIu32,
@@ -359,26 +359,26 @@ __wt_huffman_read(WT_SESSION_IMPL *session, WT_CONFIG_ITEM *ip,
 		tp->symbol = (uint32_t)symbol;
 		tp->frequency = (uint32_t)frequency;
 	}
-	ret = ferror(fp) ? WT_ERROR : 0;
+	ret = ferror(fp) ? AE_ERROR : 0;
 
 	*entriesp = lineno - 1;
 	*tablep = table;
 
 	if (0) {
-err:		__wt_free(session, table);
+err:		__ae_free(session, table);
 	}
-	(void)__wt_fclose(&fp, WT_FHANDLE_READ);
+	(void)__ae_fclose(&fp, AE_FHANDLE_READ);
 	return (ret);
 }
 
 /*
- * __wt_btree_huffman_close --
+ * __ae_btree_huffman_close --
  *	Close the Huffman tables.
  */
 void
-__wt_btree_huffman_close(WT_SESSION_IMPL *session)
+__ae_btree_huffman_close(AE_SESSION_IMPL *session)
 {
-	WT_BTREE *btree;
+	AE_BTREE *btree;
 
 	btree = S2BT(session);
 
@@ -387,11 +387,11 @@ __wt_btree_huffman_close(WT_SESSION_IMPL *session)
 		if (btree->huffman_value == btree->huffman_key)
 			btree->huffman_value = NULL;
 
-		__wt_huffman_close(session, btree->huffman_key);
+		__ae_huffman_close(session, btree->huffman_key);
 		btree->huffman_key = NULL;
 	}
 	if (btree->huffman_value != NULL) {
-		__wt_huffman_close(session, btree->huffman_value);
+		__ae_huffman_close(session, btree->huffman_value);
 		btree->huffman_value = NULL;
 	}
 }

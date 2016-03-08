@@ -1,6 +1,6 @@
 /*-
  * Copyright (c) 2014-2015 MongoDB, Inc.
- * Copyright (c) 2008-2014 WiredTiger, Inc.
+ * Copyright (c) 2008-2014 ArchEngine, Inc.
  *	All rights reserved.
  *
  * See the file LICENSE for redistribution information.
@@ -11,10 +11,10 @@
 static int usage(void);
 
 int
-util_stat(WT_SESSION *session, int argc, char *argv[])
+util_stat(AE_SESSION *session, int argc, char *argv[])
 {
-	WT_CURSOR *cursor;
-	WT_DECL_RET;
+	AE_CURSOR *cursor;
+	AE_DECL_RET;
 	size_t urilen;
 	int ch;
 	bool objname_free;
@@ -24,7 +24,7 @@ util_stat(WT_SESSION *session, int argc, char *argv[])
 	objname_free = false;
 	objname = uri = NULL;
 	config = NULL;
-	while ((ch = __wt_getopt(progname, argc, argv, "af")) != EOF)
+	while ((ch = __ae_getopt(progname, argc, argv, "af")) != EOF)
 		switch (ch) {
 		case 'a':
 			/*
@@ -42,8 +42,8 @@ util_stat(WT_SESSION *session, int argc, char *argv[])
 		default:
 			return (usage());
 		}
-	argc -= __wt_optind;
-	argv += __wt_optind;
+	argc -= __ae_optind;
+	argv += __ae_optind;
 
 	/*
 	 * If there are no arguments, the statistics cursor operates on the
@@ -86,7 +86,7 @@ util_stat(WT_SESSION *session, int argc, char *argv[])
 			ret = errno;
 			break;
 		}
-	if (ret == WT_NOTFOUND)
+	if (ret == AE_NOTFOUND)
 		ret = 0;
 
 	if (ret != 0) {

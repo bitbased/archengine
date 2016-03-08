@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Public Domain 2014-2015 MongoDB, Inc.
-# Public Domain 2008-2014 WiredTiger, Inc.
+# Public Domain 2008-2014 ArchEngine, Inc.
 #
 # This is free and unencumbered software released into the public domain.
 #
@@ -26,10 +26,10 @@
 # ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 # OTHER DEALINGS IN THE SOFTWARE.
 
-import sys, threading, wiredtiger, wttest
+import sys, threading, archengine, aetest
 from suite_subprocess import suite_subprocess
-from wiredtiger import wiredtiger_open, WiredTigerError
-from wtscenario import check_scenarios
+from archengine import archengine_open, ArchEngineError
+from aescenario import check_scenarios
 
 # TODO - tmp code
 def tty_pr(s):
@@ -37,7 +37,7 @@ def tty_pr(s):
     o.write(s + '\n')
     o.close()
 
-class Callback(wiredtiger.AsyncCallback):
+class Callback(archengine.AsyncCallback):
     def __init__(self, current):
         self.current = current
         self.ncompact = 0
@@ -58,36 +58,36 @@ class Callback(wiredtiger.AsyncCallback):
         # exceptions would be swallowed by a non-python worker thread.
         try:
             optype = op.get_type()
-            if optype != wiredtiger.WT_AOP_COMPACT:
+            if optype != archengine.AE_AOP_COMPACT:
                 key = op.get_key()
                 #
                 # Remove does not set a value.  Just set it from the
                 # reference list.
                 #
-                if optype != wiredtiger.WT_AOP_REMOVE:
+                if optype != archengine.AE_AOP_REMOVE:
                     value = op.get_value()
                 else:
                     value = self.current[key]
 
-            if optype == wiredtiger.WT_AOP_INSERT:
+            if optype == archengine.AE_AOP_INSERT:
                 self.lock.acquire()
                 self.ninsert += 1
                 self.lock.release()
-            elif optype == wiredtiger.WT_AOP_COMPACT:
+            elif optype == archengine.AE_AOP_COMPACT:
                 self.lock.acquire()
                 self.ncompact += 1
                 self.lock.release()
                 # Skip checking key/value.
                 return 0
-            elif optype == wiredtiger.WT_AOP_REMOVE:
+            elif optype == archengine.AE_AOP_REMOVE:
                 self.lock.acquire()
                 self.nremove += 1
                 self.lock.release()
-            elif optype == wiredtiger.WT_AOP_SEARCH:
+            elif optype == archengine.AE_AOP_SEARCH:
                 self.lock.acquire()
                 self.nsearch += 1
                 self.lock.release()
-            elif optype == wiredtiger.WT_AOP_UPDATE:
+            elif optype == archengine.AE_AOP_UPDATE:
                 self.lock.acquire()
                 self.nupdate += 1
                 self.lock.release()
@@ -112,7 +112,7 @@ class Callback(wiredtiger.AsyncCallback):
 #    Async operations
 # Basic smoke-test of file and table async ops: tests get/set key, insert
 # update, and remove.
-class test_async01(wttest.WiredTigerTestCase, suite_subprocess):
+class test_async01(aetest.ArchEngineTestCase, suite_subprocess):
     """
     Test basic operations
     """
@@ -132,7 +132,7 @@ class test_async01(wttest.WiredTigerTestCase, suite_subprocess):
         ('table-row', dict(tablekind='row',uri='table')),
     ])
 
-    # Overrides WiredTigerTestCase so that we can configure
+    # Overrides ArchEngineTestCase so that we can configure
     # async operations.
     def setUpConnectionOpen(self, dir):
         self.home = dir
@@ -141,7 +141,7 @@ class test_async01(wttest.WiredTigerTestCase, suite_subprocess):
                 'async=(enabled=true,ops_max=%s,' % self.async_ops + \
                 'threads=%s)' % self.async_threads
         sys.stdout.flush()
-        conn = wiredtiger_open(dir, conn_params)
+        conn = archengine_open(dir, conn_params)
         self.pr(`conn`)
         return conn
 
@@ -271,4 +271,4 @@ class test_async01(wttest.WiredTigerTestCase, suite_subprocess):
 
 
 if __name__ == '__main__':
-    wttest.run()
+    aetest.run()

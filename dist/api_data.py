@@ -1,4 +1,4 @@
-# This file is a python script that describes the WiredTiger API.
+# This file is a python script that describes the ArchEngine API.
 
 class Method:
     def __init__(self, config):
@@ -21,7 +21,7 @@ common_meta = [
         application-owned metadata for this object'''),
     Config('collator', 'none', r'''
         configure custom collation for keys.  Permitted values are \c "none"
-        or a custom collator name created with WT_CONNECTION::add_collator'''),
+        or a custom collator name created with AE_CONNECTION::add_collator'''),
     Config('columns', '', r'''
         list of the column names.  Comma-separated list of the form
         <code>(column[,...])</code>.  For tables, the number of entries
@@ -50,19 +50,19 @@ format_meta = common_meta + [
     Config('key_format', 'u', r'''
         the format of the data packed into key items.  See @ref
         schema_format_types for details.  By default, the key_format is
-        \c 'u' and applications use WT_ITEM structures to manipulate
+        \c 'u' and applications use AE_ITEM structures to manipulate
         raw byte arrays. By default, records are stored in row-store
         files: keys of type \c 'r' are record numbers and records
         referenced by record number are stored in column-store files''',
-        type='format', func='__wt_struct_confchk'),
+        type='format', func='__ae_struct_confchk'),
     Config('value_format', 'u', r'''
         the format of the data packed into value items.  See @ref
         schema_format_types for details.  By default, the value_format
-        is \c 'u' and applications use a WT_ITEM structure to
+        is \c 'u' and applications use a AE_ITEM structure to
         manipulate raw byte arrays. Value items of type 't' are
         bitfields, and when configured with record number type keys,
         will be stored using a fixed-length store''',
-        type='format', func='__wt_struct_confchk'),
+        type='format', func='__ae_struct_confchk'),
 ]
 
 lsm_config = [
@@ -78,7 +78,7 @@ lsm_config = [
             type='boolean'),
         Config('bloom_config', '', r'''
             config string used when creating Bloom filter files, passed
-            to WT_SESSION::create'''),
+            to AE_SESSION::create'''),
         Config('bloom_bit_count', '16', r'''
             the number of bits used per item for LSM bloom filters''',
             min='2', max='1000'),
@@ -135,7 +135,7 @@ file_config = format_meta + [
     Config('block_compressor', 'none', r'''
         configure a compressor for file blocks.  Permitted values are \c "none"
         or custom compression engine name created with
-        WT_CONNECTION::add_compressor.  If WiredTiger has builtin support for
+        AE_CONNECTION::add_compressor.  If ArchEngine has builtin support for
         \c "bzip2", \c "snappy", \c "lz4" or \c "zlib" compression, these names
         are also available.  See @ref compression for more information'''),
     Config('cache_resident', 'false', r'''
@@ -163,13 +163,13 @@ file_config = format_meta + [
         Config('name', 'none', r'''
             Permitted values are \c "none"
             or custom encryption engine name created with
-            WT_CONNECTION::add_encryptor.
+            AE_CONNECTION::add_encryptor.
             See @ref encryption for more information'''),
         Config('keyid', '', r'''
             An identifier that identifies a unique instance of the encryptor.
             It is stored in clear text, and thus is available when
-            the wiredtiger database is reopened.  On the first use
-            of a (name, keyid) combination, the WT_ENCRYPTOR::customize
+            the archengine database is reopened.  On the first use
+            of a (name, keyid) combination, the AE_ENCRYPTOR::customize
             function is called with the keyid as an argument.'''),
         ]),
     Config('format', 'btree', r'''
@@ -238,7 +238,7 @@ file_config = format_meta + [
         min=0, undoc=True),
     Config('log', '', r'''
         the transaction log configuration for this object.  Only valid if
-        log is enabled in ::wiredtiger_open.''',
+        log is enabled in ::archengine_open.''',
         type='category', subconfig=[
         Config('enabled', 'true', r'''
             if false, this object has checkpoint-level durability.''',
@@ -307,14 +307,14 @@ table_only_config = [
         stored together in a single file.  All value columns in the
         table must appear in at least one column group.  Each column
         group must be created with a separate call to
-        WT_SESSION::create''', type='list'),
+        AE_SESSION::create''', type='list'),
 ]
 
 index_only_config = [
     Config('extractor', 'none', r'''
         configure custom extractor for indices.  Permitted values are
         \c "none" or an extractor name created with
-        WT_CONNECTION::add_extractor'''),
+        AE_CONNECTION::add_extractor'''),
     Config('immutable', 'false', r'''
         configure the index to be immutable - that is an index is not changed
         by any update to a record in the table''', type='boolean'),
@@ -329,7 +329,7 @@ index_meta = format_meta + source_meta + index_only_config + [
 
 table_meta = format_meta + table_only_config
 
-# Connection runtime config, shared by conn.reconfigure and wiredtiger_open
+# Connection runtime config, shared by conn.reconfigure and archengine_open
 connection_runtime_config = [
     Config('async', '', r'''
         asynchronous operations configuration options''',
@@ -344,7 +344,7 @@ connection_runtime_config = [
             the number of worker threads to service asynchronous requests.
             Each worker thread uses a session from the configured
             session_max.''',
-                min='1', max='20'), # !!! Must match WT_ASYNC_MAX_WORKERS
+                min='1', max='20'), # !!! Must match AE_ASYNC_MAX_WORKERS
             ]),
     Config('cache_size', '100MB', r'''
         maximum heap memory to allocate for the cache. A database should
@@ -353,7 +353,7 @@ connection_runtime_config = [
     Config('cache_overhead', '8', r'''
         assume the heap allocator overhead is the specified percentage, and
         adjust the cache usage by that amount (for example, if there is 10GB
-        of data in cache, a percentage of 10 means WiredTiger treats this as
+        of data in cache, a percentage of 10 means ArchEngine treats this as
         11GB).  This value is configurable because different heap allocators
         have different overhead and different workloads will have different
         heap allocation sizes and patterns, therefore applications may need to
@@ -364,7 +364,7 @@ connection_runtime_config = [
         periodically checkpoint the database. Enabling the checkpoint server
         uses a session from the configured session_max''',
         type='category', subconfig=[
-        Config('name', '"WiredTigerCheckpoint"', r'''
+        Config('name', '"ArchEngineCheckpoint"', r'''
             the checkpoint name'''),
         Config('log_size', '0', r'''
             wait for this amount of log record bytes to be written to
@@ -421,7 +421,7 @@ connection_runtime_config = [
         Config('compressor', 'none', r'''
             configure a compressor for log records.  Permitted values are
             \c "none" or custom compression engine name created with
-            WT_CONNECTION::add_compressor.  If WiredTiger has builtin support
+            AE_CONNECTION::add_compressor.  If ArchEngine has builtin support
             for \c "bzip2", \c "snappy", \c "lz4" or \c "zlib" compression,
             these names are also available. See @ref compression for more
             information'''),
@@ -455,8 +455,8 @@ connection_runtime_config = [
             Configure a set of threads to manage merging LSM trees in
             the database. Each worker thread uses a session handle from
             the configured session_max''',
-            min='3',     # !!! Must match WT_LSM_MIN_WORKERS
-            max='20'),     # !!! Must match WT_LSM_MAX_WORKERS
+            min='3',     # !!! Must match AE_LSM_MIN_WORKERS
+            max='20'),     # !!! Must match AE_LSM_MAX_WORKERS
         Config('merge', 'true', r'''
             merge LSM chunks where possible''',
             type='boolean')
@@ -468,13 +468,13 @@ connection_runtime_config = [
         eviction configuration options.''',
         type='category', subconfig=[
             Config('threads_max', '1', r'''
-                maximum number of threads WiredTiger will start to help evict
+                maximum number of threads ArchEngine will start to help evict
                 pages from cache. The number of threads started will vary
                 depending on the current eviction load. Each eviction worker
                 thread uses a session from the configured session_max''',
                 min=1, max=20),
             Config('threads_min', '1', r'''
-                minimum number of threads WiredTiger will start to help evict
+                minimum number of threads ArchEngine will start to help evict
                 pages from cache. The number of threads currently running will
                 vary depending on the current eviction load''',
                 min=1, max=20),
@@ -525,7 +525,7 @@ connection_runtime_config = [
         type='category', subconfig=[
         Config('on_close', 'false', r'''log statistics on database close''',
             type='boolean'),
-        Config('path', '"WiredTigerStat.%d.%H"', r'''
+        Config('path', '"ArchEngineStat.%d.%H"', r'''
             the pathname to a file into which the log records are written,
             may contain ISO C standard strftime conversion specifications.
             If the value is not an absolute path name, the file is created
@@ -546,7 +546,7 @@ connection_runtime_config = [
             min='0', max='100000'),
         ]),
     Config('verbose', '', r'''
-        enable messages for various events. Only available if WiredTiger
+        enable messages for various events. Only available if ArchEngine
         is configured with --enable-verbose. Options are given as a
         list, such as <code>"verbose=[evictserver,read]"</code>''',
         type='list', choices=[
@@ -582,7 +582,7 @@ session_config = [
         choices=['read-uncommitted', 'read-committed', 'snapshot']),
 ]
 
-wiredtiger_open_common = connection_runtime_config + [
+archengine_open_common = connection_runtime_config + [
     Config('buffer_alignment', '-1', r'''
         in-memory alignment (in bytes) for buffers used for I/O.  The
         default value of -1 indicates a platform-specific alignment value
@@ -598,9 +598,9 @@ wiredtiger_open_common = connection_runtime_config + [
         Windows to access files.  Options are given as a list, such as
         <code>"direct_io=[data]"</code>.  Configuring \c direct_io requires
         care, see @ref tuning_system_buffer_cache_direct_io for important
-        warnings.  Including \c "data" will cause WiredTiger data files to use
-        direct I/O, including \c "log" will cause WiredTiger log files to use
-        direct I/O, and including \c "checkpoint" will cause WiredTiger data
+        warnings.  Including \c "data" will cause ArchEngine data files to use
+        direct I/O, including \c "log" will cause ArchEngine log files to use
+        direct I/O, and including \c "checkpoint" will cause ArchEngine data
         files opened at a checkpoint (i.e: read only) to use direct I/O.
         \c direct_io should be combined with \c write_through to get the
         equivalent of \c O_DIRECT on Windows.''',
@@ -610,30 +610,30 @@ wiredtiger_open_common = connection_runtime_config + [
         If a system wide encryptor is set, it is also used for
         encrypting data files and tables, unless encryption configuration
         is explicitly set for them when they are created with
-        WT_SESSION::create''',
+        AE_SESSION::create''',
         type='category', subconfig=[
         Config('name', 'none', r'''
             Permitted values are \c "none"
             or custom encryption engine name created with
-            WT_CONNECTION::add_encryptor.
+            AE_CONNECTION::add_encryptor.
             See @ref encryption for more information'''),
         Config('keyid', '', r'''
             An identifier that identifies a unique instance of the encryptor.
             It is stored in clear text, and thus is available when
-            the wiredtiger database is reopened.  On the first use
-            of a (name, keyid) combination, the WT_ENCRYPTOR::customize
+            the archengine database is reopened.  On the first use
+            of a (name, keyid) combination, the AE_ENCRYPTOR::customize
             function is called with the keyid as an argument.'''),
         Config('secretkey', '', r'''
-            A string that is passed to the WT_ENCRYPTOR::customize function.
+            A string that is passed to the AE_ENCRYPTOR::customize function.
             It is never stored in clear text, so must be given to any
-            subsequent ::wiredtiger_open calls to reopen the database.
-            It must also be provided to any "wt" commands used with
+            subsequent ::archengine_open calls to reopen the database.
+            It must also be provided to any "ae" commands used with
             this database.'''),
         ]),
     Config('extensions', '', r'''
         list of shared library extensions to load (using dlopen).
         Any values specified to an library extension are passed to
-        WT_CONNECTION::load_extension as the \c config parameter
+        AE_CONNECTION::load_extension as the \c config parameter
         (for example,
         <code>extensions=(/path/ext.so={entry=my_entry})</code>)''',
         type='list'),
@@ -653,7 +653,7 @@ wiredtiger_open_common = connection_runtime_config + [
     Config('multiprocess', 'false', r'''
         permit sharing between processes (will automatically start an
         RPC server for primary processes and use RPC for secondary
-        processes). <b>Not yet supported in WiredTiger</b>''',
+        processes). <b>Not yet supported in ArchEngine</b>''',
         type='boolean'),
     Config('session_max', '100', r'''
         maximum expected number of sessions (including server
@@ -668,7 +668,7 @@ wiredtiger_open_common = connection_runtime_config + [
         Config('enabled', 'false', r'''
             whether to sync the log on every commit by default, can be
             overridden by the \c sync setting to
-            WT_SESSION::commit_transaction''',
+            AE_SESSION::commit_transaction''',
             type='boolean'),
         Config('method', 'fsync', r'''
             the method used to ensure log records are stable on disk, see
@@ -680,18 +680,18 @@ wiredtiger_open_common = connection_runtime_config + [
         on non-Windows systems.  Options are given as a list, such as
         <code>"write_through=[data]"</code>.  Configuring \c write_through
         requires care, see @ref tuning_system_buffer_cache_direct_io for
-        important warnings.  Including \c "data" will cause WiredTiger data
-        files to write through cache, including \c "log" will cause WiredTiger
+        important warnings.  Including \c "data" will cause ArchEngine data
+        files to write through cache, including \c "log" will cause ArchEngine
         log files to write through cache. \c write_through should be combined
         with \c direct_io to get the equivalent of POSIX \c O_DIRECT on
         Windows.''',
         type='list', choices=['data', 'log']),
 ]
 
-wiredtiger_open = wiredtiger_open_common + [
+archengine_open = archengine_open_common + [
    Config('config_base', 'true', r'''
         write the base configuration file if creating the database.  If
-        \c false in the config passed directly to ::wiredtiger_open, will
+        \c false in the config passed directly to ::archengine_open, will
         ignore any existing base configuration file in addition to not creating
         one.  See @ref config_base for more information''',
         type='boolean'),
@@ -706,12 +706,12 @@ wiredtiger_open = wiredtiger_open_common + [
         keep data in-memory only, minimize disk I/O''',
         type='boolean', undoc=True),
     Config('use_environment', 'true', r'''
-        use the \c WIREDTIGER_CONFIG and \c WIREDTIGER_HOME environment
+        use the \c ARCHENGINE_CONFIG and \c ARCHENGINE_HOME environment
         variables if the process is not running with special privileges.
         See @ref home for more information''',
         type='boolean'),
     Config('use_environment_priv', 'false', r'''
-        use the \c WIREDTIGER_CONFIG and \c WIREDTIGER_HOME environment
+        use the \c ARCHENGINE_CONFIG and \c ARCHENGINE_HOME environment
         variables even if the process is running with special privileges.
         See @ref home for more information''',
         type='boolean'),
@@ -725,9 +725,9 @@ cursor_runtime_config = [
     Config('overwrite', 'true', r'''
         configures whether the cursor's insert, update and remove
         methods check the existing state of the record.  If \c overwrite
-        is \c false, WT_CURSOR::insert fails with ::WT_DUPLICATE_KEY
-        if the record exists, WT_CURSOR::update and WT_CURSOR::remove
-        fail with ::WT_NOTFOUND if the record does not exist''',
+        is \c false, AE_CURSOR::insert fails with ::AE_DUPLICATE_KEY
+        if the record exists, AE_CURSOR::update and AE_CURSOR::remove
+        fail with ::AE_NOTFOUND if the record does not exist''',
         type='boolean'),
 ]
 
@@ -740,13 +740,13 @@ methods = {
 
 'table.meta' : Method(table_meta),
 
-'WT_CURSOR.close' : Method([]),
+'AE_CURSOR.close' : Method([]),
 
-'WT_CURSOR.reconfigure' : Method(cursor_runtime_config),
+'AE_CURSOR.reconfigure' : Method(cursor_runtime_config),
 
-'WT_SESSION.close' : Method([]),
+'AE_SESSION.close' : Method([]),
 
-'WT_SESSION.compact' : Method([
+'AE_SESSION.compact' : Method([
     Config('timeout', '1200', r'''
         maximum amount of time to allow for compact in seconds. The
         actual amount of time spent in compact may exceed the configured
@@ -754,7 +754,7 @@ methods = {
         type='int'),
 ]),
 
-'WT_SESSION.create' : Method(file_config + lsm_config + source_meta + 
+'AE_SESSION.create' : Method(file_config + lsm_config + source_meta + 
         index_only_config + table_only_config + [
     Config('exclusive', 'false', r'''
         fail if the object exists.  When false (the default), if the
@@ -763,7 +763,7 @@ methods = {
         type='boolean'),
 ]),
 
-'WT_SESSION.drop' : Method([
+'AE_SESSION.drop' : Method([
     Config('force', 'false', r'''
         return success if the object does not exist''',
         type='boolean'),
@@ -772,7 +772,7 @@ methods = {
         type='boolean'),
 ]),
 
-'WT_SESSION.join' : Method([
+'AE_SESSION.join' : Method([
     Config('compare', '"eq"', r'''
         modifies the set of items to be returned so that the index key
         satisfies the given comparison relative to the key set in this
@@ -799,31 +799,31 @@ methods = {
         choices=['bloom', 'default']),
 ]),
 
-'WT_SESSION.log_flush' : Method([
+'AE_SESSION.log_flush' : Method([
     Config('sync', 'on', r'''
         forcibly flush the log and wait for it to achieve the synchronization
         level specified.  The \c background setting initiates a background
         synchronization intended to be used with a later call to
-        WT_SESSION::transaction_sync.  The \c off setting forces any
+        AE_SESSION::transaction_sync.  The \c off setting forces any
         buffered log records to be written to the file system.  The
         \c on setting forces log records to be written to the storage device''',
         choices=['background', 'off', 'on']),
 ]),
 
-'WT_SESSION.log_printf' : Method([]),
+'AE_SESSION.log_printf' : Method([]),
 
-'WT_SESSION.open_cursor' : Method(cursor_runtime_config + [
+'AE_SESSION.open_cursor' : Method(cursor_runtime_config + [
     Config('bulk', 'false', r'''
         configure the cursor for bulk-loading, a fast, initial load
         path (see @ref tune_bulk_load for more information).  Bulk-load
         may only be used for newly created objects and cursors
-        configured for bulk-load only support the WT_CURSOR::insert
-        and WT_CURSOR::close methods.  When bulk-loading row-store
+        configured for bulk-load only support the AE_CURSOR::insert
+        and AE_CURSOR::close methods.  When bulk-loading row-store
         objects, keys must be loaded in sorted order.  The value is
         usually a true/false flag; when bulk-loading fixed-length
         column store objects, the special value \c bitmap allows
         chunks of a memory resident bitmap to be loaded directly into
-        a file by passing a \c WT_ITEM to WT_CURSOR::set_value where
+        a file by passing a \c AE_ITEM to AE_CURSOR::set_value where
         the \c size field indicates the number of records in the
         bitmap (as specified by the object's \c value_format
         configuration). Bulk-loaded bitmap values must end on a byte
@@ -831,7 +831,7 @@ methods = {
         of values loaded)'''),
     Config('checkpoint', '', r'''
         the name of a checkpoint to open (the reserved name
-        "WiredTigerCheckpoint" opens the most recent internal
+        "ArchEngineCheckpoint" opens the most recent internal
         checkpoint taken for the object).  The cursor does not
         support data modification'''),
     Config('dump', '', r'''
@@ -846,7 +846,7 @@ methods = {
         configure the cursor to return a pseudo-random record from
         the object; valid only for row-store cursors.  Cursors
         configured with \c next_random=true only support the
-        WT_CURSOR::next and WT_CURSOR::close methods.  See @ref
+        AE_CURSOR::next and AE_CURSOR::close methods.  See @ref
         cursor_random for details''',
         type='boolean'),
     Config('raw', 'false', r'''
@@ -867,7 +867,7 @@ methods = {
         statistics regardless of cost and may include traversing on-disk files;
         "fast" gathers a subset of relatively inexpensive statistics.  The
         selection must agree with the database \c statistics configuration
-        specified to ::wiredtiger_open or WT_CONNECTION::reconfigure.  For
+        specified to ::archengine_open or AE_CONNECTION::reconfigure.  For
         example, "all" or "fast" can be configured when the database is
         configured with "all", but the cursor open will fail if "all" is
         specified when the database is configured with "fast", and the cursor
@@ -886,16 +886,16 @@ methods = {
         type='list'),
 ]),
 
-'WT_SESSION.rename' : Method([]),
-'WT_SESSION.reset' : Method([]),
-'WT_SESSION.salvage' : Method([
+'AE_SESSION.rename' : Method([]),
+'AE_SESSION.reset' : Method([]),
+'AE_SESSION.salvage' : Method([
     Config('force', 'false', r'''
-        force salvage even of files that do not appear to be WiredTiger
+        force salvage even of files that do not appear to be ArchEngine
         files''',
         type='boolean'),
 ]),
-'WT_SESSION.strerror' : Method([]),
-'WT_SESSION.transaction_sync' : Method([
+'AE_SESSION.strerror' : Method([]),
+'AE_SESSION.transaction_sync' : Method([
     Config('timeout_ms', '1200000', r'''
         maximum amount of time to wait for background sync to complete in
         milliseconds.  A value of zero disables the timeout and returns
@@ -903,9 +903,9 @@ methods = {
         type='int'),
 ]),
 
-'WT_SESSION.truncate' : Method([]),
-'WT_SESSION.upgrade' : Method([]),
-'WT_SESSION.verify' : Method([
+'AE_SESSION.truncate' : Method([]),
+'AE_SESSION.upgrade' : Method([]),
+'AE_SESSION.verify' : Method([
     Config('dump_address', 'false', r'''
         Display addresses and page types as pages are verified,
         using the application's message handler, intended for debugging''',
@@ -933,7 +933,7 @@ methods = {
         type='boolean')
 ]),
 
-'WT_SESSION.begin_transaction' : Method([
+'AE_SESSION.begin_transaction' : Method([
     Config('isolation', '', r'''
         the isolation level for this transaction; defaults to the
         session's isolation level''',
@@ -949,24 +949,24 @@ methods = {
         @ref transaction_named_snapshots'''),
     Config('sync', '', r'''
         whether to sync log records when the transaction commits,
-        inherited from ::wiredtiger_open \c transaction_sync''',
+        inherited from ::archengine_open \c transaction_sync''',
         type='boolean'),
 ]),
 
-'WT_SESSION.commit_transaction' : Method([
+'AE_SESSION.commit_transaction' : Method([
     Config('sync', '', r'''
         override whether to sync log records when the transaction commits,
-        inherited from ::wiredtiger_open \c transaction_sync.
+        inherited from ::archengine_open \c transaction_sync.
         The \c background setting initiates a background
         synchronization intended to be used with a later call to
-        WT_SESSION::transaction_sync.  The \c off setting does not
+        AE_SESSION::transaction_sync.  The \c off setting does not
         wait for record to be written or synchronized.  The
         \c on setting forces log records to be written to the storage device''',
         choices=['background', 'off', 'on']),
 ]),
-'WT_SESSION.rollback_transaction' : Method([]),
+'AE_SESSION.rollback_transaction' : Method([]),
 
-'WT_SESSION.checkpoint' : Method([
+'AE_SESSION.checkpoint' : Method([
     Config('drop', '', r'''
         specify a list of checkpoints to drop.
         The list may additionally contain one of the following keys:
@@ -988,7 +988,7 @@ methods = {
         if non-empty, checkpoint the list of objects''', type='list'),
 ]),
 
-'WT_SESSION.snapshot' : Method([
+'AE_SESSION.snapshot' : Method([
     Config('drop', '', r'''
             if non-empty, specifies which snapshots to drop. Where a group
             of snapshots are being dropped, the order is based on snapshot
@@ -1006,12 +1006,12 @@ methods = {
     Config('name', '', r'''specify a name for the snapshot'''),
 ]),
 
-'WT_CONNECTION.add_collator' : Method([]),
-'WT_CONNECTION.add_compressor' : Method([]),
-'WT_CONNECTION.add_data_source' : Method([]),
-'WT_CONNECTION.add_encryptor' : Method([]),
-'WT_CONNECTION.add_extractor' : Method([]),
-'WT_CONNECTION.async_new_op' : Method([
+'AE_CONNECTION.add_collator' : Method([]),
+'AE_CONNECTION.add_compressor' : Method([]),
+'AE_CONNECTION.add_data_source' : Method([]),
+'AE_CONNECTION.add_encryptor' : Method([]),
+'AE_CONNECTION.add_extractor' : Method([]),
+'AE_CONNECTION.async_new_op' : Method([
     Config('append', 'false', r'''
         append the value as a new record, creating a new record
         number key; valid only for operations with record number keys''',
@@ -1019,9 +1019,9 @@ methods = {
     Config('overwrite', 'true', r'''
         configures whether the cursor's insert, update and remove
         methods check the existing state of the record.  If \c overwrite
-        is \c false, WT_CURSOR::insert fails with ::WT_DUPLICATE_KEY
-        if the record exists, WT_CURSOR::update and WT_CURSOR::remove
-        fail with ::WT_NOTFOUND if the record does not exist''',
+        is \c false, AE_CURSOR::insert fails with ::AE_DUPLICATE_KEY
+        if the record exists, AE_CURSOR::update and AE_CURSOR::remove
+        fail with ::AE_NOTFOUND if the record does not exist''',
         type='boolean'),
     Config('raw', 'false', r'''
         ignore the encodings for the key and value, manage data as if
@@ -1033,51 +1033,51 @@ methods = {
         value. A value of zero disables the timeout''',
         type='int'),
 ]),
-'WT_CONNECTION.close' : Method([
+'AE_CONNECTION.close' : Method([
     Config('leak_memory', 'false', r'''
         don't free memory during close''',
         type='boolean'),
 ]),
-'WT_CONNECTION.reconfigure' : Method(connection_runtime_config),
+'AE_CONNECTION.reconfigure' : Method(connection_runtime_config),
 
-'WT_CONNECTION.load_extension' : Method([
+'AE_CONNECTION.load_extension' : Method([
     Config('config', '', r'''
         configuration string passed to the entry point of the
-        extension as its WT_CONFIG_ARG argument'''),
-    Config('entry', 'wiredtiger_extension_init', r'''
+        extension as its AE_CONFIG_ARG argument'''),
+    Config('entry', 'archengine_extension_init', r'''
         the entry point of the extension, called to initialize the
         extension when it is loaded.  The signature of the function
-        must match ::wiredtiger_extension_init'''),
-    Config('terminate', 'wiredtiger_extension_terminate', r'''
+        must match ::archengine_extension_init'''),
+    Config('terminate', 'archengine_extension_terminate', r'''
         an optional function in the extension that is called before
-        the extension is unloaded during WT_CONNECTION::close.  The
+        the extension is unloaded during AE_CONNECTION::close.  The
         signature of the function must match
-        ::wiredtiger_extension_terminate'''),
+        ::archengine_extension_terminate'''),
 ]),
 
-'WT_CONNECTION.open_session' : Method(session_config),
+'AE_CONNECTION.open_session' : Method(session_config),
 
-'WT_SESSION.reconfigure' : Method(session_config),
+'AE_SESSION.reconfigure' : Method(session_config),
 
-# There are 4 variants of the wiredtiger_open configurations.
-# wiredtiger_open:
+# There are 4 variants of the archengine_open configurations.
+# archengine_open:
 #    Configuration values allowed in the application's configuration
-#    argument to the wiredtiger_open call.
-# wiredtiger_open_basecfg:
-#    Configuration values allowed in the WiredTiger.basecfg file (remove
+#    argument to the archengine_open call.
+# archengine_open_basecfg:
+#    Configuration values allowed in the ArchEngine.basecfg file (remove
 # creation-specific configuration strings and add a version string).
-# wiredtiger_open_usercfg:
-#    Configuration values allowed in the WiredTiger.config file (remove
+# archengine_open_usercfg:
+#    Configuration values allowed in the ArchEngine.config file (remove
 # creation-specific configuration strings).
-# wiredtiger_open_all:
+# archengine_open_all:
 #    All of the above configuration values combined
-'wiredtiger_open' : Method(wiredtiger_open),
-'wiredtiger_open_basecfg' : Method(wiredtiger_open_common + [
+'archengine_open' : Method(archengine_open),
+'archengine_open_basecfg' : Method(archengine_open_common + [
     Config('version', '(major=0,minor=0)', r'''
         the file version'''),
 ]),
-'wiredtiger_open_usercfg' : Method(wiredtiger_open_common),
-'wiredtiger_open_all' : Method(wiredtiger_open + [
+'archengine_open_usercfg' : Method(archengine_open_common),
+'archengine_open_all' : Method(archengine_open + [
     Config('version', '(major=0,minor=0)', r'''
         the file version'''),
 ]),

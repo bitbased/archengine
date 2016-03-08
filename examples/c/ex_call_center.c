@@ -1,6 +1,6 @@
 /*-
  * Public Domain 2014-2015 MongoDB, Inc.
- * Public Domain 2008-2014 WiredTiger, Inc.
+ * Public Domain 2008-2014 ArchEngine, Inc.
  *
  * This is free and unencumbered software released into the public domain.
  *
@@ -27,7 +27,7 @@
  *
  * ex_call_center.c
  *	This is an example application that demonstrates how to map a
- *	moderately complex SQL application into WiredTiger.
+ *	moderately complex SQL application into ArchEngine.
  */
 
 #include <inttypes.h>
@@ -35,7 +35,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <wiredtiger.h>
+#include <archengine.h>
 
 static const char *home;
 
@@ -79,9 +79,9 @@ int
 main(void)
 {
 	int count, exact, ret;
-	WT_CONNECTION *conn;
-	WT_SESSION *session;
-	WT_CURSOR *cursor;
+	AE_CONNECTION *conn;
+	AE_SESSION *session;
+	AE_CURSOR *cursor;
 	CUSTOMER cust, *custp, cust_sample[] = {
 		{ 0, "Professor Oak", "LeafGreen Avenue", "123-456-7890" },
 		{ 0, "Lorelei", "Sevii Islands", "098-765-4321" },
@@ -99,15 +99,15 @@ main(void)
 	 * Create a clean test directory for this run of the test program if the
 	 * environment variable isn't already set (as is done by make check).
 	 */
-	if (getenv("WIREDTIGER_HOME") == NULL) {
-		home = "WT_HOME";
-		ret = system("rm -rf WT_HOME && mkdir WT_HOME");
+	if (getenv("ARCHENGINE_HOME") == NULL) {
+		home = "AE_HOME";
+		ret = system("rm -rf AE_HOME && mkdir AE_HOME");
 	} else
 		home = NULL;
 
-	if ((ret = wiredtiger_open(home, NULL, "create", &conn)) != 0) {
+	if ((ret = archengine_open(home, NULL, "create", &conn)) != 0) {
 		fprintf(stderr, "Error connecting to %s: %s\n",
-		    home, wiredtiger_strerror(ret));
+		    home, archengine_strerror(ret));
 		return (1);
 	}
 	/* Note: further error checking omitted for clarity. */
@@ -225,7 +225,7 @@ main(void)
 	ret = cursor->search_near(cursor, &exact);
 
 	/*
-	 * If the table is empty, search_near will return WT_NOTFOUND, else the
+	 * If the table is empty, search_near will return AE_NOTFOUND, else the
 	 * cursor will be positioned on a matching key if one exists, or an
 	 * adjacent key if one does not.  If the positioned key is equal to or
 	 * larger than the search key, go back one.

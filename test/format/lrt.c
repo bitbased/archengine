@@ -1,6 +1,6 @@
 /*-
  * Public Domain 2014-2015 MongoDB, Inc.
- * Public Domain 2008-2014 WiredTiger, Inc.
+ * Public Domain 2008-2014 ArchEngine, Inc.
  *
  * This is free and unencumbered software released into the public domain.
  *
@@ -35,10 +35,10 @@
 void *
 lrt(void *arg)
 {
-	WT_CONNECTION *conn;
-	WT_CURSOR *cursor;
-	WT_ITEM key, value;
-	WT_SESSION *session;
+	AE_CONNECTION *conn;
+	AE_CURSOR *cursor;
+	AE_ITEM key, value;
+	AE_SESSION *session;
 	size_t buf_len, buf_size;
 	uint64_t keyno, saved_keyno;
 	u_int period;
@@ -59,7 +59,7 @@ lrt(void *arg)
 	buf_len = buf_size = 0;
 
 	/* Open a session and cursor. */
-	conn = g.wts_conn;
+	conn = g.aes_conn;
 	if ((ret = conn->open_session(conn, NULL, NULL, &session)) != 0)
 		die(ret, "connection.open_session");
 	if ((ret = session->open_cursor(
@@ -70,7 +70,7 @@ lrt(void *arg)
 		if (pinned) {
 			/* Re-read the record at the end of the table. */
 			while ((ret = read_row(cursor,
-			    &key, saved_keyno, 1)) == WT_ROLLBACK)
+			    &key, saved_keyno, 1)) == AE_ROLLBACK)
 				;
 			if (ret != 0)
 				die(ret, "read_row %" PRIu64, saved_keyno);
@@ -116,9 +116,9 @@ lrt(void *arg)
 				    (u_int)(g.key_cnt - g.key_cnt / 10),
 				    (u_int)g.key_cnt);
 				while ((ret = read_row(cursor,
-				    &key, saved_keyno, 1)) == WT_ROLLBACK)
+				    &key, saved_keyno, 1)) == AE_ROLLBACK)
 					;
-			} while (ret == WT_NOTFOUND);
+			} while (ret == AE_NOTFOUND);
 			if (ret != 0)
 				die(ret, "read_row %" PRIu64, saved_keyno);
 
@@ -145,9 +145,9 @@ lrt(void *arg)
 			do {
 				keyno = mmrand(NULL, 1, (u_int)g.key_cnt / 5);
 				while ((ret = read_row(cursor,
-				    &key, keyno, 1)) == WT_ROLLBACK)
+				    &key, keyno, 1)) == AE_ROLLBACK)
 					;
-			} while (ret == WT_NOTFOUND);
+			} while (ret == AE_NOTFOUND);
 			if (ret != 0)
 				die(ret, "read_row %" PRIu64, keyno);
 

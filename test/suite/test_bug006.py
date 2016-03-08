@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Public Domain 2014-2015 MongoDB, Inc.
-# Public Domain 2008-2014 WiredTiger, Inc.
+# Public Domain 2008-2014 ArchEngine, Inc.
 #
 # This is free and unencumbered software released into the public domain.
 #
@@ -29,13 +29,13 @@
 # test_bug006.py
 #       Regression tests.
 
-import wiredtiger, wttest
+import archengine, aetest
 from helper import key_populate, value_populate
-from wtscenario import check_scenarios
+from aescenario import check_scenarios
 
 # Check that verify and salvage both raise exceptions if there is an open
 # cursor.
-class test_bug006(wttest.WiredTigerTestCase):
+class test_bug006(aetest.ArchEngineTestCase):
     name = 'test_bug006'
     scenarios = check_scenarios([
         ('file', dict(uri='file:')),
@@ -51,19 +51,19 @@ class test_bug006(wttest.WiredTigerTestCase):
 
         # Table operations should fail, the cursor is open.
         self.assertRaises(
-            wiredtiger.WiredTigerError, lambda: self.session.drop(uri, None))
+            archengine.ArchEngineError, lambda: self.session.drop(uri, None))
         self.assertRaises(
-            wiredtiger.WiredTigerError,
+            archengine.ArchEngineError,
             lambda: self.session.rename(uri, self.uri + "new", None))
         self.assertRaises(
-            wiredtiger.WiredTigerError, lambda: self.session.salvage(uri, None))
+            archengine.ArchEngineError, lambda: self.session.salvage(uri, None))
         self.assertRaises(
-            wiredtiger.WiredTigerError,
+            archengine.ArchEngineError,
             lambda: self.session.truncate(uri, None, None, None))
         self.assertRaises(
-            wiredtiger.WiredTigerError, lambda: self.session.upgrade(uri, None))
+            archengine.ArchEngineError, lambda: self.session.upgrade(uri, None))
         self.assertRaises(
-            wiredtiger.WiredTigerError, lambda: self.session.verify(uri, None))
+            archengine.ArchEngineError, lambda: self.session.verify(uri, None))
 
         cursor.close()
 
@@ -79,4 +79,4 @@ class test_bug006(wttest.WiredTigerTestCase):
 
 
 if __name__ == '__main__':
-    wttest.run()
+    aetest.run()

@@ -1,17 +1,17 @@
 /*-
  * Copyright (c) 2014-2015 MongoDB, Inc.
- * Copyright (c) 2008-2014 WiredTiger, Inc.
+ * Copyright (c) 2008-2014 ArchEngine, Inc.
  *	All rights reserved.
  *
  * See the file LICENSE for redistribution information.
  */
 
-#include "wt_internal.h"
+#include "ae_internal.h"
 
 /*
  * Fast-delete support.
  *
- * This file contains most of the code that allows WiredTiger to delete pages
+ * This file contains most of the code that allows ArchEngine to delete pages
  * of data without reading them into the cache.  (This feature is currently
  * only available for row-store objects.)
  *
@@ -19,67 +19,67 @@
  * the first and last pages of the truncate range, then walks the tree with a
  * flag so the cursor walk code marks any page within the range, that hasn't
  * yet been read and which has no overflow items, as deleted, by changing the
- * WT_REF state to WT_REF_DELETED.  Pages already in the cache or with overflow
+ * AE_REF state to AE_REF_DELETED.  Pages already in the cache or with overflow
  * items, have their rows updated/deleted individually. The transaction for the
- * delete operation is stored in memory referenced by the WT_REF.page_del field.
+ * delete operation is stored in memory referenced by the AE_REF.page_del field.
  *
  * Future cursor walks of the tree will skip the deleted page based on the
  * transaction stored for the delete, but it gets more complicated if a read is
  * done using a random key, or a cursor walk is done with a transaction where
  * the delete is not visible.  In those cases, we read the original contents of
  * the page.  The page-read code notices a deleted page is being read, and as
- * part of the read instantiates the contents of the page, creating a WT_UPDATE
+ * part of the read instantiates the contents of the page, creating a AE_UPDATE
  * with a deleted operation, in the same transaction as deleted the page.  In
  * other words, the read process makes it appear as if the page was read and
  * each individual row deleted, exactly as would have happened if the page had
  * been in the cache all along.
  *
  * There's an additional complication to support rollback of the page delete.
- * When the page was marked deleted, a pointer to the WT_REF was saved in the
+ * When the page was marked deleted, a pointer to the AE_REF was saved in the
  * deleting session's transaction list and the delete is unrolled by resetting
- * the WT_REF_DELETED state back to WT_REF_DISK.  However, if the page has been
+ * the AE_REF_DELETED state back to AE_REF_DISK.  However, if the page has been
  * instantiated by some reading thread, that's not enough, each individual row
  * on the page must have the delete operation reset.  If the page split, the
- * WT_UPDATE lists might have been saved/restored during reconciliation and
- * appear on multiple pages, and the WT_REF stored in the deleting session's
+ * AE_UPDATE lists might have been saved/restored during reconciliation and
+ * appear on multiple pages, and the AE_REF stored in the deleting session's
  * transaction list is no longer useful.  For this reason, when the page is
- * instantiated by a read, a list of the WT_UPDATE structures on the page is
- * stored in the WT_REF.page_del field, with the transaction ID, that way the
- * session unrolling the delete can find all of the WT_UPDATE structures that
+ * instantiated by a read, a list of the AE_UPDATE structures on the page is
+ * stored in the AE_REF.page_del field, with the transaction ID, that way the
+ * session unrolling the delete can find all of the AE_UPDATE structures that
  * require update.
  *
  * One final note: pages can also be marked deleted if emptied and evicted.  In
- * that case, the WT_REF state will be set to WT_REF_DELETED but there will not
- * be any associated WT_REF.page_del field.  These pages are always skipped
+ * that case, the AE_REF state will be set to AE_REF_DELETED but there will not
+ * be any associated AE_REF.page_del field.  These pages are always skipped
  * during cursor traversal (the page could not have been evicted if there were
  * updates that weren't globally visible), and if read is forced to instantiate
  * such a page, it simply creates an empty page from scratch.
  */
 
 /*
- * __wt_delete_page --
+ * __ae_delete_page --
  *	If deleting a range, try to delete the page without instantiating it.
  */
 int
-__wt_delete_page(WT_SESSION_IMPL *session, WT_REF *ref, bool *skipp)
+__ae_delete_page(AE_SESSION_IMPL *session, AE_REF *ref, bool *skipp)
 {
-	WT_DECL_RET;
-	WT_PAGE *parent;
+	AE_DECL_RET;
+	AE_PAGE *parent;
 
 	*skipp = false;
 
 	/* If we have a clean page in memory, attempt to evict it. */
-	if (ref->state == WT_REF_MEM &&
-	    __wt_atomic_casv32(&ref->state, WT_REF_MEM, WT_REF_LOCKED)) {
-		if (__wt_page_is_modified(ref->page)) {
-			WT_PUBLISH(ref->state, WT_REF_MEM);
+	if (ref->state == AE_REF_MEM &&
+	    __ae_atomic_casv32(&ref->state, AE_REF_MEM, AE_REF_LOCKED)) {
+		if (__ae_page_is_modified(ref->page)) {
+			AE_PUBLISH(ref->state, AE_REF_MEM);
 			return (0);
 		}
 
-		(void)__wt_atomic_addv32(&S2BT(session)->evict_busy, 1);
-		ret = __wt_evict(session, ref, false);
-		(void)__wt_atomic_subv32(&S2BT(session)->evict_busy, 1);
-		WT_RET_BUSY_OK(ret);
+		(void)__ae_atomic_addv32(&S2BT(session)->evict_busy, 1);
+		ret = __ae_evict(session, ref, false);
+		(void)__ae_atomic_subv32(&S2BT(session)->evict_busy, 1);
+		AE_RET_BUSY_OK(ret);
 	}
 
 	/*
@@ -92,8 +92,8 @@ __wt_delete_page(WT_SESSION_IMPL *session, WT_REF *ref, bool *skipp)
 	 * in the page.  While that's a huge amount of work to no purpose, it's
 	 * unclear optimizing for overlapping range deletes is worth the effort.
 	 */
-	if (ref->state != WT_REF_DISK ||
-	    !__wt_atomic_casv32(&ref->state, WT_REF_DISK, WT_REF_LOCKED))
+	if (ref->state != AE_REF_DISK ||
+	    !__ae_atomic_casv32(&ref->state, AE_REF_DISK, AE_REF_LOCKED))
 		return (0);
 
 	/*
@@ -109,9 +109,9 @@ __wt_delete_page(WT_SESSION_IMPL *session, WT_REF *ref, bool *skipp)
 	 * any problems we simply fail the fast-delete optimization.
 	 */
 	parent = ref->home;
-	if (__wt_off_page(parent, ref->addr) ?
-	    ((WT_ADDR *)ref->addr)->type != WT_ADDR_LEAF_NO :
-	    __wt_cell_type_raw(ref->addr) != WT_CELL_ADDR_LEAF_NO)
+	if (__ae_off_page(parent, ref->addr) ?
+	    ((AE_ADDR *)ref->addr)->type != AE_ADDR_LEAF_NO :
+	    __ae_cell_type_raw(ref->addr) != AE_CELL_ADDR_LEAF_NO)
 		goto err;
 
 	/*
@@ -119,40 +119,40 @@ __wt_delete_page(WT_SESSION_IMPL *session, WT_REF *ref, bool *skipp)
 	 * future reconciliation of the child leaf page that will dirty it as
 	 * we write the tree.
 	 */
-	WT_ERR(__wt_page_parent_modify_set(session, ref, false));
+	AE_ERR(__ae_page_parent_modify_set(session, ref, false));
 
 	/*
 	 * Record the change in the transaction structure and set the change's
 	 * transaction ID.
 	 */
-	WT_ERR(__wt_calloc_one(session, &ref->page_del));
+	AE_ERR(__ae_calloc_one(session, &ref->page_del));
 	ref->page_del->txnid = session->txn.id;
 
-	WT_ERR(__wt_txn_modify_ref(session, ref));
+	AE_ERR(__ae_txn_modify_ref(session, ref));
 
 	*skipp = true;
-	WT_STAT_FAST_CONN_INCR(session, rec_page_delete_fast);
-	WT_STAT_FAST_DATA_INCR(session, rec_page_delete_fast);
-	WT_PUBLISH(ref->state, WT_REF_DELETED);
+	AE_STAT_FAST_CONN_INCR(session, rec_page_delete_fast);
+	AE_STAT_FAST_DATA_INCR(session, rec_page_delete_fast);
+	AE_PUBLISH(ref->state, AE_REF_DELETED);
 	return (0);
 
-err:	__wt_free(session, ref->page_del);
+err:	__ae_free(session, ref->page_del);
 
 	/*
 	 * Restore the page to on-disk status, we'll have to instantiate it.
 	 */
-	WT_PUBLISH(ref->state, WT_REF_DISK);
+	AE_PUBLISH(ref->state, AE_REF_DISK);
 	return (ret);
 }
 
 /*
- * __wt_delete_page_rollback --
+ * __ae_delete_page_rollback --
  *	Abort pages that were deleted without being instantiated.
  */
 void
-__wt_delete_page_rollback(WT_SESSION_IMPL *session, WT_REF *ref)
+__ae_delete_page_rollback(AE_SESSION_IMPL *session, AE_REF *ref)
 {
-	WT_UPDATE **upd;
+	AE_UPDATE **upd;
 
 	/*
 	 * If the page is still "deleted", it's as we left it, reset the state
@@ -160,28 +160,28 @@ __wt_delete_page_rollback(WT_SESSION_IMPL *session, WT_REF *ref)
 	 * instantiated or being instantiated.  Loop because it's possible for
 	 * the page to return to the deleted state if instantiation fails.
 	 */
-	for (;; __wt_yield())
+	for (;; __ae_yield())
 		switch (ref->state) {
-		case WT_REF_DISK:
-		case WT_REF_READING:
-			WT_ASSERT(session, 0);		/* Impossible, assert */
+		case AE_REF_DISK:
+		case AE_REF_READING:
+			AE_ASSERT(session, 0);		/* Impossible, assert */
 			break;
-		case WT_REF_DELETED:
+		case AE_REF_DELETED:
 			/*
 			 * If the page is still "deleted", it's as we left it,
 			 * reset the state.
 			 */
-			if (__wt_atomic_casv32(
-			    &ref->state, WT_REF_DELETED, WT_REF_DISK))
+			if (__ae_atomic_casv32(
+			    &ref->state, AE_REF_DELETED, AE_REF_DISK))
 				return;
 			break;
-		case WT_REF_LOCKED:
+		case AE_REF_LOCKED:
 			/*
 			 * A possible state, the page is being instantiated.
 			 */
 			break;
-		case WT_REF_MEM:
-		case WT_REF_SPLIT:
+		case AE_REF_MEM:
+		case AE_REF_SPLIT:
 			/*
 			 * We can't use the normal read path to get a copy of
 			 * the page because the session may have closed the
@@ -195,25 +195,25 @@ __wt_delete_page_rollback(WT_SESSION_IMPL *session, WT_REF *ref)
 			 */
 			for (upd =
 			    ref->page_del->update_list; *upd != NULL; ++upd)
-				(*upd)->txnid = WT_TXN_ABORTED;
+				(*upd)->txnid = AE_TXN_ABORTED;
 
 			/*
 			 * Discard the memory, the transaction can't abort
 			 * twice.
 			 */
-			__wt_free(session, ref->page_del->update_list);
-			__wt_free(session, ref->page_del);
+			__ae_free(session, ref->page_del->update_list);
+			__ae_free(session, ref->page_del);
 			return;
 		}
 }
 
 /*
- * __wt_delete_page_skip --
+ * __ae_delete_page_skip --
  *	If iterating a cursor, skip deleted pages that are either visible to
  * us or globally visible.
  */
 bool
-__wt_delete_page_skip(WT_SESSION_IMPL *session, WT_REF *ref, bool visible_all)
+__ae_delete_page_skip(AE_SESSION_IMPL *session, AE_REF *ref, bool visible_all)
 {
 	bool skip;
 
@@ -222,15 +222,15 @@ __wt_delete_page_skip(WT_SESSION_IMPL *session, WT_REF *ref, bool visible_all)
 	 * described above, or the page has been emptied by other operations
 	 * and eviction deleted it.
 	 *
-	 * In both cases, the WT_REF state will be WT_REF_DELETED.  In the case
-	 * of a fast-delete page, there will be a WT_PAGE_DELETED structure with
+	 * In both cases, the AE_REF state will be AE_REF_DELETED.  In the case
+	 * of a fast-delete page, there will be a AE_PAGE_DELETED structure with
 	 * the transaction ID of the transaction that deleted the page, and the
 	 * page is visible if that transaction ID is visible.  In the case of an
-	 * empty page, there will be no WT_PAGE_DELETED structure and the delete
+	 * empty page, there will be no AE_PAGE_DELETED structure and the delete
 	 * is by definition visible, eviction could not have deleted the page if
 	 * there were changes on it that were not globally visible.
 	 *
-	 * We're here because we found a WT_REF state set to WT_REF_DELETED.  It
+	 * We're here because we found a AE_REF state set to AE_REF_DELETED.  It
 	 * is possible the page is being read into memory right now, though, and
 	 * the page could switch to an in-memory state at any time.  Lock down
 	 * the structure, just to be safe.
@@ -238,41 +238,41 @@ __wt_delete_page_skip(WT_SESSION_IMPL *session, WT_REF *ref, bool visible_all)
 	if (ref->page_del == NULL)
 		return (true);
 
-	if (!__wt_atomic_casv32(&ref->state, WT_REF_DELETED, WT_REF_LOCKED))
+	if (!__ae_atomic_casv32(&ref->state, AE_REF_DELETED, AE_REF_LOCKED))
 		return (false);
 
 	skip = ref->page_del == NULL || (visible_all ?
-	    __wt_txn_visible_all(session, ref->page_del->txnid) :
-	    __wt_txn_visible(session, ref->page_del->txnid));
+	    __ae_txn_visible_all(session, ref->page_del->txnid) :
+	    __ae_txn_visible(session, ref->page_del->txnid));
 
 	/*
 	 * The page_del structure can be freed as soon as the delete is stable:
-	 * it is only read when the ref state is WT_REF_DELETED.  It is worth
+	 * it is only read when the ref state is AE_REF_DELETED.  It is worth
 	 * checking every time we come through because once this is freed, we
 	 * no longer need synchronization to check the ref.
 	 */
 	if (skip && ref->page_del != NULL && (visible_all ||
-	    __wt_txn_visible_all(session, ref->page_del->txnid))) {
-		__wt_free(session, ref->page_del->update_list);
-		__wt_free(session, ref->page_del);
+	    __ae_txn_visible_all(session, ref->page_del->txnid))) {
+		__ae_free(session, ref->page_del->update_list);
+		__ae_free(session, ref->page_del);
 	}
 
-	WT_PUBLISH(ref->state, WT_REF_DELETED);
+	AE_PUBLISH(ref->state, AE_REF_DELETED);
 	return (skip);
 }
 
 /*
- * __wt_delete_page_instantiate --
+ * __ae_delete_page_instantiate --
  *	Instantiate an entirely deleted row-store leaf page.
  */
 int
-__wt_delete_page_instantiate(WT_SESSION_IMPL *session, WT_REF *ref)
+__ae_delete_page_instantiate(AE_SESSION_IMPL *session, AE_REF *ref)
 {
-	WT_BTREE *btree;
-	WT_DECL_RET;
-	WT_PAGE *page;
-	WT_PAGE_DELETED *page_del;
-	WT_UPDATE **upd_array, *upd;
+	AE_BTREE *btree;
+	AE_DECL_RET;
+	AE_PAGE *page;
+	AE_PAGE_DELETED *page_del;
+	AE_UPDATE **upd_array, *upd;
 	size_t size;
 	uint32_t i;
 
@@ -289,8 +289,8 @@ __wt_delete_page_instantiate(WT_SESSION_IMPL *session, WT_REF *ref)
 	 * able to do so.)
 	 */
 	if (btree->modified) {
-		WT_RET(__wt_page_modify_init(session, page));
-		__wt_page_modify_set(session, page);
+		AE_RET(__ae_page_modify_init(session, page));
+		__ae_page_modify_set(session, page);
 	}
 
 	/*
@@ -321,11 +321,11 @@ __wt_delete_page_instantiate(WT_SESSION_IMPL *session, WT_REF *ref)
 	 */
 
 	if (page_del != NULL)
-		WT_RET(__wt_calloc_def(
+		AE_RET(__ae_calloc_def(
 		    session, page->pg_row_entries + 1, &page_del->update_list));
 
 	/* Allocate the per-page update array. */
-	WT_ERR(__wt_calloc_def(session, page->pg_row_entries, &upd_array));
+	AE_ERR(__ae_calloc_def(session, page->pg_row_entries, &upd_array));
 	page->pg_row_upd = upd_array;
 
 	/*
@@ -334,11 +334,11 @@ __wt_delete_page_instantiate(WT_SESSION_IMPL *session, WT_REF *ref)
 	 * deleted items.
 	 */
 	for (i = 0, size = 0; i < page->pg_row_entries; ++i) {
-		WT_ERR(__wt_calloc_one(session, &upd));
-		WT_UPDATE_DELETED_SET(upd);
+		AE_ERR(__ae_calloc_one(session, &upd));
+		AE_UPDATE_DELETED_SET(upd);
 
 		if (page_del == NULL)
-			upd->txnid = WT_TXN_NONE;	/* Globally visible */
+			upd->txnid = AE_TXN_NONE;	/* Globally visible */
 		else {
 			upd->txnid = page_del->txnid;
 			page_del->update_list[i] = upd;
@@ -347,10 +347,10 @@ __wt_delete_page_instantiate(WT_SESSION_IMPL *session, WT_REF *ref)
 		upd->next = upd_array[i];
 		upd_array[i] = upd;
 
-		size += sizeof(WT_UPDATE *) + WT_UPDATE_MEMSIZE(upd);
+		size += sizeof(AE_UPDATE *) + AE_UPDATE_MEMSIZE(upd);
 	}
 
-	__wt_cache_page_inmem_incr(session, page, size);
+	__ae_cache_page_inmem_incr(session, page, size);
 
 	return (0);
 
@@ -363,6 +363,6 @@ err:	/*
 	 * attempting to instantiate this page again.
 	 */
 	if (page_del != NULL)
-		__wt_free(session, page_del->update_list);
+		__ae_free(session, page_del->update_list);
 	return (ret);
 }

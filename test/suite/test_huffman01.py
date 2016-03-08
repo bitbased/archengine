@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Public Domain 2014-2015 MongoDB, Inc.
-# Public Domain 2008-2014 WiredTiger, Inc.
+# Public Domain 2008-2014 ArchEngine, Inc.
 #
 # This is free and unencumbered software released into the public domain.
 #
@@ -28,13 +28,13 @@
 
 import os
 from suite_subprocess import suite_subprocess
-from wtscenario import multiply_scenarios, number_scenarios
-import wiredtiger, wttest
+from aescenario import multiply_scenarios, number_scenarios
+import archengine, aetest
 
 # test_huffman01.py
 #    Huffman key and value configurations
 # Basic smoke-test of huffman key and value settings.
-class test_huffman01(wttest.WiredTigerTestCase, suite_subprocess):
+class test_huffman01(aetest.ArchEngineTestCase, suite_subprocess):
     """
     Test basic operations
     """
@@ -74,7 +74,7 @@ class test_huffman01(wttest.WiredTigerTestCase, suite_subprocess):
 
 
 # Test Huffman encoding ranges.
-class test_huffman_range(wttest.WiredTigerTestCase):
+class test_huffman_range(aetest.ArchEngineTestCase):
     table_name = 'table:test_huff'
 
     # Test UTF8 out-of-range symbol information.
@@ -85,7 +85,7 @@ class test_huffman_range(wttest.WiredTigerTestCase):
         f.close()
         config="huffman_key=utf8t8file"
         msg = '/not in range/'
-        self.assertRaisesWithMessage(wiredtiger.WiredTigerError,
+        self.assertRaisesWithMessage(archengine.ArchEngineError,
             lambda: self.session.create(self.table_name, config), msg)
 
     # Test UTF16 out-of-range symbol information.
@@ -96,7 +96,7 @@ class test_huffman_range(wttest.WiredTigerTestCase):
         f.close()
         config="huffman_key=utf16t16file"
         msg = '/not in range/'
-        self.assertRaisesWithMessage(wiredtiger.WiredTigerError,
+        self.assertRaisesWithMessage(archengine.ArchEngineError,
             lambda: self.session.create(self.table_name, config), msg)
 
     # Test out-of-range frequency information.
@@ -108,7 +108,7 @@ class test_huffman_range(wttest.WiredTigerTestCase):
         f.close()
         config="huffman_key=utf8t8file"
         msg = '/not in range/'
-        self.assertRaisesWithMessage(wiredtiger.WiredTigerError,
+        self.assertRaisesWithMessage(archengine.ArchEngineError,
             lambda: self.session.create(self.table_name, config), msg)
 
     # Test duplicate symbol information.
@@ -120,9 +120,9 @@ class test_huffman_range(wttest.WiredTigerTestCase):
         f.close()
         config="huffman_key=utf8t8file"
         msg = '/duplicate symbol/'
-        self.assertRaisesWithMessage(wiredtiger.WiredTigerError,
+        self.assertRaisesWithMessage(archengine.ArchEngineError,
             lambda: self.session.create(self.table_name, config), msg)
 
 
 if __name__ == '__main__':
-    wttest.run()
+    aetest.run()

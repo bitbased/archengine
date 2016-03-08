@@ -1,6 +1,6 @@
 /*-
  * Public Domain 2014-2015 MongoDB, Inc.
- * Public Domain 2008-2014 WiredTiger, Inc.
+ * Public Domain 2008-2014 ArchEngine, Inc.
  *
  * This is free and unencumbered software released into the public domain.
  *
@@ -32,25 +32,25 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <wiredtiger.h>
+#include <archengine.h>
 
-/*! [WT_EXTENSION_API declaration] */
-#include <wiredtiger_ext.h>
+/*! [AE_EXTENSION_API declaration] */
+#include <archengine_ext.h>
 
-static WT_EXTENSION_API *wt_api;
+static AE_EXTENSION_API *ae_api;
 
 static void
-my_data_source_init(WT_CONNECTION *connection)
+my_data_source_init(AE_CONNECTION *connection)
 {
-	wt_api = connection->get_extension_api(connection);
+	ae_api = connection->get_extension_api(connection);
 }
-/*! [WT_EXTENSION_API declaration] */
+/*! [AE_EXTENSION_API declaration] */
 
-/*! [WT_DATA_SOURCE create] */
+/*! [AE_DATA_SOURCE create] */
 static int
-my_create(WT_DATA_SOURCE *dsrc, WT_SESSION *session,
-    const char *uri, WT_CONFIG_ARG *config)
-/*! [WT_DATA_SOURCE create] */
+my_create(AE_DATA_SOURCE *dsrc, AE_SESSION *session,
+    const char *uri, AE_CONFIG_ARG *config)
+/*! [AE_DATA_SOURCE create] */
 {
 	/* Unused parameters */
 	(void)dsrc;
@@ -59,52 +59,52 @@ my_create(WT_DATA_SOURCE *dsrc, WT_SESSION *session,
 
 	{
 	const char *msg = "string";
-	/*! [WT_EXTENSION_API err_printf] */
-	(void)wt_api->err_printf(
-	    wt_api, session, "extension error message: %s", msg);
-	/*! [WT_EXTENSION_API err_printf] */
+	/*! [AE_EXTENSION_API err_printf] */
+	(void)ae_api->err_printf(
+	    ae_api, session, "extension error message: %s", msg);
+	/*! [AE_EXTENSION_API err_printf] */
 	}
 
 	{
 	const char *msg = "string";
-	/*! [WT_EXTENSION_API msg_printf] */
-	(void)wt_api->msg_printf(wt_api, session, "extension message: %s", msg);
-	/*! [WT_EXTENSION_API msg_printf] */
+	/*! [AE_EXTENSION_API msg_printf] */
+	(void)ae_api->msg_printf(ae_api, session, "extension message: %s", msg);
+	/*! [AE_EXTENSION_API msg_printf] */
 	}
 
 	{
 	int ret = 0;
-	/*! [WT_EXTENSION_API strerror] */
-	(void)wt_api->err_printf(wt_api, session,
-	    "WiredTiger error return: %s",
-	    wt_api->strerror(wt_api, session, ret));
-	/*! [WT_EXTENSION_API strerror] */
+	/*! [AE_EXTENSION_API strerror] */
+	(void)ae_api->err_printf(ae_api, session,
+	    "ArchEngine error return: %s",
+	    ae_api->strerror(ae_api, session, ret));
+	/*! [AE_EXTENSION_API strerror] */
 	}
 
 	{
-	/*! [WT_EXTENSION_API scr_alloc] */
+	/*! [AE_EXTENSION_API scr_alloc] */
 	void *buffer;
-	if ((buffer = wt_api->scr_alloc(wt_api, session, 512)) == NULL) {
-		(void)wt_api->err_printf(wt_api, session,
+	if ((buffer = ae_api->scr_alloc(ae_api, session, 512)) == NULL) {
+		(void)ae_api->err_printf(ae_api, session,
 		    "buffer allocation: %s",
 		    session->strerror(session, ENOMEM));
 		return (ENOMEM);
 	}
-	/*! [WT_EXTENSION_API scr_alloc] */
+	/*! [AE_EXTENSION_API scr_alloc] */
 
-	/*! [WT_EXTENSION_API scr_free] */
-	wt_api->scr_free(wt_api, session, buffer);
-	/*! [WT_EXTENSION_API scr_free] */
+	/*! [AE_EXTENSION_API scr_free] */
+	ae_api->scr_free(ae_api, session, buffer);
+	/*! [AE_EXTENSION_API scr_free] */
 	}
 
 	return (0);
 }
 
-/*! [WT_DATA_SOURCE compact] */
+/*! [AE_DATA_SOURCE compact] */
 static int
-my_compact(WT_DATA_SOURCE *dsrc, WT_SESSION *session,
-    const char *uri, WT_CONFIG_ARG *config)
-/*! [WT_DATA_SOURCE compact] */
+my_compact(AE_DATA_SOURCE *dsrc, AE_SESSION *session,
+    const char *uri, AE_CONFIG_ARG *config)
+/*! [AE_DATA_SOURCE compact] */
 {
 	/* Unused parameters */
 	(void)dsrc;
@@ -115,11 +115,11 @@ my_compact(WT_DATA_SOURCE *dsrc, WT_SESSION *session,
 	return (0);
 }
 
-/*! [WT_DATA_SOURCE drop] */
+/*! [AE_DATA_SOURCE drop] */
 static int
-my_drop(WT_DATA_SOURCE *dsrc, WT_SESSION *session,
-    const char *uri, WT_CONFIG_ARG *config)
-/*! [WT_DATA_SOURCE drop] */
+my_drop(AE_DATA_SOURCE *dsrc, AE_SESSION *session,
+    const char *uri, AE_CONFIG_ARG *config)
+/*! [AE_DATA_SOURCE drop] */
 {
 	/* Unused parameters */
 	(void)dsrc;
@@ -144,7 +144,7 @@ data_source_error(int v)
 
 static int
 data_source_notify(
-    WT_TXN_NOTIFY *handler, WT_SESSION *session, uint64_t txnid, int committed)
+    AE_TXN_NOTIFY *handler, AE_SESSION *session, uint64_t txnid, int committed)
 {
 	/* Unused parameters */
 	(void)handler;
@@ -155,78 +155,78 @@ data_source_notify(
 	return (0);
 }
 
-static int my_cursor_next(WT_CURSOR *wtcursor)
-	{ (void)wtcursor; return (0); }
-static int my_cursor_prev(WT_CURSOR *wtcursor)
-	{ (void)wtcursor; return (0); }
-static int my_cursor_reset(WT_CURSOR *wtcursor)
-	{ (void)wtcursor; return (0); }
-static int my_cursor_search(WT_CURSOR *wtcursor)
-	{ (void)wtcursor; return (0); }
-static int my_cursor_search_near(WT_CURSOR *wtcursor, int *exactp)
-	{ (void)wtcursor; (void)exactp; return (0); }
-static int my_cursor_insert(WT_CURSOR *wtcursor)
+static int my_cursor_next(AE_CURSOR *aecursor)
+	{ (void)aecursor; return (0); }
+static int my_cursor_prev(AE_CURSOR *aecursor)
+	{ (void)aecursor; return (0); }
+static int my_cursor_reset(AE_CURSOR *aecursor)
+	{ (void)aecursor; return (0); }
+static int my_cursor_search(AE_CURSOR *aecursor)
+	{ (void)aecursor; return (0); }
+static int my_cursor_search_near(AE_CURSOR *aecursor, int *exactp)
+	{ (void)aecursor; (void)exactp; return (0); }
+static int my_cursor_insert(AE_CURSOR *aecursor)
 {
-	WT_SESSION *session = NULL;
+	AE_SESSION *session = NULL;
 	int ret;
 
 	/* Unused parameters */
-	(void)wtcursor;
+	(void)aecursor;
 
 	{
 	int is_snapshot_isolation, isolation_level;
-	/*! [WT_EXTENSION transaction isolation level] */
-	isolation_level = wt_api->transaction_isolation_level(wt_api, session);
-	if (isolation_level == WT_TXN_ISO_SNAPSHOT)
+	/*! [AE_EXTENSION transaction isolation level] */
+	isolation_level = ae_api->transaction_isolation_level(ae_api, session);
+	if (isolation_level == AE_TXN_ISO_SNAPSHOT)
 		is_snapshot_isolation = 1;
 	else
 		is_snapshot_isolation = 0;
-	/*! [WT_EXTENSION transaction isolation level] */
+	/*! [AE_EXTENSION transaction isolation level] */
 	(void)is_snapshot_isolation;
 	}
 
 	{
-	/*! [WT_EXTENSION transaction ID] */
+	/*! [AE_EXTENSION transaction ID] */
 	uint64_t transaction_id;
 
-	transaction_id = wt_api->transaction_id(wt_api, session);
-	/*! [WT_EXTENSION transaction ID] */
+	transaction_id = ae_api->transaction_id(ae_api, session);
+	/*! [AE_EXTENSION transaction ID] */
 	(void)transaction_id;
 	}
 
 	{
-	/*! [WT_EXTENSION transaction oldest] */
+	/*! [AE_EXTENSION transaction oldest] */
 	uint64_t transaction_oldest;
 
-	transaction_oldest = wt_api->transaction_oldest(wt_api);
-	/*! [WT_EXTENSION transaction oldest] */
+	transaction_oldest = ae_api->transaction_oldest(ae_api);
+	/*! [AE_EXTENSION transaction oldest] */
 	(void)transaction_oldest;
 	}
 
 	{
-	/*! [WT_EXTENSION transaction notify] */
-	WT_TXN_NOTIFY handler;
+	/*! [AE_EXTENSION transaction notify] */
+	AE_TXN_NOTIFY handler;
 	handler.notify = data_source_notify;
-	ret = wt_api->transaction_notify(wt_api, session, &handler);
-	/*! [WT_EXTENSION transaction notify] */
+	ret = ae_api->transaction_notify(ae_api, session, &handler);
+	/*! [AE_EXTENSION transaction notify] */
 	}
 
 	{
 	uint64_t transaction_id = 1;
 	int is_visible;
-	/*! [WT_EXTENSION transaction visible] */
+	/*! [AE_EXTENSION transaction visible] */
 	is_visible =
-	    wt_api->transaction_visible(wt_api, session, transaction_id);
-	/*! [WT_EXTENSION transaction visible] */
+	    ae_api->transaction_visible(ae_api, session, transaction_id);
+	/*! [AE_EXTENSION transaction visible] */
 	(void)is_visible;
 	}
 
 	{
 	const char *key1 = NULL, *key2 = NULL;
 	uint32_t key1_len = 0, key2_len = 0;
-	WT_COLLATOR *collator = NULL;
-	/*! [WT_EXTENSION collate] */
-	WT_ITEM first, second;
+	AE_COLLATOR *collator = NULL;
+	/*! [AE_EXTENSION collate] */
+	AE_ITEM first, second;
 	int cmp;
 
 	first.data = key1;
@@ -234,65 +234,65 @@ static int my_cursor_insert(WT_CURSOR *wtcursor)
 	second.data = key2;
 	second.size = key2_len;
 
-	ret = wt_api->collate(wt_api, session, collator, &first, &second, &cmp);
+	ret = ae_api->collate(ae_api, session, collator, &first, &second, &cmp);
 	if (cmp == 0)
 		printf("key1 collates identically to key2\n");
 	else if (cmp < 0)
 		printf("key1 collates less than key2\n");
 	else
 		printf("key1 collates greater than key2\n");
-	/*! [WT_EXTENSION collate] */
+	/*! [AE_EXTENSION collate] */
 	}
 
 	return (ret);
 }
 
-static int my_cursor_update(WT_CURSOR *wtcursor)
-	{ (void)wtcursor; return (0); }
-static int my_cursor_remove(WT_CURSOR *wtcursor)
-	{ (void)wtcursor; return (0); }
-static int my_cursor_close(WT_CURSOR *wtcursor)
-	{ (void)wtcursor; return (0); }
+static int my_cursor_update(AE_CURSOR *aecursor)
+	{ (void)aecursor; return (0); }
+static int my_cursor_remove(AE_CURSOR *aecursor)
+	{ (void)aecursor; return (0); }
+static int my_cursor_close(AE_CURSOR *aecursor)
+	{ (void)aecursor; return (0); }
 
-/*! [WT_DATA_SOURCE open_cursor] */
+/*! [AE_DATA_SOURCE open_cursor] */
 typedef struct __my_cursor {
-	WT_CURSOR wtcursor;		/* WiredTiger cursor, must come first */
+	AE_CURSOR aecursor;		/* ArchEngine cursor, must come first */
 
 	/*
 	 * Local cursor information: for example, we might want to have a
 	 * reference to the extension functions.
 	 */
-	WT_EXTENSION_API *wtext;	/* Extension functions */
+	AE_EXTENSION_API *aeext;	/* Extension functions */
 } MY_CURSOR;
 
 static int
-my_open_cursor(WT_DATA_SOURCE *dsrc, WT_SESSION *session,
-    const char *uri, WT_CONFIG_ARG *config, WT_CURSOR **new_cursor)
+my_open_cursor(AE_DATA_SOURCE *dsrc, AE_SESSION *session,
+    const char *uri, AE_CONFIG_ARG *config, AE_CURSOR **new_cursor)
 {
 	MY_CURSOR *cursor;
 
-	/* Allocate and initialize a WiredTiger cursor. */
+	/* Allocate and initialize a ArchEngine cursor. */
 	if ((cursor = calloc(1, sizeof(*cursor))) == NULL)
 		return (errno);
 
-	cursor->wtcursor.next = my_cursor_next;
-	cursor->wtcursor.prev = my_cursor_prev;
-	cursor->wtcursor.reset = my_cursor_reset;
-	cursor->wtcursor.search = my_cursor_search;
-	cursor->wtcursor.search_near = my_cursor_search_near;
-	cursor->wtcursor.insert = my_cursor_insert;
-	cursor->wtcursor.update = my_cursor_update;
-	cursor->wtcursor.remove = my_cursor_remove;
-	cursor->wtcursor.close = my_cursor_close;
+	cursor->aecursor.next = my_cursor_next;
+	cursor->aecursor.prev = my_cursor_prev;
+	cursor->aecursor.reset = my_cursor_reset;
+	cursor->aecursor.search = my_cursor_search;
+	cursor->aecursor.search_near = my_cursor_search_near;
+	cursor->aecursor.insert = my_cursor_insert;
+	cursor->aecursor.update = my_cursor_update;
+	cursor->aecursor.remove = my_cursor_remove;
+	cursor->aecursor.close = my_cursor_close;
 
 	/*
 	 * Configure local cursor information.
 	 */
 
-	/* Return combined cursor to WiredTiger. */
-	*new_cursor = (WT_CURSOR *)cursor;
+	/* Return combined cursor to ArchEngine. */
+	*new_cursor = (AE_CURSOR *)cursor;
 
-/*! [WT_DATA_SOURCE open_cursor] */
+/*! [AE_DATA_SOURCE open_cursor] */
 	{
 	int ret = 0;
 	(void)dsrc;					/* Unused parameters */
@@ -301,187 +301,187 @@ my_open_cursor(WT_DATA_SOURCE *dsrc, WT_SESSION *session,
 	(void)new_cursor;
 
 	{
-	/*! [WT_EXTENSION_CONFIG boolean] */
-	WT_CONFIG_ITEM v;
+	/*! [AE_EXTENSION_CONFIG boolean] */
+	AE_CONFIG_ITEM v;
 	int my_data_source_overwrite;
 
 	/*
 	 * Retrieve the value of the boolean type configuration string
 	 * "overwrite".
 	 */
-	if ((ret = wt_api->config_get(
-	    wt_api, session, config, "overwrite", &v)) != 0) {
-		(void)wt_api->err_printf(wt_api, session,
+	if ((ret = ae_api->config_get(
+	    ae_api, session, config, "overwrite", &v)) != 0) {
+		(void)ae_api->err_printf(ae_api, session,
 		    "overwrite configuration: %s",
 		    session->strerror(session, ret));
 		return (ret);
 	}
 	my_data_source_overwrite = v.val != 0;
-	/*! [WT_EXTENSION_CONFIG boolean] */
+	/*! [AE_EXTENSION_CONFIG boolean] */
 
 	(void)my_data_source_overwrite;
 	}
 
 	{
-	/*! [WT_EXTENSION_CONFIG integer] */
-	WT_CONFIG_ITEM v;
+	/*! [AE_EXTENSION_CONFIG integer] */
+	AE_CONFIG_ITEM v;
 	int64_t my_data_source_page_size;
 
 	/*
 	 * Retrieve the value of the integer type configuration string
 	 * "page_size".
 	 */
-	if ((ret = wt_api->config_get(
-	    wt_api, session, config, "page_size", &v)) != 0) {
-		(void)wt_api->err_printf(wt_api, session,
+	if ((ret = ae_api->config_get(
+	    ae_api, session, config, "page_size", &v)) != 0) {
+		(void)ae_api->err_printf(ae_api, session,
 		    "page_size configuration: %s",
 		    session->strerror(session, ret));
 		return (ret);
 	}
 	my_data_source_page_size = v.val;
-	/*! [WT_EXTENSION_CONFIG integer] */
+	/*! [AE_EXTENSION_CONFIG integer] */
 
 	(void)my_data_source_page_size;
 	}
 
 	{
-	/*! [WT_EXTENSION config_get] */
-	WT_CONFIG_ITEM v;
+	/*! [AE_EXTENSION config_get] */
+	AE_CONFIG_ITEM v;
 	const char *my_data_source_key;
 
 	/*
 	 * Retrieve the value of the string type configuration string
 	 * "key_format".
 	 */
-	if ((ret = wt_api->config_get(
-	    wt_api, session, config, "key_format", &v)) != 0) {
-		(void)wt_api->err_printf(wt_api, session,
+	if ((ret = ae_api->config_get(
+	    ae_api, session, config, "key_format", &v)) != 0) {
+		(void)ae_api->err_printf(ae_api, session,
 		    "key_format configuration: %s",
 		    session->strerror(session, ret));
 		return (ret);
 	}
 
 	/*
-	 * Values returned from WT_EXTENSION_API::config in the str field are
+	 * Values returned from AE_EXTENSION_API::config in the str field are
 	 * not nul-terminated; the associated length must be used instead.
 	 */
 	if (v.len == 1 && v.str[0] == 'r')
 		my_data_source_key = "recno";
 	else
 		my_data_source_key = "bytestring";
-	/*! [WT_EXTENSION config_get] */
+	/*! [AE_EXTENSION config_get] */
 
 	(void)my_data_source_key;
 	}
 
 	{
-	/*! [WT_EXTENSION collator config] */
-	WT_COLLATOR *collator;
+	/*! [AE_EXTENSION collator config] */
+	AE_COLLATOR *collator;
 	int collator_owned;
 	/*
 	 * Configure the appropriate collator.
 	 */
-	if ((ret = wt_api->collator_config(wt_api, session,
+	if ((ret = ae_api->collator_config(ae_api, session,
 	    "dsrc:", config, &collator, &collator_owned)) != 0) {
-		(void)wt_api->err_printf(wt_api, session,
+		(void)ae_api->err_printf(ae_api, session,
 		    "collator configuration: %s",
 		    session->strerror(session, ret));
 		return (ret);
 	}
-	/*! [WT_EXTENSION collator config] */
+	/*! [AE_EXTENSION collator config] */
 	}
 
-	/*! [WT_DATA_SOURCE error message] */
+	/*! [AE_DATA_SOURCE error message] */
 	/*
 	 * If an underlying function fails, log the error and then return an
-	 * error within WiredTiger's name space.
+	 * error within ArchEngine's name space.
 	 */
 	if ((ret = data_source_cursor()) != 0) {
-		(void)wt_api->err_printf(wt_api,
+		(void)ae_api->err_printf(ae_api,
 		    session, "my_open_cursor: %s", data_source_error(ret));
-		return (WT_ERROR);
+		return (AE_ERROR);
 	}
-	/*! [WT_DATA_SOURCE error message] */
+	/*! [AE_DATA_SOURCE error message] */
 
 	{
-	/*! [WT_EXTENSION metadata insert] */
+	/*! [AE_EXTENSION metadata insert] */
 	/*
-	 * Insert a new WiredTiger metadata record.
+	 * Insert a new ArchEngine metadata record.
 	 */
 	const char *key = "datasource_uri";
 	const char *value = "data source uri's record";
 
-	if ((ret = wt_api->metadata_insert(wt_api, session, key, value)) != 0) {
-		(void)wt_api->err_printf(wt_api, session,
+	if ((ret = ae_api->metadata_insert(ae_api, session, key, value)) != 0) {
+		(void)ae_api->err_printf(ae_api, session,
 		    "%s: metadata insert: %s", key,
 		    session->strerror(session, ret));
 		return (ret);
 	}
-	/*! [WT_EXTENSION metadata insert] */
+	/*! [AE_EXTENSION metadata insert] */
 	}
 
 	{
-	/*! [WT_EXTENSION metadata remove] */
+	/*! [AE_EXTENSION metadata remove] */
 	/*
-	 * Remove a WiredTiger metadata record.
+	 * Remove a ArchEngine metadata record.
 	 */
 	const char *key = "datasource_uri";
 
-	if ((ret = wt_api->metadata_remove(wt_api, session, key)) != 0) {
-		(void)wt_api->err_printf(wt_api, session,
+	if ((ret = ae_api->metadata_remove(ae_api, session, key)) != 0) {
+		(void)ae_api->err_printf(ae_api, session,
 		    "%s: metadata remove: %s", key,
 		    session->strerror(session, ret));
 		return (ret);
 	}
-	/*! [WT_EXTENSION metadata remove] */
+	/*! [AE_EXTENSION metadata remove] */
 	}
 
 	{
-	/*! [WT_EXTENSION metadata search] */
+	/*! [AE_EXTENSION metadata search] */
 	/*
-	 * Insert a new WiredTiger metadata record.
+	 * Insert a new ArchEngine metadata record.
 	 */
 	const char *key = "datasource_uri";
 	char *value;
 
 	if ((ret =
-	    wt_api->metadata_search(wt_api, session, key, &value)) != 0) {
-		(void)wt_api->err_printf(wt_api, session,
+	    ae_api->metadata_search(ae_api, session, key, &value)) != 0) {
+		(void)ae_api->err_printf(ae_api, session,
 		    "%s: metadata search: %s", key,
 		     session->strerror(session, ret));
 		return (ret);
 	}
 	printf("metadata: %s has a value of %s\n", key, value);
-	/*! [WT_EXTENSION metadata search] */
+	/*! [AE_EXTENSION metadata search] */
 	}
 
 	{
-	/*! [WT_EXTENSION metadata update] */
+	/*! [AE_EXTENSION metadata update] */
 	/*
-	 * Update a WiredTiger metadata record (insert it if it does not yet
+	 * Update a ArchEngine metadata record (insert it if it does not yet
 	 * exist, update it if it does).
 	 */
 	const char *key = "datasource_uri";
 	const char *value = "data source uri's record";
 
-	if ((ret = wt_api->metadata_update(wt_api, session, key, value)) != 0) {
-		(void)wt_api->err_printf(wt_api, session,
+	if ((ret = ae_api->metadata_update(ae_api, session, key, value)) != 0) {
+		(void)ae_api->err_printf(ae_api, session,
 		    "%s: metadata update: %s", key,
 		    session->strerror(session, ret));
 		return (ret);
 	}
-	/*! [WT_EXTENSION metadata update] */
+	/*! [AE_EXTENSION metadata update] */
 	}
 
 	}
 	return (0);
 }
 
-/*! [WT_DATA_SOURCE rename] */
+/*! [AE_DATA_SOURCE rename] */
 static int
-my_rename(WT_DATA_SOURCE *dsrc, WT_SESSION *session,
-    const char *uri, const char *newname, WT_CONFIG_ARG *config)
-/*! [WT_DATA_SOURCE rename] */
+my_rename(AE_DATA_SOURCE *dsrc, AE_SESSION *session,
+    const char *uri, const char *newname, AE_CONFIG_ARG *config)
+/*! [AE_DATA_SOURCE rename] */
 {
 	/* Unused parameters */
 	(void)dsrc;
@@ -493,11 +493,11 @@ my_rename(WT_DATA_SOURCE *dsrc, WT_SESSION *session,
 	return (0);
 }
 
-/*! [WT_DATA_SOURCE salvage] */
+/*! [AE_DATA_SOURCE salvage] */
 static int
-my_salvage(WT_DATA_SOURCE *dsrc, WT_SESSION *session,
-    const char *uri, WT_CONFIG_ARG *config)
-/*! [WT_DATA_SOURCE salvage] */
+my_salvage(AE_DATA_SOURCE *dsrc, AE_SESSION *session,
+    const char *uri, AE_CONFIG_ARG *config)
+/*! [AE_DATA_SOURCE salvage] */
 {
 	/* Unused parameters */
 	(void)dsrc;
@@ -508,11 +508,11 @@ my_salvage(WT_DATA_SOURCE *dsrc, WT_SESSION *session,
 	return (0);
 }
 
-/*! [WT_DATA_SOURCE truncate] */
+/*! [AE_DATA_SOURCE truncate] */
 static int
-my_truncate(WT_DATA_SOURCE *dsrc, WT_SESSION *session,
-    const char *uri, WT_CONFIG_ARG *config)
-/*! [WT_DATA_SOURCE truncate] */
+my_truncate(AE_DATA_SOURCE *dsrc, AE_SESSION *session,
+    const char *uri, AE_CONFIG_ARG *config)
+/*! [AE_DATA_SOURCE truncate] */
 {
 	/* Unused parameters */
 	(void)dsrc;
@@ -523,11 +523,11 @@ my_truncate(WT_DATA_SOURCE *dsrc, WT_SESSION *session,
 	return (0);
 }
 
-/*! [WT_DATA_SOURCE range truncate] */
+/*! [AE_DATA_SOURCE range truncate] */
 static int
-my_range_truncate(WT_DATA_SOURCE *dsrc, WT_SESSION *session,
-    WT_CURSOR *start, WT_CURSOR *stop)
-/*! [WT_DATA_SOURCE range truncate] */
+my_range_truncate(AE_DATA_SOURCE *dsrc, AE_SESSION *session,
+    AE_CURSOR *start, AE_CURSOR *stop)
+/*! [AE_DATA_SOURCE range truncate] */
 {
 	/* Unused parameters */
 	(void)dsrc;
@@ -538,11 +538,11 @@ my_range_truncate(WT_DATA_SOURCE *dsrc, WT_SESSION *session,
 	return (0);
 }
 
-/*! [WT_DATA_SOURCE verify] */
+/*! [AE_DATA_SOURCE verify] */
 static int
-my_verify(WT_DATA_SOURCE *dsrc, WT_SESSION *session,
-    const char *uri, WT_CONFIG_ARG *config)
-/*! [WT_DATA_SOURCE verify] */
+my_verify(AE_DATA_SOURCE *dsrc, AE_SESSION *session,
+    const char *uri, AE_CONFIG_ARG *config)
+/*! [AE_DATA_SOURCE verify] */
 {
 	/* Unused parameters */
 	(void)dsrc;
@@ -553,10 +553,10 @@ my_verify(WT_DATA_SOURCE *dsrc, WT_SESSION *session,
 	return (0);
 }
 
-/*! [WT_DATA_SOURCE checkpoint] */
+/*! [AE_DATA_SOURCE checkpoint] */
 static int
-my_checkpoint(WT_DATA_SOURCE *dsrc, WT_SESSION *session, WT_CONFIG_ARG *config)
-/*! [WT_DATA_SOURCE checkpoint] */
+my_checkpoint(AE_DATA_SOURCE *dsrc, AE_SESSION *session, AE_CONFIG_ARG *config)
+/*! [AE_DATA_SOURCE checkpoint] */
 {
 	/* Unused parameters */
 	(void)dsrc;
@@ -566,10 +566,10 @@ my_checkpoint(WT_DATA_SOURCE *dsrc, WT_SESSION *session, WT_CONFIG_ARG *config)
 	return (0);
 }
 
-/*! [WT_DATA_SOURCE terminate] */
+/*! [AE_DATA_SOURCE terminate] */
 static int
-my_terminate(WT_DATA_SOURCE *dsrc, WT_SESSION *session)
-/*! [WT_DATA_SOURCE terminate] */
+my_terminate(AE_DATA_SOURCE *dsrc, AE_SESSION *session)
+/*! [AE_DATA_SOURCE terminate] */
 {
 	/* Unused parameters */
 	(void)dsrc;
@@ -581,18 +581,18 @@ my_terminate(WT_DATA_SOURCE *dsrc, WT_SESSION *session)
 int
 main(void)
 {
-	WT_CONNECTION *conn;
-	WT_SESSION *session;
+	AE_CONNECTION *conn;
+	AE_SESSION *session;
 	int ret;
 
-	ret = wiredtiger_open(NULL, NULL, "create", &conn);
+	ret = archengine_open(NULL, NULL, "create", &conn);
 	ret = conn->open_session(conn, NULL, NULL, &session);
 
 	my_data_source_init(conn);
 
 	{
-	/*! [WT_DATA_SOURCE register] */
-	static WT_DATA_SOURCE my_dsrc = {
+	/*! [AE_DATA_SOURCE register] */
+	static AE_DATA_SOURCE my_dsrc = {
 		my_create,
 		my_compact,
 		my_drop,
@@ -606,66 +606,66 @@ main(void)
 		my_terminate
 	};
 	ret = conn->add_data_source(conn, "dsrc:", &my_dsrc, NULL);
-	/*! [WT_DATA_SOURCE register] */
+	/*! [AE_DATA_SOURCE register] */
 	}
 
-	/*! [WT_DATA_SOURCE configure boolean] */
+	/*! [AE_DATA_SOURCE configure boolean] */
 	/* my_boolean defaults to true. */
 	ret = conn->configure_method(conn,
-	    "WT_SESSION.open_cursor", NULL, "my_boolean=true", "boolean", NULL);
-	/*! [WT_DATA_SOURCE configure boolean] */
+	    "AE_SESSION.open_cursor", NULL, "my_boolean=true", "boolean", NULL);
+	/*! [AE_DATA_SOURCE configure boolean] */
 
-	/*! [WT_DATA_SOURCE configure integer] */
+	/*! [AE_DATA_SOURCE configure integer] */
 	/* my_integer defaults to 5. */
 	ret = conn->configure_method(conn,
-	    "WT_SESSION.open_cursor", NULL, "my_integer=5", "int", NULL);
-	/*! [WT_DATA_SOURCE configure integer] */
+	    "AE_SESSION.open_cursor", NULL, "my_integer=5", "int", NULL);
+	/*! [AE_DATA_SOURCE configure integer] */
 
-	/*! [WT_DATA_SOURCE configure string] */
+	/*! [AE_DATA_SOURCE configure string] */
 	/* my_string defaults to "name". */
 	ret = conn->configure_method(conn,
-	    "WT_SESSION.open_cursor", NULL, "my_string=name", "string", NULL);
-	/*! [WT_DATA_SOURCE configure string] */
+	    "AE_SESSION.open_cursor", NULL, "my_string=name", "string", NULL);
+	/*! [AE_DATA_SOURCE configure string] */
 
-	/*! [WT_DATA_SOURCE configure list] */
+	/*! [AE_DATA_SOURCE configure list] */
 	/* my_list defaults to "first" and "second". */
 	ret = conn->configure_method(conn,
-	    "WT_SESSION.open_cursor",
+	    "AE_SESSION.open_cursor",
 	    NULL, "my_list=[first, second]", "list", NULL);
-	/*! [WT_DATA_SOURCE configure list] */
+	/*! [AE_DATA_SOURCE configure list] */
 
-	/*! [WT_DATA_SOURCE configure integer with checking] */
+	/*! [AE_DATA_SOURCE configure integer with checking] */
 	/*
 	 * Limit the number of devices to between 1 and 30; the default is 5.
 	 */
 	ret = conn->configure_method(conn,
-	    "WT_SESSION.open_cursor",
+	    "AE_SESSION.open_cursor",
 	    NULL, "devices=5", "int", "min=1, max=30");
-	/*! [WT_DATA_SOURCE configure integer with checking] */
+	/*! [AE_DATA_SOURCE configure integer with checking] */
 
-	/*! [WT_DATA_SOURCE configure string with checking] */
+	/*! [AE_DATA_SOURCE configure string with checking] */
 	/*
 	 * Limit the target string to one of /device, /home or /target; default
 	 * to /home.
 	 */
 	ret = conn->configure_method(conn,
-	    "WT_SESSION.open_cursor", NULL, "target=/home", "string",
+	    "AE_SESSION.open_cursor", NULL, "target=/home", "string",
 	    "choices=[/device, /home, /target]");
-	/*! [WT_DATA_SOURCE configure string with checking] */
+	/*! [AE_DATA_SOURCE configure string with checking] */
 
-	/*! [WT_DATA_SOURCE configure list with checking] */
+	/*! [AE_DATA_SOURCE configure list with checking] */
 	/*
 	 * Limit the paths list to one or more of /device, /home, /mnt or
 	 * /target; default to /mnt.
 	 */
 	ret = conn->configure_method(conn,
-	    "WT_SESSION.open_cursor", NULL, "paths=[/mnt]", "list",
+	    "AE_SESSION.open_cursor", NULL, "paths=[/mnt]", "list",
 	    "choices=[/device, /home, /mnt, /target]");
-	/*! [WT_DATA_SOURCE configure list with checking] */
+	/*! [AE_DATA_SOURCE configure list with checking] */
 
-	/*! [WT_EXTENSION_API default_session] */
-	(void)wt_api->msg_printf(wt_api, NULL, "configuration complete");
-	/*! [WT_EXTENSION_API default_session] */
+	/*! [AE_EXTENSION_API default_session] */
+	(void)ae_api->msg_printf(ae_api, NULL, "configuration complete");
+	/*! [AE_EXTENSION_API default_session] */
 
 	(void)conn->close(conn, NULL);
 

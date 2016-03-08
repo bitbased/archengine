@@ -1,12 +1,12 @@
 /*-
  * Copyright (c) 2014-2015 MongoDB, Inc.
- * Copyright (c) 2008-2014 WiredTiger, Inc.
+ * Copyright (c) 2008-2014 ArchEngine, Inc.
  *	All rights reserved.
  *
  * See the file LICENSE for redistribution information.
  */
 
-#include "wt_internal.h"
+#include "ae_internal.h"
 
 /*
  * Compaction is the place where the underlying block manager becomes visible
@@ -44,7 +44,7 @@
  * the original version of the block; once no checkpoint references a block, it
  * becomes available for reuse.
  *
- * Compaction is not necessarily possible in WiredTiger, even in a file with
+ * Compaction is not necessarily possible in ArchEngine, even in a file with
  * lots of available space.  If a block at the end of the file is referenced by
  * a named checkpoint, there is nothing we can do to compact the file, no
  * matter how many times we rewrite the block, the named checkpoint can't be
@@ -97,23 +97,23 @@
  */
 
 /*
- * __wt_compact_uri_analyze --
+ * __ae_compact_uri_analyze --
  *	Extract information relevant to deciding what work compact needs to
  *	do from a URI that is part of a table schema.
  *	Called via the schema_worker function.
  */
 int
-__wt_compact_uri_analyze(WT_SESSION_IMPL *session, const char *uri, bool *skipp)
+__ae_compact_uri_analyze(AE_SESSION_IMPL *session, const char *uri, bool *skipp)
 {
 	/*
 	 * Add references to schema URI objects to the list of objects to be
 	 * compacted.  Skip over LSM trees or we will get false positives on
 	 * the "file:" URIs for the chunks.
 	 */
-	if (WT_PREFIX_MATCH(uri, "lsm:")) {
+	if (AE_PREFIX_MATCH(uri, "lsm:")) {
 		session->compact->lsm_count++;
 		*skipp = true;
-	} else if (WT_PREFIX_MATCH(uri, "file:"))
+	} else if (AE_PREFIX_MATCH(uri, "file:"))
 		session->compact->file_count++;
 
 	return (0);
@@ -125,16 +125,16 @@ __wt_compact_uri_analyze(WT_SESSION_IMPL *session, const char *uri, bool *skipp)
  */
 static int
 __session_compact_check_timeout(
-    WT_SESSION_IMPL *session, struct timespec begin)
+    AE_SESSION_IMPL *session, struct timespec begin)
 {
 	struct timespec end;
 
 	if (session->compact->max_time == 0)
 		return (0);
 
-	WT_RET(__wt_epoch(session, &end));
-	if (session->compact->max_time < WT_TIMEDIFF_SEC(end, begin))
-		WT_RET(ETIMEDOUT);
+	AE_RET(__ae_epoch(session, &end));
+	if (session->compact->max_time < AE_TIMEDIFF_SEC(end, begin))
+		AE_RET(ETIMEDOUT);
 	return (0);
 }
 
@@ -143,24 +143,24 @@ __session_compact_check_timeout(
  *	Function to alternate between checkpoints and compaction calls.
  */
 static int
-__compact_file(WT_SESSION_IMPL *session, const char *uri, const char *cfg[])
+__compact_file(AE_SESSION_IMPL *session, const char *uri, const char *cfg[])
 {
 	struct timespec start_time;
-	WT_DECL_ITEM(t);
-	WT_DECL_RET;
+	AE_DECL_ITEM(t);
+	AE_DECL_RET;
 	int i;
 	const char *checkpoint_cfg[] = {
-	    WT_CONFIG_BASE(session, WT_SESSION_checkpoint), NULL, NULL };
+	    AE_CONFIG_BASE(session, AE_SESSION_checkpoint), NULL, NULL };
 
 	/*
 	 * Force the checkpoint: we don't want to skip it because the work we
 	 * need to have done is done in the underlying block manager.
 	 */
-	WT_ERR(__wt_scr_alloc(session, 128, &t));
-	WT_ERR(__wt_buf_fmt(session, t, "target=(\"%s\"),force=1", uri));
+	AE_ERR(__ae_scr_alloc(session, 128, &t));
+	AE_ERR(__ae_buf_fmt(session, t, "target=(\"%s\"),force=1", uri));
 	checkpoint_cfg[1] = t->data;
 
-	WT_ERR(__wt_epoch(session, &start_time));
+	AE_ERR(__ae_epoch(session, &start_time));
 
 	/*
 	 * We compact 10% of the file on each pass (but the overall size of the
@@ -170,69 +170,69 @@ __compact_file(WT_SESSION_IMPL *session, const char *uri, const char *cfg[])
 	 * time through the loop.
 	 */
 	for (i = 0; i < 100; ++i) {
-		WT_ERR(__wt_txn_checkpoint(session, checkpoint_cfg));
+		AE_ERR(__ae_txn_checkpoint(session, checkpoint_cfg));
 
 		session->compaction = false;
-		WT_WITH_SCHEMA_LOCK(session,
-		    ret = __wt_schema_worker(
-		    session, uri, __wt_compact, NULL, cfg, 0));
-		WT_ERR(ret);
+		AE_WITH_SCHEMA_LOCK(session,
+		    ret = __ae_schema_worker(
+		    session, uri, __ae_compact, NULL, cfg, 0));
+		AE_ERR(ret);
 		if (!session->compaction)
 			break;
 
-		WT_ERR(__wt_txn_checkpoint(session, checkpoint_cfg));
-		WT_ERR(__wt_txn_checkpoint(session, checkpoint_cfg));
-		WT_ERR(__session_compact_check_timeout(session, start_time));
+		AE_ERR(__ae_txn_checkpoint(session, checkpoint_cfg));
+		AE_ERR(__ae_txn_checkpoint(session, checkpoint_cfg));
+		AE_ERR(__session_compact_check_timeout(session, start_time));
 	}
 
-err:	__wt_scr_free(session, &t);
+err:	__ae_scr_free(session, &t);
 	return (ret);
 }
 
 /*
- * __wt_session_compact --
+ * __ae_session_compact --
  */
 int
-__wt_session_compact(
-    WT_SESSION *wt_session, const char *uri, const char *config)
+__ae_session_compact(
+    AE_SESSION *ae_session, const char *uri, const char *config)
 {
-	WT_COMPACT compact;
-	WT_CONFIG_ITEM cval;
-	WT_DECL_RET;
-	WT_SESSION_IMPL *session;
-	WT_TXN *txn;
+	AE_COMPACT compact;
+	AE_CONFIG_ITEM cval;
+	AE_DECL_RET;
+	AE_SESSION_IMPL *session;
+	AE_TXN *txn;
 
-	session = (WT_SESSION_IMPL *)wt_session;
+	session = (AE_SESSION_IMPL *)ae_session;
 	SESSION_API_CALL(session, compact, config, cfg);
 
-	if (F_ISSET(S2C(session), WT_CONN_IN_MEMORY))
-		WT_ERR(ENOTSUP);
+	if (F_ISSET(S2C(session), AE_CONN_IN_MEMORY))
+		AE_ERR(ENOTSUP);
 
-	/* Disallow objects in the WiredTiger name space. */
-	WT_ERR(__wt_str_name_check(session, uri));
+	/* Disallow objects in the ArchEngine name space. */
+	AE_ERR(__ae_str_name_check(session, uri));
 
-	if (!WT_PREFIX_MATCH(uri, "colgroup:") &&
-	    !WT_PREFIX_MATCH(uri, "file:") &&
-	    !WT_PREFIX_MATCH(uri, "index:") &&
-	    !WT_PREFIX_MATCH(uri, "lsm:") &&
-	    !WT_PREFIX_MATCH(uri, "table:"))
-		WT_ERR(__wt_bad_object_type(session, uri));
+	if (!AE_PREFIX_MATCH(uri, "colgroup:") &&
+	    !AE_PREFIX_MATCH(uri, "file:") &&
+	    !AE_PREFIX_MATCH(uri, "index:") &&
+	    !AE_PREFIX_MATCH(uri, "lsm:") &&
+	    !AE_PREFIX_MATCH(uri, "table:"))
+		AE_ERR(__ae_bad_object_type(session, uri));
 
 	/* Setup the structure in the session handle */
-	memset(&compact, 0, sizeof(WT_COMPACT));
+	memset(&compact, 0, sizeof(AE_COMPACT));
 	session->compact = &compact;
 
-	WT_ERR(__wt_config_gets(session, cfg, "timeout", &cval));
+	AE_ERR(__ae_config_gets(session, cfg, "timeout", &cval));
 	session->compact->max_time = (uint64_t)cval.val;
 
 	/* Find the types of data sources are being compacted. */
-	WT_WITH_SCHEMA_LOCK(session, ret = __wt_schema_worker(
-	    session, uri, NULL, __wt_compact_uri_analyze, cfg, 0));
-	WT_ERR(ret);
+	AE_WITH_SCHEMA_LOCK(session, ret = __ae_schema_worker(
+	    session, uri, NULL, __ae_compact_uri_analyze, cfg, 0));
+	AE_ERR(ret);
 
 	if (session->compact->lsm_count != 0)
-		WT_ERR(__wt_schema_worker(
-		    session, uri, NULL, __wt_lsm_compact, cfg, 0));
+		AE_ERR(__ae_schema_worker(
+		    session, uri, NULL, __ae_lsm_compact, cfg, 0));
 	if (session->compact->file_count != 0) {
 		/*
 		 * File compaction requires checkpoints, which will fail in a
@@ -240,11 +240,11 @@ __wt_session_compact(
 		 * confusing.
 		 */
 		txn = &session->txn;
-		if (F_ISSET(txn, WT_TXN_RUNNING))
-			WT_ERR_MSG(session, EINVAL,
+		if (F_ISSET(txn, AE_TXN_RUNNING))
+			AE_ERR_MSG(session, EINVAL,
 			    " File compaction not permitted in a transaction");
 
-		WT_ERR(__compact_file(session, uri, cfg));
+		AE_ERR(__compact_file(session, uri, cfg));
 	}
 
 err:	session->compact = NULL;
@@ -253,7 +253,7 @@ err:	session->compact = NULL;
 	 * Release common session resources (for example, checkpoint may acquire
 	 * significant reconciliation structures/memory).
 	 */
-	WT_TRET(__wt_session_release_resources(session));
+	AE_TRET(__ae_session_release_resources(session));
 
 	API_END_RET_NOTFOUND_MAP(session, ret);
 }

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Public Domain 2014-2015 MongoDB, Inc.
-# Public Domain 2008-2014 WiredTiger, Inc.
+# Public Domain 2008-2014 ArchEngine, Inc.
 #
 # This is free and unencumbered software released into the public domain.
 #
@@ -26,14 +26,14 @@
 # ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 # OTHER DEALINGS IN THE SOFTWARE.
 
-import wiredtiger, wttest
+import archengine, aetest
 from helper import complex_populate, simple_populate
 from helper import key_populate, value_populate
-from wtscenario import check_scenarios
+from aescenario import check_scenarios
 
 # test_cursor_random.py
 #    Cursor next_random operations
-class test_cursor_random(wttest.WiredTigerTestCase):
+class test_cursor_random(aetest.ArchEngineTestCase):
     scenarios = check_scenarios([
         ('file', dict(type='file:',fmt='S')),
         ('table', dict(type='table:',fmt='S'))
@@ -46,17 +46,17 @@ class test_cursor_random(wttest.WiredTigerTestCase):
         self.session.create(uri, 'key_format=' + self.fmt + ',value_format=S')
         cursor = self.session.open_cursor(uri, None, "next_random=true")
         self.assertRaises(
-            wiredtiger.WiredTigerError, lambda: cursor.compare(cursor))
-        self.assertRaises(wiredtiger.WiredTigerError, lambda: cursor.prev())
-        self.assertRaises(wiredtiger.WiredTigerError, lambda: cursor.search())
+            archengine.ArchEngineError, lambda: cursor.compare(cursor))
+        self.assertRaises(archengine.ArchEngineError, lambda: cursor.prev())
+        self.assertRaises(archengine.ArchEngineError, lambda: cursor.search())
         self.assertRaises(
-            wiredtiger.WiredTigerError, lambda: cursor.search_near())
-        self.assertRaises(wiredtiger.WiredTigerError, lambda: cursor.insert())
-        self.assertRaises(wiredtiger.WiredTigerError, lambda: cursor.update())
-        self.assertRaises(wiredtiger.WiredTigerError, lambda: cursor.remove())
+            archengine.ArchEngineError, lambda: cursor.search_near())
+        self.assertRaises(archengine.ArchEngineError, lambda: cursor.insert())
+        self.assertRaises(archengine.ArchEngineError, lambda: cursor.update())
+        self.assertRaises(archengine.ArchEngineError, lambda: cursor.remove())
 
         cursor.reset()
-        self.assertTrue(cursor.next(), wiredtiger.WT_NOTFOUND)
+        self.assertTrue(cursor.next(), archengine.AE_NOTFOUND)
         cursor.close()
 
     # Check that next_random works with a single value, repeatedly.
@@ -126,7 +126,7 @@ class test_cursor_random(wttest.WiredTigerTestCase):
         self.cursor_random_multiple_page_records(0)
 
 # Check that opening a random cursor on column-store returns not-supported.
-class test_cursor_random_column(wttest.WiredTigerTestCase):
+class test_cursor_random_column(aetest.ArchEngineTestCase):
     scenarios = check_scenarios([
         ('file', dict(uri='file:random',fmt='r')),
         ('table', dict(uri='table:random',fmt='r')),
@@ -136,13 +136,13 @@ class test_cursor_random_column(wttest.WiredTigerTestCase):
         self.session.create(
             self.uri, 'key_format=' + self.fmt + ',value_format=S')
         cursor = self.session.open_cursor(self.uri, None, "next_random=true")
-        self.assertRaises(wiredtiger.WiredTigerError, lambda: cursor.next())
+        self.assertRaises(archengine.ArchEngineError, lambda: cursor.next())
         cursor.close()
 
 
 # Check next_random works in the presence a set of updates, some or all of
 # which are invisible to the cursor.
-class test_cursor_random_invisible(wttest.WiredTigerTestCase):
+class test_cursor_random_invisible(aetest.ArchEngineTestCase):
     def test_cursor_random_invisible_all(self):
         uri = 'file:random'
         self.session.create(uri, 'key_format=S,value_format=S')
@@ -157,7 +157,7 @@ class test_cursor_random_invisible(wttest.WiredTigerTestCase):
         # find anything at all.
         s = self.conn.open_session()
         cursor = s.open_cursor(uri, None, "next_random=true")
-        self.assertEqual(cursor.next(), wiredtiger.WT_NOTFOUND)
+        self.assertEqual(cursor.next(), archengine.AE_NOTFOUND)
 
     def test_cursor_random_invisible_after(self):
         uri = 'file:random'
@@ -201,4 +201,4 @@ class test_cursor_random_invisible(wttest.WiredTigerTestCase):
 
 
 if __name__ == '__main__':
-    wttest.run()
+    aetest.run()

@@ -1,6 +1,6 @@
 /*-
  * Public Domain 2014-2015 MongoDB, Inc.
- * Public Domain 2008-2014 WiredTiger, Inc.
+ * Public Domain 2008-2014 ArchEngine, Inc.
  *
  * This is free and unencumbered software released into the public domain.
  *
@@ -40,10 +40,10 @@
 
 #include "test_util.i"
 
-#define	FNAME		"file:wt.%03d"		/* File name */
+#define	FNAME		"file:ae.%03d"		/* File name */
 #define	FNAME_STAT	"__stats"		/* File name for statistics */
 
-extern WT_CONNECTION *conn;			/* WiredTiger connection */
+extern AE_CONNECTION *conn;			/* ArchEngine connection */
 
 typedef enum { FIX, ROW, VAR } __ftype;		/* File type */
 extern __ftype ftype;

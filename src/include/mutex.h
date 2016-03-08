@@ -1,6 +1,6 @@
 /*-
  * Copyright (c) 2014-2015 MongoDB, Inc.
- * Copyright (c) 2008-2014 WiredTiger, Inc.
+ * Copyright (c) 2008-2014 ArchEngine, Inc.
  *	All rights reserved.
  *
  * See the file LICENSE for redistribution information.
@@ -9,14 +9,14 @@
 /*
  * Condition variables:
  *
- * WiredTiger uses condition variables to signal between threads, and for
+ * ArchEngine uses condition variables to signal between threads, and for
  * locking operations that are expected to block.
  */
-struct __wt_condvar {
+struct __ae_condvar {
 	const char *name;		/* Mutex name for debugging */
 
-	wt_mutex_t mtx;			/* Mutex */
-	wt_cond_t  cond;		/* Condition variable */
+	ae_mutex_t mtx;			/* Mutex */
+	ae_cond_t  cond;		/* Condition variable */
 
 	int waiters;			/* Numbers of waiters, or
 					   -1 if signalled with no waiters. */
@@ -38,17 +38,17 @@ typedef union {				/* Read/write lock */
 		uint16_t users;		/* Next available ticket number */
 		uint16_t __notused;	/* Padding */
 	} s;
-} wt_rwlock_t;
+} ae_rwlock_t;
 
 /*
  * Read/write locks:
  *
- * WiredTiger uses read/write locks for shared/exclusive access to resources.
+ * ArchEngine uses read/write locks for shared/exclusive access to resources.
  */
-struct __wt_rwlock {
+struct __ae_rwlock {
 	const char *name;		/* Lock name for debugging */
 
-	wt_rwlock_t rwlock;		/* Read/write lock */
+	ae_rwlock_t rwlock;		/* Read/write lock */
 };
 
 /*
@@ -57,7 +57,7 @@ struct __wt_rwlock {
  * The fields are available as a union to allow for atomically setting
  * the state of the entire lock.
  */
-struct __wt_fair_lock {
+struct __ae_fair_lock {
 	union {
 		uint32_t lock;
 		struct {
@@ -72,7 +72,7 @@ struct __wt_fair_lock {
 /*
  * Spin locks:
  *
- * WiredTiger uses spinlocks for fast mutual exclusion (where operations done
+ * ArchEngine uses spinlocks for fast mutual exclusion (where operations done
  * while holding the spin lock are expected to complete in a small number of
  * instructions).
  */
@@ -83,7 +83,7 @@ struct __wt_fair_lock {
 
 #if SPINLOCK_TYPE == SPINLOCK_GCC
 
-struct WT_COMPILER_TYPE_ALIGN(WT_CACHE_LINE_ALIGNMENT) __wt_spinlock {
+struct AE_COMPILER_TYPE_ALIGN(AE_CACHE_LINE_ALIGNMENT) __ae_spinlock {
 	volatile int lock;
 };
 
@@ -91,8 +91,8 @@ struct WT_COMPILER_TYPE_ALIGN(WT_CACHE_LINE_ALIGNMENT) __wt_spinlock {
 	SPINLOCK_TYPE == SPINLOCK_PTHREAD_MUTEX_ADAPTIVE ||\
 	SPINLOCK_TYPE == SPINLOCK_MSVC
 
-struct WT_COMPILER_TYPE_ALIGN(WT_CACHE_LINE_ALIGNMENT) __wt_spinlock {
-	wt_mutex_t lock;
+struct AE_COMPILER_TYPE_ALIGN(AE_CACHE_LINE_ALIGNMENT) __ae_spinlock {
+	ae_mutex_t lock;
 
 	const char *name;		/* Statistics: mutex name */
 

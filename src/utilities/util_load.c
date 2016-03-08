@@ -1,6 +1,6 @@
 /*-
  * Copyright (c) 2014-2015 MongoDB, Inc.
- * Copyright (c) 2008-2014 WiredTiger, Inc.
+ * Copyright (c) 2008-2014 ArchEngine, Inc.
  *	All rights reserved.
  *
  * See the file LICENSE for redistribution information.
@@ -9,11 +9,11 @@
 #include "util.h"
 #include "util_load.h"
 
-static int config_read(WT_SESSION *, char ***, bool *);
-static int config_rename(WT_SESSION *, char **, const char *);
-static int format(WT_SESSION *);
-static int insert(WT_CURSOR *, const char *);
-static int load_dump(WT_SESSION *);
+static int config_read(AE_SESSION *, char ***, bool *);
+static int config_rename(AE_SESSION *, char **, const char *);
+static int format(AE_SESSION *);
+static int insert(AE_CURSOR *, const char *);
+static int load_dump(AE_SESSION *);
 static int usage(void);
 
 static bool   append = false;		/* -a append (ignore number keys) */
@@ -23,7 +23,7 @@ static bool   json = false;		/* -j input is JSON format */
 static bool   no_overwrite = false;	/* -n don't overwrite existing data */
 
 int
-util_load(WT_SESSION *session, int argc, char *argv[])
+util_load(AE_SESSION *session, int argc, char *argv[])
 {
 	uint32_t flags;
 	int ch;
@@ -32,18 +32,18 @@ util_load(WT_SESSION *session, int argc, char *argv[])
 	flags = 0;
 
 	filename = "<stdin>";
-	while ((ch = __wt_getopt(progname, argc, argv, "af:jnr:")) != EOF)
+	while ((ch = __ae_getopt(progname, argc, argv, "af:jnr:")) != EOF)
 		switch (ch) {
 		case 'a':	/* append (ignore record number keys) */
 			append = true;
 			break;
 		case 'f':	/* input file */
-			if (freopen(__wt_optarg, "r", stdin) == NULL)
+			if (freopen(__ae_optarg, "r", stdin) == NULL)
 				return (
 				    util_err(session,
-					errno, "%s: reopen", __wt_optarg));
+					errno, "%s: reopen", __ae_optarg));
 			else
-				filename = __wt_optarg;
+				filename = __ae_optarg;
 			break;
 		case 'j':	/* input is JSON */
 			json = true;
@@ -52,14 +52,14 @@ util_load(WT_SESSION *session, int argc, char *argv[])
 			no_overwrite = true;
 			break;
 		case 'r':	/* rename */
-			cmdname = __wt_optarg;
+			cmdname = __ae_optarg;
 			break;
 		case '?':
 		default:
 			return (usage());
 		}
-	argc -= __wt_optind;
-	argv += __wt_optind;
+	argc -= __ae_optind;
+	argv += __ae_optind;
 
 	/* -a and -o are mutually exclusive. */
 	if (append && no_overwrite)
@@ -86,13 +86,13 @@ util_load(WT_SESSION *session, int argc, char *argv[])
 
 /*
  * load_dump --
- *	Load from the WiredTiger dump format.
+ *	Load from the ArchEngine dump format.
  */
 static int
-load_dump(WT_SESSION *session)
+load_dump(AE_SESSION *session)
 {
-	WT_CURSOR *cursor;
-	WT_DECL_RET;
+	AE_CURSOR *cursor;
+	AE_DECL_RET;
 	int tret;
 	bool hex;
 	char **list, **tlist, *uri, config[64];
@@ -168,9 +168,9 @@ err:	/*
  *	Create the tables/indices/colgroups implied by the list.
  */
 int
-config_exec(WT_SESSION *session, char **list)
+config_exec(AE_SESSION *session, char **list)
 {
-	WT_DECL_RET;
+	AE_DECL_RET;
 
 	for (; *list != NULL; list += 2)
 		if ((ret = session->create(session, list[0], list[1])) != 0)
@@ -184,7 +184,7 @@ config_exec(WT_SESSION *session, char **list)
  *	Add a value to the config list.
  */
 int
-config_list_add(WT_SESSION *session, CONFIG_LIST *clp, char *val)
+config_list_add(AE_SESSION *session, CONFIG_LIST *clp, char *val)
 {
 	if (clp->entry + 1 >= clp->max_entry)
 		if ((clp->list = realloc(clp->list, (size_t)
@@ -218,10 +218,10 @@ config_list_free(CONFIG_LIST *clp)
  *	Read the config lines and do some basic validation.
  */
 static int
-config_read(WT_SESSION *session, char ***listp, bool *hexp)
+config_read(AE_SESSION *session, char ***listp, bool *hexp)
 {
 	ULINE l;
-	WT_DECL_RET;
+	AE_DECL_RET;
 	int entry, max_entry;
 	bool eof;
 	const char *s;
@@ -230,10 +230,10 @@ config_read(WT_SESSION *session, char ***listp, bool *hexp)
 	list = NULL;
 	memset(&l, 0, sizeof(l));
 
-	/* Header line #1: "WiredTiger Dump" and a WiredTiger version. */
+	/* Header line #1: "ArchEngine Dump" and a ArchEngine version. */
 	if (util_read_line(session, &l, false, &eof))
 		return (1);
-	s = "WiredTiger Dump ";
+	s = "ArchEngine Dump ";
 	if (strncmp(l.mem, s, strlen(s)) != 0)
 		return (format(session));
 
@@ -307,7 +307,7 @@ err:	if (list != NULL) {
  *	For other dumps, make any needed checks.
  */
 int
-config_reorder(WT_SESSION *session, char **list)
+config_reorder(AE_SESSION *session, char **list)
 {
 	char **entry, *p;
 
@@ -316,7 +316,7 @@ config_reorder(WT_SESSION *session, char **list)
 	 * otherwise, it's a single file dump.
 	 */
 	for (entry = list; *entry != NULL; ++entry)
-		if (WT_PREFIX_MATCH(*entry, "table:"))
+		if (AE_PREFIX_MATCH(*entry, "table:"))
 			break;
 	if (*entry == NULL) {
 		/*
@@ -324,8 +324,8 @@ config_reorder(WT_SESSION *session, char **list)
 		 * the configuration information.
 		 */
 		if ((list[0] == NULL || list[1] == NULL || list[2] != NULL) ||
-		    (WT_PREFIX_MATCH(list[0], "file:") &&
-		    WT_PREFIX_MATCH(list[0], "lsm:")))
+		    (AE_PREFIX_MATCH(list[0], "file:") &&
+		    AE_PREFIX_MATCH(list[0], "lsm:")))
 			return (format(session));
 
 		entry = list;
@@ -349,9 +349,9 @@ config_reorder(WT_SESSION *session, char **list)
  *	config we found.
  */
 int
-config_update(WT_SESSION *session, char **list)
+config_update(AE_SESSION *session, char **list)
 {
-	WT_DECL_RET;
+	AE_DECL_RET;
 	size_t cnt;
 	int found;
 	const char *p, **cfg;
@@ -363,10 +363,10 @@ config_update(WT_SESSION *session, char **list)
 	 */
 	if (cmdname != NULL) {
 		for (listp = list; *listp != NULL; listp += 2)
-			if (WT_PREFIX_MATCH(*listp, "colgroup:") ||
-			    WT_PREFIX_MATCH(*listp, "file:") ||
-			    WT_PREFIX_MATCH(*listp, "index:") ||
-			    WT_PREFIX_MATCH(*listp, "table:"))
+			if (AE_PREFIX_MATCH(*listp, "colgroup:") ||
+			    AE_PREFIX_MATCH(*listp, "file:") ||
+			    AE_PREFIX_MATCH(*listp, "index:") ||
+			    AE_PREFIX_MATCH(*listp, "table:"))
 				if (config_rename(session, listp, cmdname))
 					return (1);
 
@@ -448,7 +448,7 @@ config_update(WT_SESSION *session, char **list)
 				cfg[cnt++] = configp[1];
 		cfg[cnt++] = NULL;
 
-		if ((ret = __wt_config_merge((WT_SESSION_IMPL *)session,
+		if ((ret = __ae_config_merge((AE_SESSION_IMPL *)session,
 		    cfg,
 		    "filename=,id=,"
 		    "checkpoint=,checkpoint_lsn=,version=,source=,",
@@ -467,7 +467,7 @@ config_update(WT_SESSION *session, char **list)
  *	Update the URI name.
  */
 static int
-config_rename(WT_SESSION *session, char **urip, const char *name)
+config_rename(AE_SESSION *session, char **urip, const char *name)
 {
 	size_t len;
 	char *buf, *p;
@@ -498,10 +498,10 @@ config_rename(WT_SESSION *session, char **urip, const char *name)
  *	The input doesn't match the dump format.
  */
 static int
-format(WT_SESSION *session)
+format(AE_SESSION *session)
 {
 	return (util_err(
-	    session, 0, "input does not match WiredTiger dump format"));
+	    session, 0, "input does not match ArchEngine dump format"));
 }
 
 /*
@@ -509,11 +509,11 @@ format(WT_SESSION *session)
  *	Read and insert data.
  */
 static int
-insert(WT_CURSOR *cursor, const char *name)
+insert(AE_CURSOR *cursor, const char *name)
 {
 	ULINE key, value;
-	WT_DECL_RET;
-	WT_SESSION *session;
+	AE_DECL_RET;
+	AE_SESSION *session;
 	uint64_t insert_count;
 	bool eof;
 

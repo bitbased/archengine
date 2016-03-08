@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Public Domain 2014-2015 MongoDB, Inc.
-# Public Domain 2008-2014 WiredTiger, Inc.
+# Public Domain 2008-2014 ArchEngine, Inc.
 #
 # This is free and unencumbered software released into the public domain.
 #
@@ -28,12 +28,12 @@
 
 import os
 from suite_subprocess import suite_subprocess
-from wtscenario import multiply_scenarios, number_scenarios
-import wiredtiger, wttest
+from aescenario import multiply_scenarios, number_scenarios
+import archengine, aetest
 
 # test_huffman02.py
 #    Huffman key and value configurations test.
-class test_huffman02(wttest.WiredTigerTestCase, suite_subprocess):
+class test_huffman02(aetest.ArchEngineTestCase, suite_subprocess):
     huffkey = [
         ('bad', dict(keybad=1,huffkey=',huffman_key=bad')),
         ('english', dict(keybad=0,huffkey=',huffman_key=english')),
@@ -53,10 +53,10 @@ class test_huffman02(wttest.WiredTigerTestCase, suite_subprocess):
     def test_huffman(self):
         if self.keybad or self.valbad:
             msg = '/Invalid argument/'
-            self.assertRaisesWithMessage(wiredtiger.WiredTigerError, lambda:
+            self.assertRaisesWithMessage(archengine.ArchEngineError, lambda:
                 self.session.create(self.uri, self.huffkey + self.huffval), msg)
         else:
             self.session.create(self.uri, self.huffkey + self.huffval)
 
 if __name__ == '__main__':
-    wttest.run()
+    aetest.run()

@@ -1,6 +1,6 @@
 /*-
  * Public Domain 2014-2015 MongoDB, Inc.
- * Public Domain 2008-2014 WiredTiger, Inc.
+ * Public Domain 2008-2014 ArchEngine, Inc.
  *
  * This is free and unencumbered software released into the public domain.
  *
@@ -35,12 +35,12 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <wiredtiger.h>
+#include <archengine.h>
 
 static const char *home;
 
 /*! [schema declaration] */
-/* The C struct for the data we are storing in a WiredTiger table. */
+/* The C struct for the data we are storing in a ArchEngine table. */
 typedef struct {
 	char country[5];
 	uint16_t year;
@@ -68,9 +68,9 @@ int
 main(void)
 {
 	POP_RECORD *p;
-	WT_CONNECTION *conn;
-	WT_CURSOR *cursor, *cursor2, *join_cursor;
-	WT_SESSION *session;
+	AE_CONNECTION *conn;
+	AE_CURSOR *cursor, *cursor2, *join_cursor;
+	AE_SESSION *session;
 	const char *country;
 	uint64_t recno, population;
 	uint16_t year;
@@ -80,15 +80,15 @@ main(void)
 	 * Create a clean test directory for this run of the test program if the
 	 * environment variable isn't already set (as is done by make check).
 	 */
-	if (getenv("WIREDTIGER_HOME") == NULL) {
-		home = "WT_HOME";
-		ret = system("rm -rf WT_HOME && mkdir WT_HOME");
+	if (getenv("ARCHENGINE_HOME") == NULL) {
+		home = "AE_HOME";
+		ret = system("rm -rf AE_HOME && mkdir AE_HOME");
 	} else
 		home = NULL;
 
-	if ((ret = wiredtiger_open(home, NULL, "create", &conn)) != 0) {
+	if ((ret = archengine_open(home, NULL, "create", &conn)) != 0) {
 		fprintf(stderr, "Error connecting to %s: %s\n",
-		    home, wiredtiger_strerror(ret));
+		    home, archengine_strerror(ret));
 		return (ret);
 	}
 	/* Note: error checking omitted for clarity. */
@@ -100,7 +100,7 @@ main(void)
 	 * Create the population table.
 	 * Keys are record numbers, the format for values is (5-byte string,
 	 * uint16_t, uint64_t).
-	 * See ::wiredtiger_struct_pack for details of the format strings.
+	 * See ::archengine_struct_pack for details of the format strings.
 	 */
 	ret = session->create(session, "table:poptable",
 	    "key_format=r,"
@@ -174,15 +174,15 @@ main(void)
 	ret = session->open_cursor(session,
 	    "table:poptable", NULL, "raw", &cursor);
 	while ((ret = cursor->next(cursor)) == 0) {
-		WT_ITEM key, value;
+		AE_ITEM key, value;
 
 		ret = cursor->get_key(cursor, &key);
-		ret = wiredtiger_struct_unpack(session,
+		ret = archengine_struct_unpack(session,
 		    key.data, key.size, "r", &recno);
 		printf("ID %" PRIu64, recno);
 
 		ret = cursor->get_value(cursor, &value);
-		ret = wiredtiger_struct_unpack(session,
+		ret = archengine_struct_unpack(session,
 		    value.data, value.size,
 		    "5sHQ", &country, &year, &population);
 		printf(": country %s, year %u, population %" PRIu64 "\n",
@@ -268,10 +268,10 @@ main(void)
 	ret = session->open_cursor(session,
 	    "table:poptable(country,year)", NULL, "raw", &cursor);
 	while ((ret = cursor->next(cursor)) == 0) {
-		WT_ITEM value;
+		AE_ITEM value;
 
 		ret = cursor->get_value(cursor, &value);
-		ret = wiredtiger_struct_unpack(
+		ret = archengine_struct_unpack(
 		    session, value.data, value.size, "5sH", &country, &year);
 		printf("country %s, year %u\n", country, year);
 	}

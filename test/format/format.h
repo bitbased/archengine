@@ -1,6 +1,6 @@
 /*-
  * Public Domain 2014-2015 MongoDB, Inc.
- * Public Domain 2008-2014 WiredTiger, Inc.
+ * Public Domain 2008-2014 ArchEngine, Inc.
  *
  * This is free and unencumbered software released into the public domain.
  *
@@ -57,32 +57,32 @@
 #endif
 
 #if defined(__GNUC__)
-#define	WT_GCC_ATTRIBUTE(x)	__attribute__(x)
+#define	AE_GCC_ATTRIBUTE(x)	__attribute__(x)
 #else
-#define	WT_GCC_ATTRIBUTE(x)
+#define	AE_GCC_ATTRIBUTE(x)
 #endif
 
 #define	EXTPATH	"../../ext/"			/* Extensions path */
 
 #define	BZIP_PATH							\
-	EXTPATH "compressors/bzip2/.libs/libwiredtiger_bzip2.so"
+	EXTPATH "compressors/bzip2/.libs/libarchengine_bzip2.so"
 #define	LZ4_PATH							\
-	EXTPATH "compressors/lz4/.libs/libwiredtiger_lz4.so"
+	EXTPATH "compressors/lz4/.libs/libarchengine_lz4.so"
 #define	SNAPPY_PATH							\
-	EXTPATH "compressors/snappy/.libs/libwiredtiger_snappy.so"
+	EXTPATH "compressors/snappy/.libs/libarchengine_snappy.so"
 #define	ZLIB_PATH							\
-	EXTPATH "compressors/zlib/.libs/libwiredtiger_zlib.so"
+	EXTPATH "compressors/zlib/.libs/libarchengine_zlib.so"
 
 #define	REVERSE_PATH							\
-	EXTPATH "collators/reverse/.libs/libwiredtiger_reverse_collator.so"
+	EXTPATH "collators/reverse/.libs/libarchengine_reverse_collator.so"
 
 #define	ROTN_PATH							\
-	EXTPATH "encryptors/rotn/.libs/libwiredtiger_rotn.so"
+	EXTPATH "encryptors/rotn/.libs/libarchengine_rotn.so"
 
 #define	KVS_BDB_PATH							\
-	EXTPATH "test/kvs_bdb/.libs/libwiredtiger_kvs_bdb.so"
+	EXTPATH "test/kvs_bdb/.libs/libarchengine_kvs_bdb.so"
 #define	HELIUM_PATH							\
-	EXTPATH "datasources/helium/.libs/libwiredtiger_helium.so"
+	EXTPATH "datasources/helium/.libs/libarchengine_helium.so"
 
 #define	LZO_PATH	".libs/lzo_compress.so"
 
@@ -93,7 +93,7 @@
 #undef	MEGABYTE
 #define	MEGABYTE(v)	((v) * 1048576)
 
-#define	WT_NAME	"wt"				/* Object name */
+#define	AE_NAME	"ae"				/* Object name */
 
 #define	DATASOURCE(v)	(strcmp(v, g.c_data_source) == 0 ? 1 : 0)
 #define	SINGLETHREADED	(g.c_threads == 1)
@@ -127,8 +127,8 @@ typedef struct {
 	void *dbc;				/* BDB cursor handle */
 #endif
 
-	WT_CONNECTION	 *wts_conn;
-	WT_EXTENSION_API *wt_api;
+	AE_CONNECTION	 *aes_conn;
+	AE_EXTENSION_API *ae_api;
 
 	int   rand_log_stop;			/* Logging turned off */
 	FILE *randfp;				/* Random number log */
@@ -147,7 +147,7 @@ typedef struct {
 
 	pthread_rwlock_t backup_lock;		/* Hot backup running */
 
-	WT_RAND_STATE rnd;			/* Global RNG state */
+	AE_RAND_STATE rnd;			/* Global RNG state */
 
 	/*
 	 * We have a list of records that are appended, but not yet "resolved",
@@ -266,7 +266,7 @@ typedef struct {
 extern GLOBAL g;
 
 typedef struct {
-	WT_RAND_STATE rnd;			/* thread RNG state */
+	AE_RAND_STATE rnd;			/* thread RNG state */
 
 	uint64_t search;			/* operations */
 	uint64_t insert;
@@ -287,7 +287,7 @@ typedef struct {
 #define	TINFO_COMPLETE	2			/* Finished */
 #define	TINFO_JOINED	3			/* Resolved */
 	volatile int state;			/* state */
-} TINFO WT_GCC_ATTRIBUTE((aligned(WT_CACHE_LINE_ALIGNMENT)));
+} TINFO AE_GCC_ATTRIBUTE((aligned(AE_CACHE_LINE_ALIGNMENT)));
 
 #ifdef HAVE_BERKELEY_DB
 void	 bdb_close(void);
@@ -310,26 +310,26 @@ void	 config_single(const char *, int);
 void	*dmalloc(size_t);
 void	 fclose_and_clear(FILE **);
 void	 key_gen(uint8_t *, size_t *, uint64_t);
-void	 key_gen_insert(WT_RAND_STATE *, uint8_t *, size_t *, uint64_t);
+void	 key_gen_insert(AE_RAND_STATE *, uint8_t *, size_t *, uint64_t);
 void	 key_gen_setup(uint8_t **);
 void	 key_len_setup(void);
 void	*lrt(void *);
 void	 path_setup(const char *);
-int	 read_row(WT_CURSOR *, WT_ITEM *, uint64_t, int);
-uint32_t rng(WT_RAND_STATE *);
+int	 read_row(AE_CURSOR *, AE_ITEM *, uint64_t, int);
+uint32_t rng(AE_RAND_STATE *);
 void	 track(const char *, uint64_t, TINFO *);
-void	 val_gen(WT_RAND_STATE *, uint8_t *, size_t *, uint64_t);
-void	 val_gen_setup(WT_RAND_STATE *, uint8_t **);
-void	 wts_close(void);
-void	 wts_create(void);
-void	 wts_dump(const char *, int);
-void	 wts_load(void);
-void	 wts_open(const char *, int, WT_CONNECTION **);
-void	 wts_ops(int);
-void	 wts_read_scan(void);
-void	 wts_salvage(void);
-void	 wts_stats(void);
-void	 wts_verify(const char *);
+void	 val_gen(AE_RAND_STATE *, uint8_t *, size_t *, uint64_t);
+void	 val_gen_setup(AE_RAND_STATE *, uint8_t **);
+void	 aes_close(void);
+void	 aes_create(void);
+void	 aes_dump(const char *, int);
+void	 aes_load(void);
+void	 aes_open(const char *, int, AE_CONNECTION **);
+void	 aes_ops(int);
+void	 aes_read_scan(void);
+void	 aes_salvage(void);
+void	 aes_stats(void);
+void	 aes_verify(const char *);
 
 void	 die(int, const char *, ...)
 #if defined(__GNUC__)
@@ -342,7 +342,7 @@ __attribute__((__noreturn__))
  *	Return a random value between a min/max pair.
  */
 static inline uint32_t
-mmrand(WT_RAND_STATE *rnd, u_int min, u_int max)
+mmrand(AE_RAND_STATE *rnd, u_int min, u_int max)
 {
 	return (rng(rnd) % (((max) + 1) - (min)) + (min));
 }

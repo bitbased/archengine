@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Public Domain 2014-2015 MongoDB, Inc.
-# Public Domain 2008-2014 WiredTiger, Inc.
+# Public Domain 2008-2014 ArchEngine, Inc.
 #
 # This is free and unencumbered software released into the public domain.
 #
@@ -26,13 +26,13 @@
 # ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 # OTHER DEALINGS IN THE SOFTWARE.
 
-import wiredtiger, wttest, exceptions
+import archengine, aetest, exceptions
 from helper import complex_populate, simple_populate, key_populate
 from helper import complex_populate_index_name
-from wtscenario import multiply_scenarios, number_scenarios
+from aescenario import multiply_scenarios, number_scenarios
 
 # Test cursor comparisons.
-class test_cursor_comparison(wttest.WiredTigerTestCase):
+class test_cursor_comparison(aetest.ArchEngineTestCase):
     name = 'test_compare'
 
     types = [
@@ -85,9 +85,9 @@ class test_cursor_comparison(wttest.WiredTigerTestCase):
         # Confirm failure unless the keys are set.
         msg = '/requires key be set/'
         self.assertRaisesWithMessage(
-            wiredtiger.WiredTigerError, lambda: c1.compare(c2), msg)
+            archengine.ArchEngineError, lambda: c1.compare(c2), msg)
         self.assertRaisesWithMessage(
-            wiredtiger.WiredTigerError, lambda: c2.compare(c1), msg)
+            archengine.ArchEngineError, lambda: c2.compare(c1), msg)
 
         # Test cursors before they're positioned.
         c1.set_key(key_populate(c1, 10))
@@ -103,8 +103,8 @@ class test_cursor_comparison(wttest.WiredTigerTestCase):
         cX.set_key(key_populate(cX, 10))
         msg = '/must reference the same object/'
         self.assertRaisesWithMessage(
-            wiredtiger.WiredTigerError, lambda: cX.compare(c1), msg)
-        msg = '/wt_cursor.* is None/'
+            archengine.ArchEngineError, lambda: cX.compare(c1), msg)
+        msg = '/ae_cursor.* is None/'
         self.assertRaisesHavingMessage(
             exceptions.RuntimeError,  lambda: cX.compare(None), msg)
         if ix0_0 != None:
@@ -116,13 +116,13 @@ class test_cursor_comparison(wttest.WiredTigerTestCase):
             # Main table vs. index not allowed
             msg = '/must reference the same object/'
             self.assertRaisesWithMessage(
-                wiredtiger.WiredTigerError, lambda: c1.compare(ix0_0), msg)
+                archengine.ArchEngineError, lambda: c1.compare(ix0_0), msg)
             # Two unrelated indices not allowed
             self.assertRaisesWithMessage(
-                wiredtiger.WiredTigerError, lambda: ixX_0.compare(ix0_0), msg)
+                archengine.ArchEngineError, lambda: ixX_0.compare(ix0_0), msg)
             # Two different indices from same table not allowed
             self.assertRaisesWithMessage(
-                wiredtiger.WiredTigerError, lambda: ix0_0.compare(ix1_0), msg)
+                archengine.ArchEngineError, lambda: ix0_0.compare(ix1_0), msg)
 
         # Test cursors after they're positioned (shouldn't matter for compare).
         c1.set_key(key_populate(c1, 10))
@@ -142,7 +142,7 @@ class test_cursor_comparison(wttest.WiredTigerTestCase):
         self.assertEqual(cX.search(), 0)
         msg = '/must reference the same object/'
         self.assertRaisesWithMessage(
-            wiredtiger.WiredTigerError, lambda: cX.compare(c1), msg)
+            archengine.ArchEngineError, lambda: cX.compare(c1), msg)
 
     def test_cursor_equality(self):
         uri = self.type + 'equality'
@@ -182,9 +182,9 @@ class test_cursor_comparison(wttest.WiredTigerTestCase):
         # Confirm failure unless the keys are set.
         msg = '/requires key be set/'
         self.assertRaisesWithMessage(
-            wiredtiger.WiredTigerError, lambda: c1.equals(c2), msg)
+            archengine.ArchEngineError, lambda: c1.equals(c2), msg)
         self.assertRaisesWithMessage(
-            wiredtiger.WiredTigerError, lambda: c2.equals(c1), msg)
+            archengine.ArchEngineError, lambda: c2.equals(c1), msg)
 
         # Test cursors before they're positioned.
         c1.set_key(key_populate(c1, 10))
@@ -200,8 +200,8 @@ class test_cursor_comparison(wttest.WiredTigerTestCase):
         cX.set_key(key_populate(cX, 10))
         msg = '/must reference the same object/'
         self.assertRaisesWithMessage(
-            wiredtiger.WiredTigerError, lambda: cX.equals(c1), msg)
-        msg = '/wt_cursor.* is None/'
+            archengine.ArchEngineError, lambda: cX.equals(c1), msg)
+        msg = '/ae_cursor.* is None/'
         self.assertRaisesHavingMessage(
             exceptions.RuntimeError,  lambda: cX.equals(None), msg)
         if ix0_0 != None:
@@ -212,13 +212,13 @@ class test_cursor_comparison(wttest.WiredTigerTestCase):
             # Main table vs. index not allowed
             msg = '/must reference the same object/'
             self.assertRaisesWithMessage(
-                wiredtiger.WiredTigerError, lambda: c1.equals(ix0_0), msg)
+                archengine.ArchEngineError, lambda: c1.equals(ix0_0), msg)
             # Two unrelated indices not allowed
             self.assertRaisesWithMessage(
-                wiredtiger.WiredTigerError, lambda: ixX_0.equals(ix0_0), msg)
+                archengine.ArchEngineError, lambda: ixX_0.equals(ix0_0), msg)
             # Two different indices from same table not allowed
             self.assertRaisesWithMessage(
-                wiredtiger.WiredTigerError, lambda: ix0_0.equals(ix1_0), msg)
+                archengine.ArchEngineError, lambda: ix0_0.equals(ix1_0), msg)
 
         # Test cursors after they're positioned (internally, it's a different
         # search path if keys are positioned in the tree).
@@ -239,8 +239,8 @@ class test_cursor_comparison(wttest.WiredTigerTestCase):
         self.assertEqual(cX.search(), 0)
         msg = '/must reference the same object/'
         self.assertRaisesWithMessage(
-            wiredtiger.WiredTigerError, lambda: cX.equals(c1), msg)
+            archengine.ArchEngineError, lambda: cX.equals(c1), msg)
 
 
 if __name__ == '__main__':
-    wttest.run()
+    aetest.run()

@@ -26,13 +26,13 @@ check()
 	(sed -e '/^#/d' s_export.list &&
 	eval $NM |
 	sed 's/.* //' |
-	egrep -v '^__wt') |
+	egrep -v '^__ae') |
 	sort |
 	uniq -u > $t
 
 	test -s $t && {
 		echo "=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-="
-		echo 'unexpected external symbols in the WiredTiger library'
+		echo 'unexpected external symbols in the ArchEngine library'
 		echo "=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-="
 		cat $t
 		exit 1
@@ -45,12 +45,12 @@ check()
 # we don't forget about a symbol during development.   Check the previously
 # built library, if it exists.
 for d in .libs build_posix/.libs; do
-	f="$d/libwiredtiger.a"
+	f="$d/libarchengine.a"
 	test -f $f && check $f
 
-	f="../$d/libwiredtiger.a"
+	f="../$d/libarchengine.a"
 	test -f $f && check $f
 done
 
-echo "skipped: libwiredtiger.a not found"
+echo "skipped: libarchengine.a not found"
 exit 0

@@ -1,27 +1,27 @@
 /*-
  * Copyright (c) 2014-2015 MongoDB, Inc.
- * Copyright (c) 2008-2014 WiredTiger, Inc.
+ * Copyright (c) 2008-2014 ArchEngine, Inc.
  *	All rights reserved.
  *
  * See the file LICENSE for redistribution information.
  */
 
-#include "wt_internal.h"
+#include "ae_internal.h"
 
 /*
- * __wt_search_insert_append --
+ * __ae_search_insert_append --
  *	Fast append search of a row-store insert list, creating a skiplist stack
  * as we go.
  */
 static inline int
-__wt_search_insert_append(WT_SESSION_IMPL *session,
-    WT_CURSOR_BTREE *cbt, WT_ITEM *srch_key, bool *donep)
+__ae_search_insert_append(AE_SESSION_IMPL *session,
+    AE_CURSOR_BTREE *cbt, AE_ITEM *srch_key, bool *donep)
 {
-	WT_BTREE *btree;
-	WT_COLLATOR *collator;
-	WT_INSERT *ins;
-	WT_INSERT_HEAD *inshead;
-	WT_ITEM key;
+	AE_BTREE *btree;
+	AE_COLLATOR *collator;
+	AE_INSERT *ins;
+	AE_INSERT_HEAD *inshead;
+	AE_ITEM key;
 	int cmp, i;
 
 	btree = S2BT(session);
@@ -29,12 +29,12 @@ __wt_search_insert_append(WT_SESSION_IMPL *session,
 	*donep = 0;
 
 	inshead = cbt->ins_head;
-	if ((ins = WT_SKIP_LAST(inshead)) == NULL)
+	if ((ins = AE_SKIP_LAST(inshead)) == NULL)
 		return (0);
-	key.data = WT_INSERT_KEY(ins);
-	key.size = WT_INSERT_KEY_SIZE(ins);
+	key.data = AE_INSERT_KEY(ins);
+	key.size = AE_INSERT_KEY_SIZE(ins);
 
-	WT_RET(__wt_compare(session, collator, srch_key, &key, &cmp));
+	AE_RET(__ae_compare(session, collator, srch_key, &key, &cmp));
 	if (cmp >= 0) {
 		/*
 		 * !!!
@@ -46,7 +46,7 @@ __wt_search_insert_append(WT_SESSION_IMPL *session,
 		 * the time they are checked against the next stack inside the
 		 * serialized insert function.
 		 */
-		for (i = WT_SKIP_MAXDEPTH - 1; i >= 0; i--) {
+		for (i = AE_SKIP_MAXDEPTH - 1; i >= 0; i--) {
 			cbt->ins_stack[i] = (i == 0) ? &ins->next[0] :
 			    (inshead->tail[i] != NULL) ?
 			    &inshead->tail[i]->next[i] : &inshead->head[i];
@@ -60,18 +60,18 @@ __wt_search_insert_append(WT_SESSION_IMPL *session,
 }
 
 /*
- * __wt_search_insert --
+ * __ae_search_insert --
  *	Search a row-store insert list, creating a skiplist stack as we go.
  */
 int
-__wt_search_insert(
-    WT_SESSION_IMPL *session, WT_CURSOR_BTREE *cbt, WT_ITEM *srch_key)
+__ae_search_insert(
+    AE_SESSION_IMPL *session, AE_CURSOR_BTREE *cbt, AE_ITEM *srch_key)
 {
-	WT_BTREE *btree;
-	WT_COLLATOR *collator;
-	WT_INSERT *ins, **insp, *last_ins;
-	WT_INSERT_HEAD *inshead;
-	WT_ITEM key;
+	AE_BTREE *btree;
+	AE_COLLATOR *collator;
+	AE_INSERT *ins, **insp, *last_ins;
+	AE_INSERT_HEAD *inshead;
+	AE_ITEM key;
 	size_t match, skiphigh, skiplow;
 	int cmp, i;
 
@@ -86,7 +86,7 @@ __wt_search_insert(
 	 */
 	match = skiphigh = skiplow = 0;
 	ins = last_ins = NULL;
-	for (i = WT_SKIP_MAXDEPTH - 1, insp = &inshead->head[i]; i >= 0;) {
+	for (i = AE_SKIP_MAXDEPTH - 1, insp = &inshead->head[i]; i >= 0;) {
 		if ((ins = *insp) == NULL) {
 			cbt->next_stack[i] = NULL;
 			cbt->ins_stack[i--] = insp--;
@@ -99,10 +99,10 @@ __wt_search_insert(
 		 */
 		if (ins != last_ins) {
 			last_ins = ins;
-			key.data = WT_INSERT_KEY(ins);
-			key.size = WT_INSERT_KEY_SIZE(ins);
-			match = WT_MIN(skiplow, skiphigh);
-			WT_RET(__wt_compare_skip(
+			key.data = AE_INSERT_KEY(ins);
+			key.size = AE_INSERT_KEY_SIZE(ins);
+			match = AE_MIN(skiplow, skiphigh);
+			AE_RET(__ae_compare_skip(
 			    session, collator, srch_key, &key, &cmp, &match));
 		}
 
@@ -132,21 +132,21 @@ __wt_search_insert(
 }
 
 /*
- * __wt_row_search --
+ * __ae_row_search --
  *	Search a row-store tree for a specific key.
  */
 int
-__wt_row_search(WT_SESSION_IMPL *session,
-    WT_ITEM *srch_key, WT_REF *leaf, WT_CURSOR_BTREE *cbt, bool insert)
+__ae_row_search(AE_SESSION_IMPL *session,
+    AE_ITEM *srch_key, AE_REF *leaf, AE_CURSOR_BTREE *cbt, bool insert)
 {
-	WT_BTREE *btree;
-	WT_COLLATOR *collator;
-	WT_DECL_RET;
-	WT_ITEM *item;
-	WT_PAGE *page;
-	WT_PAGE_INDEX *pindex, *parent_pindex;
-	WT_REF *current, *descent;
-	WT_ROW *rip;
+	AE_BTREE *btree;
+	AE_COLLATOR *collator;
+	AE_DECL_RET;
+	AE_ITEM *item;
+	AE_PAGE *page;
+	AE_PAGE_INDEX *pindex, *parent_pindex;
+	AE_REF *current, *descent;
+	AE_ROW *rip;
 	size_t match, skiphigh, skiplow;
 	uint32_t base, indx, limit;
 	int cmp, depth;
@@ -191,10 +191,10 @@ restart_root:
 	for (depth = 2, pindex = NULL;; ++depth) {
 		parent_pindex = pindex;
 restart_page:	page = current->page;
-		if (page->type != WT_PAGE_ROW_INT)
+		if (page->type != AE_PAGE_ROW_INT)
 			break;
 
-		WT_INTL_INDEX_GET(session, page, pindex);
+		AE_INTL_INDEX_GET(session, page, pindex);
 
 		/*
 		 * Fast-path internal pages with one child, a common case for
@@ -208,8 +208,8 @@ restart_page:	page = current->page;
 		/* Fast-path appends. */
 		if (append_check) {
 			descent = pindex->index[pindex->entries - 1];
-			__wt_ref_key(page, descent, &item->data, &item->size);
-			WT_ERR(__wt_compare(
+			__ae_ref_key(page, descent, &item->data, &item->size);
+			AE_ERR(__ae_compare(
 			    session, collator, srch_key, item, &cmp));
 			if (cmp >= 0)
 				goto append;
@@ -239,14 +239,14 @@ restart_page:	page = current->page;
 		base = 1;
 		limit = pindex->entries - 1;
 		if (collator == NULL &&
-		    srch_key->size <= WT_COMPARE_SHORT_MAXLEN)
+		    srch_key->size <= AE_COMPARE_SHORT_MAXLEN)
 			for (; limit != 0; limit >>= 1) {
 				indx = base + (limit >> 1);
 				descent = pindex->index[indx];
-				__wt_ref_key(
+				__ae_ref_key(
 				    page, descent, &item->data, &item->size);
 
-				cmp = __wt_lex_compare_short(srch_key, item);
+				cmp = __ae_lex_compare_short(srch_key, item);
 				if (cmp > 0) {
 					base = indx + 1;
 					--limit;
@@ -276,11 +276,11 @@ restart_page:	page = current->page;
 			for (; limit != 0; limit >>= 1) {
 				indx = base + (limit >> 1);
 				descent = pindex->index[indx];
-				__wt_ref_key(
+				__ae_ref_key(
 				    page, descent, &item->data, &item->size);
 
-				match = WT_MIN(skiplow, skiphigh);
-				cmp = __wt_lex_compare_skip(
+				match = AE_MIN(skiplow, skiphigh);
+				cmp = __ae_lex_compare_skip(
 				    srch_key, item, &match);
 				if (cmp > 0) {
 					skiplow = match;
@@ -295,10 +295,10 @@ restart_page:	page = current->page;
 			for (; limit != 0; limit >>= 1) {
 				indx = base + (limit >> 1);
 				descent = pindex->index[indx];
-				__wt_ref_key(
+				__ae_ref_key(
 				    page, descent, &item->data, &item->size);
 
-				WT_ERR(__wt_compare(
+				AE_ERR(__ae_compare(
 				    session, collator, srch_key, item, &cmp));
 				if (cmp > 0) {
 					base = indx + 1;
@@ -328,9 +328,9 @@ restart_page:	page = current->page;
 		 */
 		if (pindex->entries == base) {
 append:			if (parent_pindex != NULL &&
-			    __wt_split_intl_race(
+			    __ae_split_intl_race(
 			    session, current->home, parent_pindex)) {
-				if ((ret = __wt_page_release(
+				if ((ret = __ae_page_release(
 				    session, current, 0)) != 0)
 					return (ret);
 
@@ -345,11 +345,11 @@ descend:	/*
 		 * page; otherwise return on error, the swap call ensures we're
 		 * holding nothing on failure.
 		 */
-		if ((ret = __wt_page_swap(session, current, descent, 0)) == 0) {
+		if ((ret = __ae_page_swap(session, current, descent, 0)) == 0) {
 			current = descent;
 			continue;
 		}
-		if (ret == WT_RESTART) {
+		if (ret == AE_RESTART) {
 			skiphigh = skiplow = 0;
 			goto restart_page;
 		}
@@ -385,19 +385,19 @@ leaf_only:
 		cbt->append_tree = 1;
 
 		if (page->pg_row_entries == 0) {
-			cbt->slot = WT_ROW_SLOT(page, page->pg_row_d);
+			cbt->slot = AE_ROW_SLOT(page, page->pg_row_d);
 
-			F_SET(cbt, WT_CBT_SEARCH_SMALLEST);
-			cbt->ins_head = WT_ROW_INSERT_SMALLEST(page);
+			F_SET(cbt, AE_CBT_SEARCH_SMALLEST);
+			cbt->ins_head = AE_ROW_INSERT_SMALLEST(page);
 		} else {
-			cbt->slot = WT_ROW_SLOT(page,
+			cbt->slot = AE_ROW_SLOT(page,
 			    page->pg_row_d + (page->pg_row_entries - 1));
 
-			cbt->ins_head = WT_ROW_INSERT_SLOT(page, cbt->slot);
+			cbt->ins_head = AE_ROW_INSERT_SLOT(page, cbt->slot);
 		}
 
-		WT_ERR(
-		    __wt_search_insert_append(session, cbt, srch_key, &done));
+		AE_ERR(
+		    __ae_search_insert_append(session, cbt, srch_key, &done));
 		if (done)
 			return (0);
 
@@ -416,14 +416,14 @@ leaf_only:
 	 */
 	base = 0;
 	limit = page->pg_row_entries;
-	if (collator == NULL && srch_key->size <= WT_COMPARE_SHORT_MAXLEN)
+	if (collator == NULL && srch_key->size <= AE_COMPARE_SHORT_MAXLEN)
 		for (; limit != 0; limit >>= 1) {
 			indx = base + (limit >> 1);
 			rip = page->pg_row_d + indx;
-			WT_ERR(
-			    __wt_row_leaf_key(session, page, rip, item, true));
+			AE_ERR(
+			    __ae_row_leaf_key(session, page, rip, item, true));
 
-			cmp = __wt_lex_compare_short(srch_key, item);
+			cmp = __ae_lex_compare_short(srch_key, item);
 			if (cmp > 0) {
 				base = indx + 1;
 				--limit;
@@ -434,11 +434,11 @@ leaf_only:
 		for (; limit != 0; limit >>= 1) {
 			indx = base + (limit >> 1);
 			rip = page->pg_row_d + indx;
-			WT_ERR(
-			    __wt_row_leaf_key(session, page, rip, item, true));
+			AE_ERR(
+			    __ae_row_leaf_key(session, page, rip, item, true));
 
-			match = WT_MIN(skiplow, skiphigh);
-			cmp = __wt_lex_compare_skip(srch_key, item, &match);
+			match = AE_MIN(skiplow, skiphigh);
+			cmp = __ae_lex_compare_skip(srch_key, item, &match);
 			if (cmp > 0) {
 				skiplow = match;
 				base = indx + 1;
@@ -452,10 +452,10 @@ leaf_only:
 		for (; limit != 0; limit >>= 1) {
 			indx = base + (limit >> 1);
 			rip = page->pg_row_d + indx;
-			WT_ERR(
-			    __wt_row_leaf_key(session, page, rip, item, true));
+			AE_ERR(
+			    __ae_row_leaf_key(session, page, rip, item, true));
 
-			WT_ERR(__wt_compare(
+			AE_ERR(__ae_compare(
 			    session, collator, srch_key, item, &cmp));
 			if (cmp > 0) {
 				base = indx + 1;
@@ -465,18 +465,18 @@ leaf_only:
 		}
 
 	/*
-	 * The best case is finding an exact match in the leaf page's WT_ROW
+	 * The best case is finding an exact match in the leaf page's AE_ROW
 	 * array, probable for any read-mostly workload.  Check that case and
 	 * get out fast.
 	 */
 	if (0) {
 leaf_match:	cbt->compare = 0;
-		cbt->slot = WT_ROW_SLOT(page, rip);
+		cbt->slot = AE_ROW_SLOT(page, rip);
 		return (0);
 	}
 
 	/*
-	 * We didn't find an exact match in the WT_ROW array.
+	 * We didn't find an exact match in the AE_ROW array.
 	 *
 	 * Base is the smallest index greater than key and may be the 0th index
 	 * or the (last + 1) index.  Set the slot to be the largest index less
@@ -489,25 +489,25 @@ leaf_match:	cbt->compare = 0;
 	 * (we'll correct as needed inside the search routine, depending on
 	 * what we find).
 	 *
-	 * If inserting a key smaller than any key found in the WT_ROW array,
+	 * If inserting a key smaller than any key found in the AE_ROW array,
 	 * use the extra slot of the insert array, otherwise the insert array
-	 * maps one-to-one to the WT_ROW array.
+	 * maps one-to-one to the AE_ROW array.
 	 */
 	if (base == 0) {
 		cbt->compare = 1;
-		cbt->slot = WT_ROW_SLOT(page, page->pg_row_d);
+		cbt->slot = AE_ROW_SLOT(page, page->pg_row_d);
 
-		F_SET(cbt, WT_CBT_SEARCH_SMALLEST);
-		cbt->ins_head = WT_ROW_INSERT_SMALLEST(page);
+		F_SET(cbt, AE_CBT_SEARCH_SMALLEST);
+		cbt->ins_head = AE_ROW_INSERT_SMALLEST(page);
 	} else {
 		cbt->compare = -1;
-		cbt->slot = WT_ROW_SLOT(page, page->pg_row_d + (base - 1));
+		cbt->slot = AE_ROW_SLOT(page, page->pg_row_d + (base - 1));
 
-		cbt->ins_head = WT_ROW_INSERT_SLOT(page, cbt->slot);
+		cbt->ins_head = AE_ROW_INSERT_SLOT(page, cbt->slot);
 	}
 
 	/* If there's no insert list, we're done. */
-	if (WT_SKIP_FIRST(cbt->ins_head) == NULL)
+	if (AE_SKIP_FIRST(cbt->ins_head) == NULL)
 		return (0);
 
 	/*
@@ -515,12 +515,12 @@ leaf_match:	cbt->compare = 0;
 	 * catch cursors repeatedly inserting at a single point.
 	 */
 	if (insert) {
-		WT_ERR(
-		    __wt_search_insert_append(session, cbt, srch_key, &done));
+		AE_ERR(
+		    __ae_search_insert_append(session, cbt, srch_key, &done));
 		if (done)
 			return (0);
 	}
-	WT_ERR(__wt_search_insert(session, cbt, srch_key));
+	AE_ERR(__ae_search_insert(session, cbt, srch_key));
 
 	return (0);
 
@@ -529,25 +529,25 @@ err:	/*
 	 * search didn't start at the root we should never have gone looking
 	 * beyond the start page.
 	 */
-	WT_ASSERT(session, leaf == NULL || leaf == current);
+	AE_ASSERT(session, leaf == NULL || leaf == current);
 	if (leaf == NULL)
-		WT_TRET(__wt_page_release(session, current, 0));
+		AE_TRET(__ae_page_release(session, current, 0));
 	return (ret);
 }
 
 /*
- * __wt_row_random --
+ * __ae_row_random --
  *	Return a random key from a row-store tree.
  */
 int
-__wt_row_random(WT_SESSION_IMPL *session, WT_CURSOR_BTREE *cbt)
+__ae_row_random(AE_SESSION_IMPL *session, AE_CURSOR_BTREE *cbt)
 {
-	WT_BTREE *btree;
-	WT_DECL_RET;
-	WT_INSERT *p, *t;
-	WT_PAGE *page;
-	WT_PAGE_INDEX *pindex;
-	WT_REF *current, *descent;
+	AE_BTREE *btree;
+	AE_DECL_RET;
+	AE_INSERT *p, *t;
+	AE_PAGE *page;
+	AE_PAGE_INDEX *pindex;
+	AE_REF *current, *descent;
 	uint32_t cnt;
 
 	btree = S2BT(session);
@@ -559,18 +559,18 @@ restart_root:
 	current = &btree->root;
 	for (;;) {
 		page = current->page;
-		if (page->type != WT_PAGE_ROW_INT)
+		if (page->type != AE_PAGE_ROW_INT)
 			break;
 
-		WT_INTL_INDEX_GET(session, page, pindex);
+		AE_INTL_INDEX_GET(session, page, pindex);
 		descent = pindex->index[
-		    __wt_random(&session->rnd) % pindex->entries];
+		    __ae_random(&session->rnd) % pindex->entries];
 
 		/*
 		 * Swap the parent page for the child page; return on error,
 		 * the swap function ensures we're holding nothing on failure.
 		 */
-		if ((ret = __wt_page_swap(session, current, descent, 0)) == 0) {
+		if ((ret = __ae_page_swap(session, current, descent, 0)) == 0) {
 			current = descent;
 			continue;
 		}
@@ -579,8 +579,8 @@ restart_root:
 		 * held page isn't discarded when restart is returned, discard
 		 * it and restart the search from the top of the tree.
 		 */
-		if (ret == WT_RESTART &&
-		    (ret = __wt_page_release(session, current, 0)) == 0)
+		if (ret == AE_RESTART &&
+		    (ret = __ae_page_release(session, current, 0)) == 0)
 			goto restart_root;
 		return (ret);
 	}
@@ -588,13 +588,13 @@ restart_root:
 	if (page->pg_row_entries != 0) {
 		cbt->ref = current;
 		cbt->compare = 0;
-		cbt->slot = __wt_random(&session->rnd) % page->pg_row_entries;
+		cbt->slot = __ae_random(&session->rnd) % page->pg_row_entries;
 
 		/*
 		 * The real row-store search function builds the key, so we
 		 * have to as well.
 		 */
-		return (__wt_row_leaf_key(session,
+		return (__ae_row_leaf_key(session,
 		    page, page->pg_row_d + cbt->slot, cbt->tmp, false));
 	}
 
@@ -602,19 +602,19 @@ restart_root:
 	 * If the tree is new (and not empty), it might have a large insert
 	 * list. Count how many records are in the list.
 	 */
-	F_SET(cbt, WT_CBT_SEARCH_SMALLEST);
-	if ((cbt->ins_head = WT_ROW_INSERT_SMALLEST(page)) == NULL)
-		WT_ERR(WT_NOTFOUND);
-	for (cnt = 1, p = WT_SKIP_FIRST(cbt->ins_head);; ++cnt)
-		if ((p = WT_SKIP_NEXT(p)) == NULL)
+	F_SET(cbt, AE_CBT_SEARCH_SMALLEST);
+	if ((cbt->ins_head = AE_ROW_INSERT_SMALLEST(page)) == NULL)
+		AE_ERR(AE_NOTFOUND);
+	for (cnt = 1, p = AE_SKIP_FIRST(cbt->ins_head);; ++cnt)
+		if ((p = AE_SKIP_NEXT(p)) == NULL)
 			break;
 
 	/*
 	 * Select a random number from 0 to (N - 1), return that record.
 	 */
-	cnt = __wt_random(&session->rnd) % cnt;
-	for (p = t = WT_SKIP_FIRST(cbt->ins_head);; t = p)
-		if (cnt-- == 0 || (p = WT_SKIP_NEXT(p)) == NULL)
+	cnt = __ae_random(&session->rnd) % cnt;
+	for (p = t = AE_SKIP_FIRST(cbt->ins_head);; t = p)
+		if (cnt-- == 0 || (p = AE_SKIP_NEXT(p)) == NULL)
 			break;
 	cbt->ref = current;
 	cbt->compare = 0;
@@ -622,6 +622,6 @@ restart_root:
 
 	return (0);
 
-err:	WT_TRET(__wt_page_release(session, current, 0));
+err:	AE_TRET(__ae_page_release(session, current, 0));
 	return (ret);
 }

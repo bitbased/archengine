@@ -1,25 +1,25 @@
 /*-
  * Copyright (c) 2014-2015 MongoDB, Inc.
- * Copyright (c) 2008-2014 WiredTiger, Inc.
+ * Copyright (c) 2008-2014 ArchEngine, Inc.
  *	All rights reserved.
  *
  * See the file LICENSE for redistribution information.
  */
 
-#include "wt_internal.h"
+#include "ae_internal.h"
 
 /*
- * __wt_sleep --
+ * __ae_sleep --
  *	Pause the thread of control.
  */
 void
-__wt_sleep(uint64_t seconds, uint64_t micro_seconds)
+__ae_sleep(uint64_t seconds, uint64_t micro_seconds)
 {
 	/*
 	 * If the caller wants a small pause, set to our
 	 * smallest granularity.
 	 */
-	if (seconds == 0 && micro_seconds < WT_THOUSAND)
-		micro_seconds = WT_THOUSAND;
-	Sleep(seconds * WT_THOUSAND + micro_seconds / WT_THOUSAND);
+	if (seconds == 0 && micro_seconds < AE_THOUSAND)
+		micro_seconds = AE_THOUSAND;
+	Sleep(seconds * AE_THOUSAND + micro_seconds / AE_THOUSAND);
 }

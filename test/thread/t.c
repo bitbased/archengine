@@ -1,6 +1,6 @@
 /*-
  * Public Domain 2014-2015 MongoDB, Inc.
- * Public Domain 2008-2014 WiredTiger, Inc.
+ * Public Domain 2008-2014 ArchEngine, Inc.
  *
  * This is free and unencumbered software released into the public domain.
  *
@@ -28,7 +28,7 @@
 
 #include "thread.h"
 
-WT_CONNECTION *conn;				/* WiredTiger connection */
+AE_CONNECTION *conn;				/* ArchEngine connection */
 __ftype ftype;					/* File type */
 u_int nkeys, max_nops;				/* Keys, Operations */
 int vary_nops;					/* Vary operations by thread */
@@ -40,16 +40,16 @@ static char home[512];				/* Program working dir */
 static char *progname;				/* Program name */
 static FILE *logfp;				/* Log file */
 
-static int  handle_error(WT_EVENT_HANDLER *, WT_SESSION *, int, const char *);
-static int  handle_message(WT_EVENT_HANDLER *, WT_SESSION *, const char *);
+static int  handle_error(AE_EVENT_HANDLER *, AE_SESSION *, int, const char *);
+static int  handle_message(AE_EVENT_HANDLER *, AE_SESSION *, const char *);
 static void onint(int);
 static void shutdown(void);
 static int  usage(void);
-static void wt_connect(char *);
-static void wt_shutdown(void);
+static void ae_connect(char *);
+static void ae_shutdown(void);
 
-extern int __wt_optind;
-extern char *__wt_optarg;
+extern int __ae_optind;
+extern char *__ae_optarg;
 
 int
 main(int argc, char *argv[])
@@ -76,45 +76,45 @@ main(int argc, char *argv[])
 	vary_nops = 0;
 	writers = 10;
 
-	while ((ch = __wt_getopt(
+	while ((ch = __ae_getopt(
 	    progname, argc, argv, "C:Fk:h:Ll:n:R:r:St:vW:")) != EOF)
 		switch (ch) {
-		case 'C':			/* wiredtiger_open config */
-			config_open = __wt_optarg;
+		case 'C':			/* archengine_open config */
+			config_open = __ae_optarg;
 			break;
 		case 'F':			/* multiple files */
 			multiple_files = 1;
 			break;
 		case 'h':
-			working_dir = __wt_optarg;
+			working_dir = __ae_optarg;
 			break;
 		case 'k':			/* rows */
-			nkeys = (u_int)atoi(__wt_optarg);
+			nkeys = (u_int)atoi(__ae_optarg);
 			break;
 		case 'L':			/* log print per operation */
 			log_print = 1;
 			break;
 		case 'l':			/* log */
-			if ((logfp = fopen(__wt_optarg, "w")) == NULL) {
+			if ((logfp = fopen(__ae_optarg, "w")) == NULL) {
 				fprintf(stderr,
-				    "%s: %s\n", __wt_optarg, strerror(errno));
+				    "%s: %s\n", __ae_optarg, strerror(errno));
 				return (EXIT_FAILURE);
 			}
 			break;
 		case 'n':			/* operations */
-			max_nops = (u_int)atoi(__wt_optarg);
+			max_nops = (u_int)atoi(__ae_optarg);
 			break;
 		case 'R':
-			readers = (u_int)atoi(__wt_optarg);
+			readers = (u_int)atoi(__ae_optarg);
 			break;
 		case 'r':			/* runs */
-			runs = atoi(__wt_optarg);
+			runs = atoi(__ae_optarg);
 			break;
 		case 'S':			/* new session per operation */
 			session_per_op = 1;
 			break;
 		case 't':
-			switch (__wt_optarg[0]) {
+			switch (__ae_optarg[0]) {
 			case 'f':
 				ftype = FIX;
 				break;
@@ -132,14 +132,14 @@ main(int argc, char *argv[])
 			vary_nops = 1;
 			break;
 		case 'W':
-			writers = (u_int)atoi(__wt_optarg);
+			writers = (u_int)atoi(__ae_optarg);
 			break;
 		default:
 			return (usage());
 		}
 
-	argc -= __wt_optind;
-	argv += __wt_optind;
+	argc -= __ae_optind;
+	argv += __ae_optind;
 	if (argc != 0)
 		return (usage());
 
@@ -161,26 +161,26 @@ main(int argc, char *argv[])
 
 		shutdown();			/* Clean up previous runs */
 
-		wt_connect(config_open);	/* WiredTiger connection */
+		ae_connect(config_open);	/* ArchEngine connection */
 
 		if (rw_start(readers, writers))	/* Loop operations */
 			return (EXIT_FAILURE);
 
 		stats();			/* Statistics */
 
-		wt_shutdown();			/* WiredTiger shut down */
+		ae_shutdown();			/* ArchEngine shut down */
 	}
 	return (0);
 }
 
 /*
- * wt_connect --
- *	Configure the WiredTiger connection.
+ * ae_connect --
+ *	Configure the ArchEngine connection.
  */
 static void
-wt_connect(char *config_open)
+ae_connect(char *config_open)
 {
-	static WT_EVENT_HANDLER event_handler = {
+	static AE_EVENT_HANDLER event_handler = {
 		handle_error,
 		handle_message,
 		NULL,
@@ -202,18 +202,18 @@ wt_connect(char *config_open)
 	if (print_count >= sizeof(config))
 		testutil_die(EINVAL, "Config string too long");
 
-	if ((ret = wiredtiger_open(home, &event_handler, config, &conn)) != 0)
-		testutil_die(ret, "wiredtiger_open");
+	if ((ret = archengine_open(home, &event_handler, config, &conn)) != 0)
+		testutil_die(ret, "archengine_open");
 }
 
 /*
- * wt_shutdown --
- *	Flush the file to disk and shut down the WiredTiger connection.
+ * ae_shutdown --
+ *	Flush the file to disk and shut down the ArchEngine connection.
  */
 static void
-wt_shutdown(void)
+ae_shutdown(void)
 {
-	WT_SESSION *session;
+	AE_SESSION *session;
 	int ret;
 
 	if ((ret = conn->open_session(conn, NULL, NULL, &session)) != 0)
@@ -237,8 +237,8 @@ shutdown(void)
 }
 
 static int
-handle_error(WT_EVENT_HANDLER *handler,
-    WT_SESSION *session, int error, const char *errmsg)
+handle_error(AE_EVENT_HANDLER *handler,
+    AE_SESSION *session, int error, const char *errmsg)
 {
 	(void)(handler);
 	(void)(session);
@@ -248,8 +248,8 @@ handle_error(WT_EVENT_HANDLER *handler,
 }
 
 static int
-handle_message(WT_EVENT_HANDLER *handler,
-    WT_SESSION *session, const char *message)
+handle_message(AE_EVENT_HANDLER *handler,
+    AE_SESSION *session, const char *message)
 {
 	(void)(handler);
 	(void)(session);
@@ -284,11 +284,11 @@ usage(void)
 {
 	fprintf(stderr,
 	    "usage: %s "
-	    "[-FLSv] [-C wiredtiger-config] [-k keys] [-l log]\n\t"
+	    "[-FLSv] [-C archengine-config] [-k keys] [-l log]\n\t"
 	    "[-n ops] [-R readers] [-r runs] [-t f|r|v] [-W writers]\n",
 	    progname);
 	fprintf(stderr, "%s",
-	    "\t-C specify wiredtiger_open configuration arguments\n"
+	    "\t-C specify archengine_open configuration arguments\n"
 	    "\t-F create a file per thread\n"
 	    "\t-k set number of keys to load\n"
 	    "\t-L log print per operation\n"

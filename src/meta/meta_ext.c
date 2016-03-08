@@ -1,104 +1,104 @@
 /*-
  * Copyright (c) 2014-2015 MongoDB, Inc.
- * Copyright (c) 2008-2014 WiredTiger, Inc.
+ * Copyright (c) 2008-2014 ArchEngine, Inc.
  *	All rights reserved.
  *
  * See the file LICENSE for redistribution information.
  */
 
-#include "wt_internal.h"
+#include "ae_internal.h"
 
 /*
- * __wt_ext_metadata_insert --
+ * __ae_ext_metadata_insert --
  *	Insert a row into the metadata (external API version).
  */
 int
-__wt_ext_metadata_insert(WT_EXTENSION_API *wt_api,
-    WT_SESSION *wt_session, const char *key, const char *value)
+__ae_ext_metadata_insert(AE_EXTENSION_API *ae_api,
+    AE_SESSION *ae_session, const char *key, const char *value)
 {
-	WT_CONNECTION_IMPL *conn;
-	WT_SESSION_IMPL *session;
+	AE_CONNECTION_IMPL *conn;
+	AE_SESSION_IMPL *session;
 
-	conn = (WT_CONNECTION_IMPL *)wt_api->conn;
-	if ((session = (WT_SESSION_IMPL *)wt_session) == NULL)
+	conn = (AE_CONNECTION_IMPL *)ae_api->conn;
+	if ((session = (AE_SESSION_IMPL *)ae_session) == NULL)
 		session = conn->default_session;
 
-	return (__wt_metadata_insert(session, key, value));
+	return (__ae_metadata_insert(session, key, value));
 }
 
 /*
- * __wt_ext_metadata_remove --
+ * __ae_ext_metadata_remove --
  *	Remove a row from the metadata (external API version).
  */
 int
-__wt_ext_metadata_remove(
-    WT_EXTENSION_API *wt_api, WT_SESSION *wt_session, const char *key)
+__ae_ext_metadata_remove(
+    AE_EXTENSION_API *ae_api, AE_SESSION *ae_session, const char *key)
 {
-	WT_CONNECTION_IMPL *conn;
-	WT_SESSION_IMPL *session;
+	AE_CONNECTION_IMPL *conn;
+	AE_SESSION_IMPL *session;
 
-	conn = (WT_CONNECTION_IMPL *)wt_api->conn;
-	if ((session = (WT_SESSION_IMPL *)wt_session) == NULL)
+	conn = (AE_CONNECTION_IMPL *)ae_api->conn;
+	if ((session = (AE_SESSION_IMPL *)ae_session) == NULL)
 		session = conn->default_session;
 
-	return (__wt_metadata_remove(session, key));
+	return (__ae_metadata_remove(session, key));
 }
 
 /*
- * __wt_ext_metadata_search --
+ * __ae_ext_metadata_search --
  *	Return a copied row from the metadata (external API version).
  *	The caller is responsible for freeing the allocated memory.
  */
 int
-__wt_ext_metadata_search(WT_EXTENSION_API *wt_api,
-    WT_SESSION *wt_session, const char *key, char **valuep)
+__ae_ext_metadata_search(AE_EXTENSION_API *ae_api,
+    AE_SESSION *ae_session, const char *key, char **valuep)
 {
-	WT_CONNECTION_IMPL *conn;
-	WT_SESSION_IMPL *session;
+	AE_CONNECTION_IMPL *conn;
+	AE_SESSION_IMPL *session;
 
-	conn = (WT_CONNECTION_IMPL *)wt_api->conn;
-	if ((session = (WT_SESSION_IMPL *)wt_session) == NULL)
+	conn = (AE_CONNECTION_IMPL *)ae_api->conn;
+	if ((session = (AE_SESSION_IMPL *)ae_session) == NULL)
 		session = conn->default_session;
 
-	return (__wt_metadata_search(session, key, valuep));
+	return (__ae_metadata_search(session, key, valuep));
 }
 
 /*
- * __wt_ext_metadata_update --
+ * __ae_ext_metadata_update --
  *	Update a row in the metadata (external API version).
  */
 int
-__wt_ext_metadata_update(WT_EXTENSION_API *wt_api,
-    WT_SESSION *wt_session, const char *key, const char *value)
+__ae_ext_metadata_update(AE_EXTENSION_API *ae_api,
+    AE_SESSION *ae_session, const char *key, const char *value)
 {
-	WT_CONNECTION_IMPL *conn;
-	WT_SESSION_IMPL *session;
+	AE_CONNECTION_IMPL *conn;
+	AE_SESSION_IMPL *session;
 
-	conn = (WT_CONNECTION_IMPL *)wt_api->conn;
-	if ((session = (WT_SESSION_IMPL *)wt_session) == NULL)
+	conn = (AE_CONNECTION_IMPL *)ae_api->conn;
+	if ((session = (AE_SESSION_IMPL *)ae_session) == NULL)
 		session = conn->default_session;
 
-	return (__wt_metadata_update(session, key, value));
+	return (__ae_metadata_update(session, key, value));
 }
 
 /*
- * __wt_metadata_get_ckptlist --
- *	Public entry point to __wt_meta_ckptlist_get (for wt list).
+ * __ae_metadata_get_ckptlist --
+ *	Public entry point to __ae_meta_ckptlist_get (for ae list).
  */
 int
-__wt_metadata_get_ckptlist(
-    WT_SESSION *session, const char *name, WT_CKPT **ckptbasep)
+__ae_metadata_get_ckptlist(
+    AE_SESSION *session, const char *name, AE_CKPT **ckptbasep)
 {
-	return (__wt_meta_ckptlist_get(
-	    (WT_SESSION_IMPL *)session, name, ckptbasep));
+	return (__ae_meta_ckptlist_get(
+	    (AE_SESSION_IMPL *)session, name, ckptbasep));
 }
 
 /*
- * __wt_metadata_free_ckptlist --
- *	Public entry point to __wt_meta_ckptlist_free (for wt list).
+ * __ae_metadata_free_ckptlist --
+ *	Public entry point to __ae_meta_ckptlist_free (for ae list).
  */
 void
-__wt_metadata_free_ckptlist(WT_SESSION *session, WT_CKPT *ckptbase)
+__ae_metadata_free_ckptlist(AE_SESSION *session, AE_CKPT *ckptbase)
 {
-	__wt_meta_ckptlist_free((WT_SESSION_IMPL *)session, ckptbase);
+	__ae_meta_ckptlist_free((AE_SESSION_IMPL *)session, ckptbase);
 }

@@ -1,7 +1,7 @@
 #! /bin/sh
 
 # Single space and remove trailing whitespace from source files.
-t=__wt.$$
+t=__ae.$$
 trap 'rm -f $t; exit 0' 0 1 2 3 13 15
 
 # Clear lines that only contain whitespace, discard trailing empty lines.

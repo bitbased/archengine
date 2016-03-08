@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Public Domain 2014-2015 MongoDB, Inc.
-# Public Domain 2008-2014 WiredTiger, Inc.
+# Public Domain 2008-2014 ArchEngine, Inc.
 #
 # This is free and unencumbered software released into the public domain.
 #
@@ -27,16 +27,16 @@
 # OTHER DEALINGS IN THE SOFTWARE.
 
 import string, os
-import wiredtiger, wttest
+import archengine, aetest
 from suite_subprocess import suite_subprocess
-from wtscenario import check_scenarios
+from aescenario import check_scenarios
 from helper import complex_populate
 
 # test_util02.py
-#    Utilities: wt load
-class test_util02(wttest.WiredTigerTestCase, suite_subprocess):
+#    Utilities: ae load
+class test_util02(aetest.ArchEngineTestCase, suite_subprocess):
     """
-    Test wt load
+    Test ae load
     """
 
     tablename = 'test_util02.a'
@@ -100,7 +100,7 @@ class test_util02(wttest.WiredTigerTestCase, suite_subprocess):
 
     def dumpstr(self, obj, hexoutput):
         """
-        Return a key or value string formatted just as 'wt dump' would.
+        Return a key or value string formatted just as 'ae dump' would.
         Most printable characters (except tab, newline,...) are printed
         as is, otherwise, backslash hex is used.
         """
@@ -138,12 +138,12 @@ class test_util02(wttest.WiredTigerTestCase, suite_subprocess):
         if hexoutput:
             dumpargs.append("-x")
         dumpargs.append(self.tablename)
-        self.runWt(dumpargs, outfilename="dump.out")
+        self.runAe(dumpargs, outfilename="dump.out")
 
         # Create a placeholder for the new table.
         self.session.create('table:' + self.tablename2, params)
 
-        self.runWt(["load", "-f", "dump.out", "-r", self.tablename2])
+        self.runAe(["load", "-f", "dump.out", "-r", self.tablename2])
 
         cursor =\
             self.session.open_cursor('table:' + self.tablename2, None, None)
@@ -165,15 +165,15 @@ class test_util02(wttest.WiredTigerTestCase, suite_subprocess):
 
 # test_load_commandline --
 #       Test the command-line processing.
-class test_load_commandline(wttest.WiredTigerTestCase, suite_subprocess):
+class test_load_commandline(aetest.ArchEngineTestCase, suite_subprocess):
     uri = "table:command_line"
 
     def load_commandline(self, args, fail):
         errfile= "errfile"
         complex_populate(self, self.uri, "key_format=S,value_format=S", 20)
-        self.runWt(["dump", self.uri], outfilename="dump.out")
+        self.runAe(["dump", self.uri], outfilename="dump.out")
         loadargs = ["load", "-f", "dump.out"] + args
-        self.runWt(loadargs, errfilename=errfile)
+        self.runAe(loadargs, errfilename=errfile)
         if fail:
                 self.check_non_empty_file(errfile)
         else:
@@ -221,4 +221,4 @@ class test_load_commandline(wttest.WiredTigerTestCase, suite_subprocess):
 
 
 if __name__ == '__main__':
-    wttest.run()
+    aetest.run()

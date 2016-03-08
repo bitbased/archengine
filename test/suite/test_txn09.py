@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Public Domain 2014-2015 MongoDB, Inc.
-# Public Domain 2008-2014 WiredTiger, Inc.
+# Public Domain 2008-2014 ArchEngine, Inc.
 #
 # This is free and unencumbered software released into the public domain.
 #
@@ -32,11 +32,11 @@
 
 import fnmatch, os, shutil, time
 from suite_subprocess import suite_subprocess
-from wiredtiger import wiredtiger_open
-from wtscenario import multiply_scenarios, number_scenarios, prune_scenarios
-import wttest
+from archengine import archengine_open
+from aescenario import multiply_scenarios, number_scenarios, prune_scenarios
+import aetest
 
-class test_txn09(wttest.WiredTigerTestCase, suite_subprocess):
+class test_txn09(aetest.ArchEngineTestCase, suite_subprocess):
     tablename = 'test_txn09'
     uri = 'table:' + tablename
     log_enabled = True
@@ -82,7 +82,7 @@ class test_txn09(wttest.WiredTigerTestCase, suite_subprocess):
     # long runs (when --long is set) we'll set a much larger limit.
     scenarios = number_scenarios(prune_scenarios(all_scenarios, 20, 5000))
 
-    # Overrides WiredTigerTestCase
+    # Overrides ArchEngineTestCase
     def setUpConnectionOpen(self, dir):
         self.home = dir
         conn_params = \
@@ -91,7 +91,7 @@ class test_txn09(wttest.WiredTigerTestCase, suite_subprocess):
                 'transaction_sync=(enabled=false),'
 
         # print "Opening conn at '%s' with config '%s'" % (dir, conn_params)
-        conn = wiredtiger_open(dir, conn_params)
+        conn = archengine_open(dir, conn_params)
         self.pr(`conn`)
         self.session2 = conn.open_session()
         return conn
@@ -177,4 +177,4 @@ class test_txn09(wttest.WiredTigerTestCase, suite_subprocess):
             self.check_all(current, committed)
 
 if __name__ == '__main__':
-    wttest.run()
+    aetest.run()

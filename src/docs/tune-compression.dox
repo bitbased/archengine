@@ -1,6 +1,6 @@
 /*! @page tune_compression Compression
 
-WiredTiger includes a number of optional compression techniques.  Configuring
+ArchEngine includes a number of optional compression techniques.  Configuring
 compression generally decreases on-disk and in-memory resource requirements
 and the amount of I/O, and increases CPU cost when rows are read and written.
 

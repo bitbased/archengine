@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Public Domain 2014-2015 MongoDB, Inc.
-# Public Domain 2008-2014 WiredTiger, Inc.
+# Public Domain 2008-2014 ArchEngine, Inc.
 #
 # This is free and unencumbered software released into the public domain.
 #
@@ -26,13 +26,13 @@
 # ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 # OTHER DEALINGS IN THE SOFTWARE.
 
-import wiredtiger, wttest
-from wtscenario import check_scenarios, multiply_scenarios, number_scenarios
+import archengine, aetest
+from aescenario import check_scenarios, multiply_scenarios, number_scenarios
 
 # test_join01.py
 #    Join operations
 # Basic tests for join
-class test_join01(wttest.WiredTigerTestCase):
+class test_join01(aetest.ArchEngineTestCase):
     table_name1 = 'test_join01'
     nentries = 100
 
@@ -41,9 +41,9 @@ class test_join01(wttest.WiredTigerTestCase):
         ('index', dict(ref='index'))
     ]
 
-    # Override WiredTigerTestCase, we have statistics tests.
+    # Override ArchEngineTestCase, we have statistics tests.
     def setUpConnectionOpen(self, dir):
-        conn = wiredtiger.wiredtiger_open(dir,
+        conn = archengine.archengine_open(dir,
             'create,statistics=(all),' + 'error_prefix="%s: "' % self.shortid())
         return conn
 
@@ -219,7 +219,7 @@ class test_join01(wttest.WiredTigerTestCase):
         self.session.create('index:join01B:index0','columns=(v0)')
         jc = self.session.open_cursor('join:table:join01', None, None)
         tc = self.session.open_cursor('table:join01', None, None)
-        fc = self.session.open_cursor('file:join01.wt', None, None)
+        fc = self.session.open_cursor('file:join01.ae', None, None)
         ic0 = self.session.open_cursor('index:join01:index0', None, None)
         ic0again = self.session.open_cursor('index:join01:index0', None, None)
         ic1 = self.session.open_cursor('index:join01:index1', None, None)
@@ -235,15 +235,15 @@ class test_join01(wttest.WiredTigerTestCase):
         fc.next()
 
         # Joining using a non join-cursor
-        self.assertRaisesWithMessage(wiredtiger.WiredTigerError,
+        self.assertRaisesWithMessage(archengine.ArchEngineError,
             lambda: self.session.join(tc, ic0, 'compare=ge'),
             '/not a join cursor/')
         # Joining a table cursor, not index
-        self.assertRaisesWithMessage(wiredtiger.WiredTigerError,
+        self.assertRaisesWithMessage(archengine.ArchEngineError,
             lambda: self.session.join(jc, fc, 'compare=ge'),
             '/not an index or table cursor/')
         # Joining a non positioned cursor
-        self.assertRaisesWithMessage(wiredtiger.WiredTigerError,
+        self.assertRaisesWithMessage(archengine.ArchEngineError,
             lambda: self.session.join(jc, ic0, 'compare=ge'),
             '/requires key be set/')
 
@@ -253,18 +253,18 @@ class test_join01(wttest.WiredTigerTestCase):
         icB.next()
 
         # Joining non matching index
-        self.assertRaisesWithMessage(wiredtiger.WiredTigerError,
+        self.assertRaisesWithMessage(archengine.ArchEngineError,
             lambda: self.session.join(jc, icB, 'compare=ge'),
             '/table for join cursor does not match/')
 
         # The cursor must be positioned
-        self.assertRaisesWithMessage(wiredtiger.WiredTigerError,
+        self.assertRaisesWithMessage(archengine.ArchEngineError,
             lambda: self.session.join(jc, ic1, 'compare=ge'),
             '/requires key be set/')
         ic1.next()
 
         # The first cursor joined cannot be bloom
-        self.assertRaisesWithMessage(wiredtiger.WiredTigerError,
+        self.assertRaisesWithMessage(archengine.ArchEngineError,
             lambda: self.session.join(jc, ic1,
             'compare=ge,strategy=bloom,count=1000'),
             '/first joined cursor cannot specify strategy=bloom/')
@@ -273,7 +273,7 @@ class test_join01(wttest.WiredTigerTestCase):
         self.session.join(jc, ic1, 'compare=ge'),
 
         # With bloom filters, a count is required
-        self.assertRaisesWithMessage(wiredtiger.WiredTigerError,
+        self.assertRaisesWithMessage(archengine.ArchEngineError,
             lambda: self.session.join(jc, ic0, 'compare=ge,strategy=bloom'),
             '/count must be nonzero/')
 
@@ -282,28 +282,28 @@ class test_join01(wttest.WiredTigerTestCase):
 
         bloom_config = ',strategy=bloom,count=1000'
         # Cannot use the same index cursor
-        self.assertRaisesWithMessage(wiredtiger.WiredTigerError,
+        self.assertRaisesWithMessage(archengine.ArchEngineError,
             lambda: self.session.join(jc, ic0,
             'compare=le' + bloom_config),
             '/index cursor already used in a join/')
 
         # When joining with the same index, need compatible compares
-        self.assertRaisesWithMessage(wiredtiger.WiredTigerError,
+        self.assertRaisesWithMessage(archengine.ArchEngineError,
             lambda: self.session.join(jc, ic0again, 'compare=ge' + bloom_config),
             '/join has overlapping ranges/')
 
         # Another incompatible compare
-        self.assertRaisesWithMessage(wiredtiger.WiredTigerError,
+        self.assertRaisesWithMessage(archengine.ArchEngineError,
             lambda: self.session.join(jc, ic0again, 'compare=gt' + bloom_config),
             '/join has overlapping ranges/')
 
         # Compare is compatible, but bloom args need to match
-        self.assertRaisesWithMessage(wiredtiger.WiredTigerError,
+        self.assertRaisesWithMessage(archengine.ArchEngineError,
             lambda: self.session.join(jc, ic0again, 'compare=le'),
             '/join has incompatible strategy/')
 
         # Counts need to match for bloom filters
-        self.assertRaisesWithMessage(wiredtiger.WiredTigerError,
+        self.assertRaisesWithMessage(archengine.ArchEngineError,
             lambda: self.session.join(jc, ic0again, 'compare=le,strategy=bloom,'
             'count=100'), '/count.* does not match previous count/')
 
@@ -311,42 +311,42 @@ class test_join01(wttest.WiredTigerTestCase):
         self.session.join(jc, ic0again, 'compare=le,strategy=bloom,count=1000')
 
         # Need to do initial next() before getting key/values
-        self.assertRaisesWithMessage(wiredtiger.WiredTigerError,
+        self.assertRaisesWithMessage(archengine.ArchEngineError,
             lambda: jc.get_keys(),
             '/join cursor must be advanced with next/')
 
-        self.assertRaisesWithMessage(wiredtiger.WiredTigerError,
+        self.assertRaisesWithMessage(archengine.ArchEngineError,
             lambda: jc.get_values(),
             '/join cursor must be advanced with next/')
 
         # Operations on the joined cursor are frozen until the join is closed.
-        self.assertRaisesWithMessage(wiredtiger.WiredTigerError,
+        self.assertRaisesWithMessage(archengine.ArchEngineError,
             lambda: ic0.next(),
             '/index cursor is being used in a join/')
 
         # Operations on the joined cursor are frozen until the join is closed.
-        self.assertRaisesWithMessage(wiredtiger.WiredTigerError,
+        self.assertRaisesWithMessage(archengine.ArchEngineError,
             lambda: ic0.prev(),
             '/index cursor is being used in a join/')
 
-        self.assertRaisesWithMessage(wiredtiger.WiredTigerError,
+        self.assertRaisesWithMessage(archengine.ArchEngineError,
             lambda: ic0.reset(),
             '/index cursor is being used in a join/')
 
         # Only a small number of operations allowed on a join cursor
-        self.assertRaises(wiredtiger.WiredTigerError,
+        self.assertRaises(archengine.ArchEngineError,
             lambda: jc.search())
 
-        self.assertRaises(wiredtiger.WiredTigerError,
+        self.assertRaises(archengine.ArchEngineError,
             lambda: jc.prev())
 
         self.assertEquals(jc.next(), 0)
-        self.assertEquals(jc.next(), wiredtiger.WT_NOTFOUND)
+        self.assertEquals(jc.next(), archengine.AE_NOTFOUND)
 
         # Only after the join cursor is closed can we use the index cursor
         # normally
         jc.close()
-        self.assertEquals(ic0.next(), wiredtiger.WT_NOTFOUND)
+        self.assertEquals(ic0.next(), archengine.AE_NOTFOUND)
         self.assertEquals(ic0.prev(), 0)
 
     # common code for making sure that cursors can be
@@ -393,4 +393,4 @@ class test_join01(wttest.WiredTigerTestCase):
 
 
 if __name__ == '__main__':
-    wttest.run()
+    aetest.run()

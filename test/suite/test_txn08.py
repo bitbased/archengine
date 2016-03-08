@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Public Domain 2014-2015 MongoDB, Inc.
-# Public Domain 2008-2014 WiredTiger, Inc.
+# Public Domain 2008-2014 ArchEngine, Inc.
 #
 # This is free and unencumbered software released into the public domain.
 #
@@ -32,16 +32,16 @@
 
 import fnmatch, os, shutil, run, time
 from suite_subprocess import suite_subprocess
-from wiredtiger import wiredtiger_open, stat
-from wtscenario import multiply_scenarios, number_scenarios
-import wttest
+from archengine import archengine_open, stat
+from aescenario import multiply_scenarios, number_scenarios
+import aetest
 
-class test_txn08(wttest.WiredTigerTestCase, suite_subprocess):
+class test_txn08(aetest.ArchEngineTestCase, suite_subprocess):
     logmax = "100K"
     tablename = 'test_txn08'
     uri = 'table:' + tablename
 
-    # Overrides WiredTigerTestCase
+    # Overrides ArchEngineTestCase
     def setUpConnectionOpen(self, dir):
         self.home = dir
         # Cycle through the different transaction_sync values in a
@@ -53,8 +53,8 @@ class test_txn08(wttest.WiredTigerTestCase, suite_subprocess):
                 'transaction_sync="%s",' % self.txn_sync
         # print "Creating conn at '%s' with config '%s'" % (dir, conn_params)
         try:
-            conn = wiredtiger_open(dir, conn_params)
-        except wiredtiger.WiredTigerError as e:
+            conn = archengine_open(dir, conn_params)
+        except archengine.ArchEngineError as e:
             print "Failed conn at '%s' with config '%s'" % (dir, conn_params)
         self.pr(`conn`)
         self.session2 = conn.open_session()
@@ -79,9 +79,9 @@ class test_txn08(wttest.WiredTigerTestCase, suite_subprocess):
         #
         # Run printlog and make sure it exits with zero status.
         #
-        self.runWt(['printlog'], outfilename='printlog.out')
+        self.runAe(['printlog'], outfilename='printlog.out')
         self.check_file_contains('printlog.out',
             '\\u0001\\u0002abcd\\u0003\\u0004')
 
 if __name__ == '__main__':
-    wttest.run()
+    aetest.run()

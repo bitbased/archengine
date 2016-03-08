@@ -1,6 +1,6 @@
 /*-
  * Public Domain 2014-2015 MongoDB, Inc.
- * Public Domain 2008-2014 WiredTiger, Inc.
+ * Public Domain 2008-2014 ArchEngine, Inc.
  *
  * This is free and unencumbered software released into the public domain.
  *
@@ -39,11 +39,11 @@
 #define	snprintf _snprintf
 #endif
 
-#include <wiredtiger.h>
+#include <archengine.h>
 
-static const char * const home = "WT_HOME_LOG";
-static const char * const home_full = "WT_HOME_LOG_FULL";
-static const char * const home_incr = "WT_HOME_LOG_INCR";
+static const char * const home = "AE_HOME_LOG";
+static const char * const home_full = "AE_HOME_LOG_FULL";
+static const char * const home_incr = "AE_HOME_LOG_INCR";
 
 static const char * const full_out = "./backup_full";
 static const char * const incr_out = "./backup_incr";
@@ -62,9 +62,9 @@ compare_backups(int i)
 	char buf[1024], msg[8];
 
 	/*
-	 * We run 'wt dump' on both the full backup directory and the
+	 * We run 'ae dump' on both the full backup directory and the
 	 * incremental backup directory for this iteration.  Since running
-	 * 'wt' runs recovery and makes both directories "live", we need
+	 * 'ae' runs recovery and makes both directories "live", we need
 	 * a new directory for each iteration.
 	 *
 	 * If i == 0, we're comparing against the main, original directory
@@ -72,18 +72,18 @@ compare_backups(int i)
 	 */
 	if (i == 0)
 		(void)snprintf(buf, sizeof(buf),
-		    "../../wt -R -h %s dump logtest > %s.%d",
+		    "../../ae -R -h %s dump logtest > %s.%d",
 		    home, full_out, i);
 	else
 		(void)snprintf(buf, sizeof(buf),
-		    "../../wt -R -h %s.%d dump logtest > %s.%d",
+		    "../../ae -R -h %s.%d dump logtest > %s.%d",
 		    home_full, i, full_out, i);
 	ret = system(buf);
 	/*
 	 * Now run dump on the incremental directory.
 	 */
 	(void)snprintf(buf, sizeof(buf),
-	    "../../wt -R -h %s.%d dump logtest > %s.%d",
+	    "../../ae -R -h %s.%d dump logtest > %s.%d",
 	    home_incr, i, incr_out, i);
 	ret = system(buf);
 
@@ -153,9 +153,9 @@ setup_directories(void)
 }
 
 static int
-add_work(WT_SESSION *session, int iter)
+add_work(AE_SESSION *session, int iter)
 {
-	WT_CURSOR *cursor;
+	AE_CURSOR *cursor;
 	int i, ret;
 	char k[32], v[32];
 
@@ -175,9 +175,9 @@ add_work(WT_SESSION *session, int iter)
 }
 
 static int
-take_full_backup(WT_SESSION *session, int i)
+take_full_backup(AE_SESSION *session, int i)
 {
-	WT_CURSOR *cursor;
+	AE_CURSOR *cursor;
 	int j, ret;
 	char buf[1024], h[256];
 	const char *filename, *hdir;
@@ -213,17 +213,17 @@ take_full_backup(WT_SESSION *session, int i)
 			ret = system(buf);
 		}
 	}
-	if (ret != WT_NOTFOUND)
+	if (ret != AE_NOTFOUND)
 		fprintf(stderr,
-		    "WT_CURSOR.next: %s\n", session->strerror(session, ret));
+		    "AE_CURSOR.next: %s\n", session->strerror(session, ret));
 	ret = cursor->close(cursor);
 	return (ret);
 }
 
 static int
-take_incr_backup(WT_SESSION *session, int i)
+take_incr_backup(AE_SESSION *session, int i)
 {
-	WT_CURSOR *cursor;
+	AE_CURSOR *cursor;
 	int j, ret;
 	char buf[1024], h[256];
 	const char *filename;
@@ -248,9 +248,9 @@ take_incr_backup(WT_SESSION *session, int i)
 			ret = system(buf);
 		}
 	}
-	if (ret != WT_NOTFOUND)
+	if (ret != AE_NOTFOUND)
 		fprintf(stderr,
-		    "WT_CURSOR.next: %s\n", session->strerror(session, ret));
+		    "AE_CURSOR.next: %s\n", session->strerror(session, ret));
 	ret = 0;
 	/*
 	 * With an incremental cursor, we want to truncate on the backup
@@ -265,8 +265,8 @@ take_incr_backup(WT_SESSION *session, int i)
 int
 main(void)
 {
-	WT_CONNECTION *wt_conn;
-	WT_SESSION *session;
+	AE_CONNECTION *ae_conn;
+	AE_SESSION *session;
 	int i, ret;
 	char cmd_buf[256];
 
@@ -275,14 +275,14 @@ main(void)
 		fprintf(stderr, "%s: failed ret %d\n", cmd_buf, ret);
 		return (ret);
 	}
-	if ((ret = wiredtiger_open(home, NULL, CONN_CONFIG, &wt_conn)) != 0) {
+	if ((ret = archengine_open(home, NULL, CONN_CONFIG, &ae_conn)) != 0) {
 		fprintf(stderr, "Error connecting to %s: %s\n",
-		    home, wiredtiger_strerror(ret));
+		    home, archengine_strerror(ret));
 		return (ret);
 	}
 
 	ret = setup_directories();
-	ret = wt_conn->open_session(wt_conn, NULL, NULL, &session);
+	ret = ae_conn->open_session(ae_conn, NULL, NULL, &session);
 	ret = session->create(session, uri, "key_format=S,value_format=S");
 	printf("Adding initial data\n");
 	ret = add_work(session, 0);
@@ -319,7 +319,7 @@ main(void)
 	 * Close the connection.  We're done and want to run the final
 	 * comparison between the incremental and original.
 	 */
-	ret = wt_conn->close(wt_conn, NULL);
+	ret = ae_conn->close(ae_conn, NULL);
 	printf("Final comparison: dumping and comparing data\n");
 	ret = compare_backups(0);
 	return (ret);

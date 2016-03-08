@@ -1,29 +1,29 @@
-WiredTiger 2.7.0: (December  8, 2015)
+ArchEngine 2.7.0: (December  8, 2015)
 
-This is version 2.7.0 of WiredTiger.
+This is version 2.7.0 of ArchEngine.
 
-WiredTiger release packages and documentation can be found at:
+ArchEngine release packages and documentation can be found at:
 
-	http://source.wiredtiger.com/
+	http://source.archengine.com/
 
 The documentation for this specific release can be found at:
 
-	http://source.wiredtiger.com/2.7.0/index.html
+	http://source.archengine.com/2.7.0/index.html
 
-The WiredTiger source code can be found at:
+The ArchEngine source code can be found at:
 
-	http://github.com/wiredtiger/wiredtiger
+	http://github.com/archengine/archengine
 
-WiredTiger uses JIRA for issue management:
+ArchEngine uses JIRA for issue management:
 
-	http://jira.mongodb.org/browse/WT
+	http://jira.mongodb.org/browse/AE
 
 Please do not report issues through GitHub.
 
-WiredTiger licensing information can be found at:
+ArchEngine licensing information can be found at:
 
-	http://source.wiredtiger.com/license.html
+	http://source.archengine.com/license.html
 
-For general questions and discussion, there's a WiredTiger group:
+For general questions and discussion, there's a ArchEngine group:
 
-	http://groups.google.com/group/wiredtiger-users
+	http://groups.google.com/group/archengine-users

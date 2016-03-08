@@ -1,29 +1,29 @@
 /*-
  * Copyright (c) 2014-2015 MongoDB, Inc.
- * Copyright (c) 2008-2014 WiredTiger, Inc.
+ * Copyright (c) 2008-2014 ArchEngine, Inc.
  *	All rights reserved.
  *
  * See the file LICENSE for redistribution information.
  */
 
-#include "wt_internal.h"
+#include "ae_internal.h"
 
 /*
- * __wt_col_search --
+ * __ae_col_search --
  *	Search a column-store tree for a specific record-based key.
  */
 int
-__wt_col_search(WT_SESSION_IMPL *session,
-    uint64_t recno, WT_REF *leaf, WT_CURSOR_BTREE *cbt)
+__ae_col_search(AE_SESSION_IMPL *session,
+    uint64_t recno, AE_REF *leaf, AE_CURSOR_BTREE *cbt)
 {
-	WT_BTREE *btree;
-	WT_COL *cip;
-	WT_DECL_RET;
-	WT_INSERT *ins;
-	WT_INSERT_HEAD *ins_head;
-	WT_PAGE *page;
-	WT_PAGE_INDEX *pindex, *parent_pindex;
-	WT_REF *current, *descent;
+	AE_BTREE *btree;
+	AE_COL *cip;
+	AE_DECL_RET;
+	AE_INSERT *ins;
+	AE_INSERT_HEAD *ins_head;
+	AE_PAGE *page;
+	AE_PAGE_INDEX *pindex, *parent_pindex;
+	AE_REF *current, *descent;
 	uint32_t base, indx, limit;
 	int depth;
 
@@ -43,12 +43,12 @@ restart_root:
 	for (depth = 2, pindex = NULL;; ++depth) {
 		parent_pindex = pindex;
 restart_page:	page = current->page;
-		if (page->type != WT_PAGE_COL_INT)
+		if (page->type != AE_PAGE_COL_INT)
 			break;
 
-		WT_ASSERT(session, current->key.recno == page->pg_intl_recno);
+		AE_ASSERT(session, current->key.recno == page->pg_intl_recno);
 
-		WT_INTL_INDEX_GET(session, page, pindex);
+		AE_INTL_INDEX_GET(session, page, pindex);
 		base = pindex->entries;
 		descent = pindex->index[base - 1];
 
@@ -59,9 +59,9 @@ restart_page:	page = current->page;
 			 * on the page), check for an internal page split race.
 			 */
 			if (parent_pindex != NULL &&
-			    __wt_split_intl_race(
+			    __ae_split_intl_race(
 			    session, current->home, parent_pindex)) {
-				WT_RET(__wt_page_release(session, current, 0));
+				AE_RET(__ae_page_release(session, current, 0));
 				goto restart_root;
 			}
 			goto descend;
@@ -93,7 +93,7 @@ descend:	/*
 			 * only way for base to be 0 is if recno is the page's
 			 * starting recno.
 			 */
-			WT_ASSERT(session, base > 0);
+			AE_ASSERT(session, base > 0);
 			descent = pindex->index[base - 1];
 		}
 
@@ -103,11 +103,11 @@ descend:	/*
 		 * page; otherwise return on error, the swap call ensures we're
 		 * holding nothing on failure.
 		 */
-		if ((ret = __wt_page_swap(session, current, descent, 0)) == 0) {
+		if ((ret = __ae_page_swap(session, current, descent, 0)) == 0) {
 			current = descent;
 			continue;
 		}
-		if (ret == WT_RESTART)
+		if (ret == AE_RESTART)
 			goto restart_page;
 		return (ret);
 	}
@@ -142,7 +142,7 @@ leaf_only:
 	 * that's impossibly large for the page. We do have additional setup to
 	 * do in that case, the record may be appended to the page.
 	 */
-	if (page->type == WT_PAGE_COL_FIX) {
+	if (page->type == AE_PAGE_COL_FIX) {
 		if (recno < page->pg_fix_recno) {
 			cbt->compare = 1;
 			return (0);
@@ -151,7 +151,7 @@ leaf_only:
 			cbt->recno = page->pg_fix_recno + page->pg_fix_entries;
 			goto past_end;
 		} else
-			ins_head = WT_COL_UPDATE_SINGLE(page);
+			ins_head = AE_COL_UPDATE_SINGLE(page);
 	} else {
 		if (recno < page->pg_var_recno) {
 			cbt->compare = 1;
@@ -161,8 +161,8 @@ leaf_only:
 			cbt->recno = __col_var_last_recno(page);
 			goto past_end;
 		} else {
-			cbt->slot = WT_COL_SLOT(page, cip);
-			ins_head = WT_COL_UPDATE_SLOT(page, cbt->slot);
+			cbt->slot = AE_COL_SLOT(page, cip);
+			ins_head = AE_COL_UPDATE_SLOT(page, cbt->slot);
 		}
 	}
 
@@ -171,12 +171,12 @@ leaf_only:
 	 * update list (fixed-length), or slot's update list (variable-length)
 	 * for a better match.  The only better match we can find is an exact
 	 * match, otherwise the existing match on the page is the one we want.
-	 * For that reason, don't set the cursor's WT_INSERT_HEAD/WT_INSERT pair
+	 * For that reason, don't set the cursor's AE_INSERT_HEAD/AE_INSERT pair
 	 * until we know we have a useful entry.
 	 */
 	if ((ins = __col_insert_search(
 	    ins_head, cbt->ins_stack, cbt->next_stack, recno)) != NULL)
-		if (recno == WT_INSERT_RECNO(ins)) {
+		if (recno == AE_INSERT_RECNO(ins)) {
 			cbt->ins_head = ins_head;
 			cbt->ins = ins;
 		}
@@ -195,7 +195,7 @@ past_end:
 	 * we'll allocate the record number; we're not going to find a match by
 	 * definition, and we figure out the position when we do the work.
 	 */
-	cbt->ins_head = WT_COL_APPEND(page);
+	cbt->ins_head = AE_COL_APPEND(page);
 	if (recno == UINT64_MAX)
 		cbt->ins = NULL;
 	else
@@ -204,7 +204,7 @@ past_end:
 	if (cbt->ins == NULL)
 		cbt->compare = -1;
 	else {
-		cbt->recno = WT_INSERT_RECNO(cbt->ins);
+		cbt->recno = AE_INSERT_RECNO(cbt->ins);
 		if (recno == cbt->recno)
 			cbt->compare = 0;
 		else if (recno < cbt->recno)
@@ -220,6 +220,6 @@ past_end:
 	 * search functions have to handle that case.
 	 */
 	if (cbt->compare == -1)
-		F_SET(cbt, WT_CBT_MAX_RECORD);
+		F_SET(cbt, AE_CBT_MAX_RECORD);
 	return (0);
 }

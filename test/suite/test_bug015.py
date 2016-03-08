@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Public Domain 2014-2015 MongoDB, Inc.
-# Public Domain 2008-2014 WiredTiger, Inc.
+# Public Domain 2008-2014 ArchEngine, Inc.
 #
 # This is free and unencumbered software released into the public domain.
 #
@@ -26,12 +26,12 @@
 # ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 # OTHER DEALINGS IN THE SOFTWARE.
 
-import wiredtiger, wttest
-from helper import copy_wiredtiger_home, key_populate, simple_populate
+import archengine, aetest
+from helper import copy_archengine_home, key_populate, simple_populate
 
 # test_bug015.py
-#    JIRA WT-2162: index drop in a certain order triggers NULL pointer deref
-class test_bug015(wttest.WiredTigerTestCase):
+#    JIRA AE-2162: index drop in a certain order triggers NULL pointer deref
+class test_bug015(aetest.ArchEngineTestCase):
     def test_bug015(self):
         table = 'table:test_bug015'
         idx1 = 'index:test_bug015:aab'
@@ -45,4 +45,4 @@ class test_bug015(wttest.WiredTigerTestCase):
         self.session.create(idx2, "columns=(v)")
 
 if __name__ == '__main__':
-    wttest.run()
+    aetest.run()

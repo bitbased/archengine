@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Public Domain 2014-2015 MongoDB, Inc.
-# Public Domain 2008-2014 WiredTiger, Inc.
+# Public Domain 2008-2014 ArchEngine, Inc.
 #
 # This is free and unencumbered software released into the public domain.
 #
@@ -28,7 +28,7 @@
 
 
 # This Python script is run as part of generating the documentation for the
-# WiredTiger reference manual.  It changes comments to Javadoc style
+# ArchEngine reference manual.  It changes comments to Javadoc style
 # (i.e., from "/*!" to "/**"), because the latter are configured to not
 # search for brief descriptions at the beginning of pages.
 # It also processes any page marked with @m_page specially to create
@@ -46,17 +46,17 @@ def err(arg):
 
 def java_post_substitutions(source):
     result = source
-    for datatype in [['WT_CONNECTION', 'Connection'],
-             ['WT_CURSOR', 'Cursor'],
-             ['WT_SESSION', 'Session'],
-             ['WT_ASYNC_OPTYPE', 'AsyncOpType'],
-             ['WT_ASYNC_OP', 'AsyncOp']]:
+    for datatype in [['AE_CONNECTION', 'Connection'],
+             ['AE_CURSOR', 'Cursor'],
+             ['AE_SESSION', 'Session'],
+             ['AE_ASYNC_OPTYPE', 'AsyncOpType'],
+             ['AE_ASYNC_OP', 'AsyncOp']]:
         fromdt = datatype[0]
         todt = datatype[1]
 
-        # e.g. replace("WT_CONNECTION::", "Connection.").
-        #      replace("WT_CONNECTION", "Connection")
-        #      replace("::WT_CONNECTION", "Connection")
+        # e.g. replace("AE_CONNECTION::", "Connection.").
+        #      replace("AE_CONNECTION", "Connection")
+        #      replace("::AE_CONNECTION", "Connection")
         # etc.
         result = result.replace(fromdt + '::', todt + '.')
         result = re.sub(r':*' + fromdt, todt, result)
@@ -67,7 +67,7 @@ def java_post_substitutions(source):
         # Ideally, we'd have a way ('@m_ref'?) to indicate which
         # ones could refer to a Java version.
         result = result.replace('ref ' + todt + '.', 'ref ' + fromdt + '::')
-    result = result.replace('::wiredtiger_open', '\c wiredtiger.open')
+    result = result.replace('::archengine_open', '\c archengine.open')
     return result
 
 def process_lang(lang, lines):

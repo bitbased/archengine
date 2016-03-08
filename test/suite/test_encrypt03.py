@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Public Domain 2014-2015 MongoDB, Inc.
-# Public Domain 2008-2014 WiredTiger, Inc.
+# Public Domain 2008-2014 ArchEngine, Inc.
 #
 # This is free and unencumbered software released into the public domain.
 #
@@ -31,11 +31,11 @@
 #
 
 import os, run, random
-import wiredtiger, wttest
-from wtscenario import multiply_scenarios, number_scenarios
+import archengine, aetest
+from aescenario import multiply_scenarios, number_scenarios
 
 # Test basic encryption
-class test_encrypt03(wttest.WiredTigerTestCase):
+class test_encrypt03(aetest.ArchEngineTestCase):
 
     types = [
         ('table', dict(uri='table:test_encrypt03')),
@@ -50,29 +50,29 @@ class test_encrypt03(wttest.WiredTigerTestCase):
     ]
     scenarios = number_scenarios(multiply_scenarios('.', types, encrypt))
 
-    # Override WiredTigerTestCase, we have extensions.
+    # Override ArchEngineTestCase, we have extensions.
     def setUpConnectionOpen(self, dir):
         encarg = 'encryption=(name={0}{1}),'.format(
             self.sys_encrypt, self.sys_encrypt_args)
         extarg = self.extensionArg([('encryptors', self.sys_encrypt),
             ('encryptors', self.file_encrypt)])
         self.pr('encarg = ' + encarg + ' extarg = ' + extarg)
-        conn = wiredtiger.wiredtiger_open(dir,
+        conn = archengine.archengine_open(dir,
             'create,error_prefix="{0}: ",{1}{2}'.format(
                 self.shortid(), encarg, extarg))
         self.pr(`conn`)
         return conn
 
-    # Return the wiredtiger_open extension argument for a shared library.
+    # Return the archengine_open extension argument for a shared library.
     def extensionArg(self, exts):
         extfiles = []
         for ext in exts:
             (dirname, name) = ext
             if name != None and name != 'none':
                 testdir = os.path.dirname(__file__)
-                extdir = os.path.join(run.wt_builddir, 'ext', dirname)
+                extdir = os.path.join(run.ae_builddir, 'ext', dirname)
                 extfile = os.path.join(
-                    extdir, name, '.libs', 'libwiredtiger_' + name + '.so')
+                    extdir, name, '.libs', 'libarchengine_' + name + '.so')
                 if not os.path.exists(extfile):
                     self.skipTest('extension "' + extfile + '" not built')
                 if not extfile in extfiles:
@@ -94,9 +94,9 @@ class test_encrypt03(wttest.WiredTigerTestCase):
         # All error messages so far have this in common.
         msg = '/to be set: Invalid argument/'
 
-        self.assertRaisesWithMessage(wiredtiger.WiredTigerError, lambda:
+        self.assertRaisesWithMessage(archengine.ArchEngineError, lambda:
             self.session.create(self.uri, params), msg)
 
 
 if __name__ == '__main__':
-    wttest.run()
+    aetest.run()

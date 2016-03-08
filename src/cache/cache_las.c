@@ -1,23 +1,23 @@
 /*-
  * Copyright (c) 2014-2015 MongoDB, Inc.
- * Copyright (c) 2008-2014 WiredTiger, Inc.
+ * Copyright (c) 2008-2014 ArchEngine, Inc.
  *	All rights reserved.
  *
  * See the file LICENSE for redistribution information.
  */
 
-#include "wt_internal.h"
+#include "ae_internal.h"
 
 /*
- * __wt_las_stats_update --
+ * __ae_las_stats_update --
  *	Update the lookaside table statistics for return to the application.
  */
 void
-__wt_las_stats_update(WT_SESSION_IMPL *session)
+__ae_las_stats_update(AE_SESSION_IMPL *session)
 {
-	WT_CONNECTION_IMPL *conn;
-	WT_CONNECTION_STATS **cstats;
-	WT_DSRC_STATS **dstats;
+	AE_CONNECTION_IMPL *conn;
+	AE_CONNECTION_STATS **cstats;
+	AE_DSRC_STATS **dstats;
 
 	conn = S2C(session);
 
@@ -26,7 +26,7 @@ __wt_las_stats_update(WT_SESSION_IMPL *session)
 	 * table data-source statistics. If there's no lookaside table, values
 	 * remain 0.
 	 */
-	if (!F_ISSET(conn, WT_CONN_LAS_OPEN))
+	if (!F_ISSET(conn, AE_CONN_LAS_OPEN))
 		return;
 
 	/*
@@ -34,26 +34,26 @@ __wt_las_stats_update(WT_SESSION_IMPL *session)
 	 * to it by way of the underlying btree handle, but it's a little ugly.
 	 */
 	cstats = conn->stats;
-	dstats = ((WT_CURSOR_BTREE *)
+	dstats = ((AE_CURSOR_BTREE *)
 	    conn->las_session->las_cursor)->btree->dhandle->stats;
 
-	WT_STAT_SET(session, cstats,
-	    cache_lookaside_insert, WT_STAT_READ(dstats, cursor_insert));
-	WT_STAT_SET(session, cstats,
-	    cache_lookaside_remove, WT_STAT_READ(dstats, cursor_remove));
+	AE_STAT_SET(session, cstats,
+	    cache_lookaside_insert, AE_STAT_READ(dstats, cursor_insert));
+	AE_STAT_SET(session, cstats,
+	    cache_lookaside_remove, AE_STAT_READ(dstats, cursor_remove));
 }
 
 /*
- * __wt_las_create --
+ * __ae_las_create --
  *	Initialize the database's lookaside store.
  */
 int
-__wt_las_create(WT_SESSION_IMPL *session)
+__ae_las_create(AE_SESSION_IMPL *session)
 {
-	WT_CONNECTION_IMPL *conn;
+	AE_CONNECTION_IMPL *conn;
 	uint32_t session_flags;
 	const char *drop_cfg[] = {
-	    WT_CONFIG_BASE(session, WT_SESSION_drop), "force=true", NULL };
+	    AE_CONFIG_BASE(session, AE_SESSION_drop), "force=true", NULL };
 
 	conn = S2C(session);
 
@@ -64,43 +64,43 @@ __wt_las_create(WT_SESSION_IMPL *session)
 	 *
 	 * Discard any previous incarnation of the table.
 	 */
-	WT_RET(__wt_session_drop(session, WT_LAS_URI, drop_cfg));
+	AE_RET(__ae_session_drop(session, AE_LAS_URI, drop_cfg));
 
 	/* Re-create the table. */
-	WT_RET(__wt_session_create(session, WT_LAS_URI, WT_LAS_FORMAT));
+	AE_RET(__ae_session_create(session, AE_LAS_URI, AE_LAS_FORMAT));
 
 	/*
 	 * Open a shared internal session used to access the lookaside table.
 	 * This session should never be tapped for eviction.
 	 */
-	session_flags = WT_SESSION_LOOKASIDE_CURSOR | WT_SESSION_NO_EVICTION;
-	WT_RET(__wt_open_internal_session(
+	session_flags = AE_SESSION_LOOKASIDE_CURSOR | AE_SESSION_NO_EVICTION;
+	AE_RET(__ae_open_internal_session(
 	    conn, "lookaside table", true, session_flags, &conn->las_session));
 
 	/* Flag that the lookaside table has been created. */
-	F_SET(conn, WT_CONN_LAS_OPEN);
+	F_SET(conn, AE_CONN_LAS_OPEN);
 
 	return (0);
 }
 
 /*
- * __wt_las_destroy --
+ * __ae_las_destroy --
  *	Destroy the database's lookaside store.
  */
 int
-__wt_las_destroy(WT_SESSION_IMPL *session)
+__ae_las_destroy(AE_SESSION_IMPL *session)
 {
-	WT_CONNECTION_IMPL *conn;
-	WT_DECL_RET;
-	WT_SESSION *wt_session;
+	AE_CONNECTION_IMPL *conn;
+	AE_DECL_RET;
+	AE_SESSION *ae_session;
 
 	conn = S2C(session);
 
 	if (conn->las_session == NULL)
 		return (0);
 
-	wt_session = &conn->las_session->iface;
-	ret = wt_session->close(wt_session, NULL);
+	ae_session = &conn->las_session->iface;
+	ret = ae_session->close(ae_session, NULL);
 
 	conn->las_session = NULL;
 
@@ -108,13 +108,13 @@ __wt_las_destroy(WT_SESSION_IMPL *session)
 }
 
 /*
- * __wt_las_set_written --
+ * __ae_las_set_written --
  *	Flag that the lookaside table has been written.
  */
 void
-__wt_las_set_written(WT_SESSION_IMPL *session)
+__ae_las_set_written(AE_SESSION_IMPL *session)
 {
-	WT_CONNECTION_IMPL *conn;
+	AE_CONNECTION_IMPL *conn;
 
 	conn = S2C(session);
 	if (!conn->las_written) {
@@ -124,33 +124,33 @@ __wt_las_set_written(WT_SESSION_IMPL *session)
 		 * Push the flag: unnecessary, but from now page reads must deal
 		 * with lookaside table records, and we only do the write once.
 		 */
-		WT_FULL_BARRIER();
+		AE_FULL_BARRIER();
 	}
 }
 
 /*
- * __wt_las_is_written --
+ * __ae_las_is_written --
  *	Return if the lookaside table has been written.
  */
 bool
-__wt_las_is_written(WT_SESSION_IMPL *session)
+__ae_las_is_written(AE_SESSION_IMPL *session)
 {
 	return (S2C(session)->las_written);
 }
 
 /*
- * __wt_las_cursor_create --
+ * __ae_las_cursor_create --
  *	Open a new lookaside table cursor.
  */
 int
-__wt_las_cursor_create(WT_SESSION_IMPL *session, WT_CURSOR **cursorp)
+__ae_las_cursor_create(AE_SESSION_IMPL *session, AE_CURSOR **cursorp)
 {
-	WT_BTREE *btree;
+	AE_BTREE *btree;
 	const char *open_cursor_cfg[] = {
-	    WT_CONFIG_BASE(session, WT_SESSION_open_cursor), NULL };
+	    AE_CONFIG_BASE(session, AE_SESSION_open_cursor), NULL };
 
-	WT_RET(__wt_open_cursor(
-	    session, WT_LAS_URI, NULL, open_cursor_cfg, cursorp));
+	AE_RET(__ae_open_cursor(
+	    session, AE_LAS_URI, NULL, open_cursor_cfg, cursorp));
 
 	/*
 	 * Set special flags for the lookaside table: the lookaside flag (used,
@@ -159,28 +159,28 @@ __wt_las_cursor_create(WT_SESSION_IMPL *session, WT_CURSOR **cursorp)
 	 *
 	 * Test flags before setting them so updates can't race in subsequent
 	 * opens (the first update is safe because it's single-threaded from
-	 * wiredtiger_open).
+	 * archengine_open).
 	 */
 	btree = S2BT(session);
-	if (!F_ISSET(btree, WT_BTREE_LOOKASIDE))
-		F_SET(btree, WT_BTREE_LOOKASIDE);
-	if (!F_ISSET(btree, WT_BTREE_NO_CHECKPOINT))
-		F_SET(btree, WT_BTREE_NO_CHECKPOINT);
-	if (!F_ISSET(btree, WT_BTREE_NO_LOGGING))
-		F_SET(btree, WT_BTREE_NO_LOGGING);
+	if (!F_ISSET(btree, AE_BTREE_LOOKASIDE))
+		F_SET(btree, AE_BTREE_LOOKASIDE);
+	if (!F_ISSET(btree, AE_BTREE_NO_CHECKPOINT))
+		F_SET(btree, AE_BTREE_NO_CHECKPOINT);
+	if (!F_ISSET(btree, AE_BTREE_NO_LOGGING))
+		F_SET(btree, AE_BTREE_NO_LOGGING);
 
 	return (0);
 }
 
 /*
- * __wt_las_cursor --
+ * __ae_las_cursor --
  *	Return a lookaside cursor.
  */
 int
-__wt_las_cursor(
-    WT_SESSION_IMPL *session, WT_CURSOR **cursorp, uint32_t *session_flags)
+__ae_las_cursor(
+    AE_SESSION_IMPL *session, AE_CURSOR **cursorp, uint32_t *session_flags)
 {
-	WT_CONNECTION_IMPL *conn;
+	AE_CONNECTION_IMPL *conn;
 
 	*cursorp = NULL;
 
@@ -194,7 +194,7 @@ __wt_las_cursor(
 	 * useful more than once.
 	 */
 	*session_flags =
-	    F_ISSET(session, WT_SESSION_NO_CACHE | WT_SESSION_NO_EVICTION);
+	    F_ISSET(session, AE_SESSION_NO_CACHE | AE_SESSION_NO_EVICTION);
 
 	conn = S2C(session);
 
@@ -202,30 +202,30 @@ __wt_las_cursor(
 	 * Some threads have their own lookaside table cursors, else lock the
 	 * shared lookaside cursor.
 	 */
-	if (F_ISSET(session, WT_SESSION_LOOKASIDE_CURSOR))
+	if (F_ISSET(session, AE_SESSION_LOOKASIDE_CURSOR))
 		*cursorp = session->las_cursor;
 	else {
-		__wt_spin_lock(session, &conn->las_lock);
+		__ae_spin_lock(session, &conn->las_lock);
 		*cursorp = conn->las_session->las_cursor;
 	}
 
 	/* Turn caching and eviction off. */
-	F_SET(session, WT_SESSION_NO_CACHE | WT_SESSION_NO_EVICTION);
+	F_SET(session, AE_SESSION_NO_CACHE | AE_SESSION_NO_EVICTION);
 
 	return (0);
 }
 
 /*
- * __wt_las_cursor_close --
+ * __ae_las_cursor_close --
  *	Discard a lookaside cursor.
  */
 int
-__wt_las_cursor_close(
-	WT_SESSION_IMPL *session, WT_CURSOR **cursorp, uint32_t session_flags)
+__ae_las_cursor_close(
+	AE_SESSION_IMPL *session, AE_CURSOR **cursorp, uint32_t session_flags)
 {
-	WT_CONNECTION_IMPL *conn;
-	WT_CURSOR *cursor;
-	WT_DECL_RET;
+	AE_CONNECTION_IMPL *conn;
+	AE_CURSOR *cursor;
+	AE_DECL_RET;
 
 	conn = S2C(session);
 
@@ -240,32 +240,32 @@ __wt_las_cursor_close(
 	 * We turned off caching and eviction while the lookaside cursor was in
 	 * use, restore the session's flags.
 	 */
-	F_CLR(session, WT_SESSION_NO_CACHE | WT_SESSION_NO_EVICTION);
+	F_CLR(session, AE_SESSION_NO_CACHE | AE_SESSION_NO_EVICTION);
 	F_SET(session, session_flags);
 
 	/*
 	 * Some threads have their own lookaside table cursors, else unlock the
 	 * shared lookaside cursor.
 	 */
-	if (!F_ISSET(session, WT_SESSION_LOOKASIDE_CURSOR))
-		__wt_spin_unlock(session, &conn->las_lock);
+	if (!F_ISSET(session, AE_SESSION_LOOKASIDE_CURSOR))
+		__ae_spin_unlock(session, &conn->las_lock);
 
 	return (ret);
 }
 
 /*
- * __wt_las_sweep --
+ * __ae_las_sweep --
  *	Sweep the lookaside table.
  */
 int
-__wt_las_sweep(WT_SESSION_IMPL *session)
+__ae_las_sweep(AE_SESSION_IMPL *session)
 {
-	WT_CONNECTION_IMPL *conn;
-	WT_CURSOR *cursor;
-	WT_DECL_ITEM(las_addr);
-	WT_DECL_ITEM(las_key);
-	WT_DECL_RET;
-	WT_ITEM *key;
+	AE_CONNECTION_IMPL *conn;
+	AE_CURSOR *cursor;
+	AE_DECL_ITEM(las_addr);
+	AE_DECL_ITEM(las_key);
+	AE_DECL_RET;
+	AE_ITEM *key;
 	uint64_t cnt, las_counter, las_txnid;
 	int64_t remove_cnt;
 	uint32_t las_id, session_flags;
@@ -277,10 +277,10 @@ __wt_las_sweep(WT_SESSION_IMPL *session)
 	remove_cnt = 0;
 	session_flags = 0;		/* [-Werror=maybe-uninitialized] */
 
-	WT_ERR(__wt_scr_alloc(session, 0, &las_addr));
-	WT_ERR(__wt_scr_alloc(session, 0, &las_key));
+	AE_ERR(__ae_scr_alloc(session, 0, &las_addr));
+	AE_ERR(__ae_scr_alloc(session, 0, &las_key));
 
-	WT_ERR(__wt_las_cursor(session, &cursor, &session_flags));
+	AE_ERR(__ae_las_cursor(session, &cursor, &session_flags));
 
 	/*
 	 * If we're not starting a new sweep, position the cursor using the key
@@ -288,7 +288,7 @@ __wt_las_sweep(WT_SESSION_IMPL *session)
 	 * just roughly in the same spot is fine).
 	 */
 	if (key->size != 0) {
-		__wt_cursor_set_raw_key(cursor, key);
+		__ae_cursor_set_raw_key(cursor, key);
 		ret = cursor->search_near(cursor, &notused);
 
 		/*
@@ -316,10 +316,10 @@ __wt_las_sweep(WT_SESSION_IMPL *session)
 	 * blocks in the cache in order to get rid of them, and slowly review
 	 * lookaside blocks that have already been evicted.
 	 */
-	cnt = (uint64_t)WT_MAX(100, conn->las_record_cnt / 30);
+	cnt = (uint64_t)AE_MAX(100, conn->las_record_cnt / 30);
 
 	/* Discard pages we read as soon as we're done with them. */
-	F_SET(session, WT_SESSION_NO_CACHE);
+	F_SET(session, AE_SESSION_NO_CACHE);
 
 	/* Walk the file. */
 	for (; cnt > 0 && (ret = cursor->next(cursor)) == 0; --cnt) {
@@ -331,37 +331,37 @@ __wt_las_sweep(WT_SESSION_IMPL *session)
 		 * pointer and the page could be evicted from underneath us.
 		 */
 		if (cnt == 1) {
-			WT_ERR(__wt_cursor_get_raw_key(cursor, key));
-			if (!WT_DATA_IN_ITEM(key))
-				WT_ERR(__wt_buf_set(
+			AE_ERR(__ae_cursor_get_raw_key(cursor, key));
+			if (!AE_DATA_IN_ITEM(key))
+				AE_ERR(__ae_buf_set(
 				    session, key, key->data, key->size));
 		}
 
-		WT_ERR(cursor->get_key(cursor,
+		AE_ERR(cursor->get_key(cursor,
 		    &las_id, las_addr, &las_counter, &las_txnid, las_key));
 
 		/*
 		 * If the on-page record transaction ID associated with the
 		 * record is globally visible, the record can be discarded.
 		 *
-		 * Cursor opened overwrite=true: won't return WT_NOTFOUND should
+		 * Cursor opened overwrite=true: won't return AE_NOTFOUND should
 		 * another thread remove the record before we do, and the cursor
 		 * remains positioned in that case.
 		 */
-		if (__wt_txn_visible_all(session, las_txnid)) {
-			WT_ERR(cursor->remove(cursor));
+		if (__ae_txn_visible_all(session, las_txnid)) {
+			AE_ERR(cursor->remove(cursor));
 			++remove_cnt;
 		}
 	}
 
 srch_notfound:
-	WT_ERR_NOTFOUND_OK(ret);
+	AE_ERR_NOTFOUND_OK(ret);
 
 	if (0) {
-err:		__wt_buf_free(session, key);
+err:		__ae_buf_free(session, key);
 	}
 
-	WT_TRET(__wt_las_cursor_close(session, &cursor, session_flags));
+	AE_TRET(__ae_las_cursor_close(session, &cursor, session_flags));
 
 	/*
 	 * If there were races to remove records, we can over-count.  All
@@ -371,12 +371,12 @@ err:		__wt_buf_free(session, key);
 	if (remove_cnt > S2C(session)->las_record_cnt)
 		S2C(session)->las_record_cnt = 0;
 	else if (remove_cnt > 0)
-		(void)__wt_atomic_subi64(&conn->las_record_cnt, remove_cnt);
+		(void)__ae_atomic_subi64(&conn->las_record_cnt, remove_cnt);
 
-	F_CLR(session, WT_SESSION_NO_CACHE);
+	F_CLR(session, AE_SESSION_NO_CACHE);
 
-	__wt_scr_free(session, &las_addr);
-	__wt_scr_free(session, &las_key);
+	__ae_scr_free(session, &las_addr);
+	__ae_scr_free(session, &las_key);
 
 	return (ret);
 }

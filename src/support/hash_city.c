@@ -1,6 +1,6 @@
 /*-
  * Public Domain 2014-2015 MongoDB, Inc.
- * Public Domain 2008-2014 WiredTiger, Inc.
+ * Public Domain 2008-2014 ArchEngine, Inc.
  *
  * This is free and unencumbered software released into the public domain.
  *
@@ -58,7 +58,7 @@
  */
 
 #include <string.h>
-#include "wt_internal.h"
+#include "ae_internal.h"
 
 /*
  * Google City Hash implementation. Based on source code from:
@@ -314,11 +314,11 @@ static inline uint64_t CityHash64(const char *s, size_t len) {
 }
 
 /*
- * __wt_hash_city64 --
- *	WiredTiger wrapper around third party hash implementation.
+ * __ae_hash_city64 --
+ *	ArchEngine wrapper around third party hash implementation.
  */
 uint64_t
-__wt_hash_city64(const void *s, size_t len)
+__ae_hash_city64(const void *s, size_t len)
 {
 	return (CityHash64(s, len));
 }

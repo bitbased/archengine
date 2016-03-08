@@ -1,23 +1,23 @@
 /*-
  * Copyright (c) 2014-2015 MongoDB, Inc.
- * Copyright (c) 2008-2014 WiredTiger, Inc.
+ * Copyright (c) 2008-2014 ArchEngine, Inc.
  *	All rights reserved.
  *
  * See the file LICENSE for redistribution information.
  */
 
-#include "wt_internal.h"
+#include "ae_internal.h"
 
 /*
- * __wt_salvage --
+ * __ae_salvage --
  *	Salvage a single file.
  */
 int
-__wt_salvage(WT_SESSION_IMPL *session, const char *cfg[])
+__ae_salvage(AE_SESSION_IMPL *session, const char *cfg[])
 {
-	WT_CKPT *ckptbase;
-	WT_DATA_HANDLE *dhandle;
-	WT_DECL_RET;
+	AE_CKPT *ckptbase;
+	AE_DATA_HANDLE *dhandle;
+	AE_DECL_RET;
 
 	dhandle = session->dhandle;
 
@@ -36,11 +36,11 @@ __wt_salvage(WT_SESSION_IMPL *session, const char *cfg[])
 	 * create or open of a file without a checkpoint to roll-forward from,
 	 * and the contents of the file would be discarded.
 	 */
-	WT_RET(__wt_calloc_def(session, 2, &ckptbase));
-	WT_ERR(__wt_strdup(session, WT_CHECKPOINT, &ckptbase[0].name));
-	F_SET(&ckptbase[0], WT_CKPT_ADD);
+	AE_RET(__ae_calloc_def(session, 2, &ckptbase));
+	AE_ERR(__ae_strdup(session, AE_CHECKPOINT, &ckptbase[0].name));
+	F_SET(&ckptbase[0], AE_CKPT_ADD);
 
-	WT_ERR(__wt_bt_salvage(session, ckptbase, cfg));
+	AE_ERR(__ae_bt_salvage(session, ckptbase, cfg));
 
 	/*
 	 * If no checkpoint was created, well, it's probably bad news, but there
@@ -49,11 +49,11 @@ __wt_salvage(WT_SESSION_IMPL *session, const char *cfg[])
 	 * checkpoints with the single new one.
 	 */
 	if (ckptbase[0].raw.data == NULL)
-		WT_ERR(__wt_meta_checkpoint_clear(session, dhandle->name));
+		AE_ERR(__ae_meta_checkpoint_clear(session, dhandle->name));
 	else
-		WT_ERR(__wt_meta_ckptlist_set(
+		AE_ERR(__ae_meta_ckptlist_set(
 		    session, dhandle->name, ckptbase, NULL));
 
-err:	__wt_meta_ckptlist_free(session, ckptbase);
+err:	__ae_meta_ckptlist_free(session, ckptbase);
 	return (ret);
 }

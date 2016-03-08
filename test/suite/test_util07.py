@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Public Domain 2014-2015 MongoDB, Inc.
-# Public Domain 2008-2014 WiredTiger, Inc.
+# Public Domain 2008-2014 ArchEngine, Inc.
 #
 # This is free and unencumbered software released into the public domain.
 #
@@ -28,11 +28,11 @@
 
 import os, struct
 from suite_subprocess import suite_subprocess
-import wiredtiger, wttest
+import archengine, aetest
 
 # test_util07.py
-#    Utilities: wt read
-class test_util07(wttest.WiredTigerTestCase, suite_subprocess):
+#    Utilities: ae read
+class test_util07(aetest.ArchEngineTestCase, suite_subprocess):
     tablename = 'test_util07.a'
     nentries = 1000
     session_params = 'key_format=S,value_format=S'
@@ -66,30 +66,30 @@ class test_util07(wttest.WiredTigerTestCase, suite_subprocess):
 
     def test_read_empty(self):
         """
-        Test read in a 'wt' process, using an empty table
+        Test read in a 'ae' process, using an empty table
         """
         self.session.create('table:' + self.tablename, self.session_params)
         outfile = "readout.txt"
         errfile = "readerr.txt"
-        self.runWt(["read", 'table:' + self.tablename, 'NoMatch'], outfilename=outfile, errfilename=errfile)
+        self.runAe(["read", 'table:' + self.tablename, 'NoMatch'], outfilename=outfile, errfilename=errfile)
         self.check_empty_file(outfile)
         self.check_file_contains(errfile, 'NoMatch: not found\n')
 
     def test_read_populated(self):
         """
-        Test read in a 'wt' process, using an empty table
+        Test read in a 'ae' process, using an empty table
         """
         self.session.create('table:' + self.tablename, self.session_params)
         self.populate(self.tablename)
         outfile = "readout.txt"
         errfile = "readerr.txt"
-        self.runWt(["read", 'table:' + self.tablename, 'KEY49'], outfilename=outfile, errfilename=errfile)
+        self.runAe(["read", 'table:' + self.tablename, 'KEY49'], outfilename=outfile, errfilename=errfile)
         self.check_file_content(outfile, 'VAL49\n')
         self.check_empty_file(errfile)
-        self.runWt(["read", 'table:' + self.tablename, 'key49'], outfilename=outfile, errfilename=errfile)
+        self.runAe(["read", 'table:' + self.tablename, 'key49'], outfilename=outfile, errfilename=errfile)
         self.check_empty_file(outfile)
         self.check_file_contains(errfile, 'key49: not found\n')
 
 
 if __name__ == '__main__':
-    wttest.run()
+    aetest.run()

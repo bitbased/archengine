@@ -1,26 +1,26 @@
 /*-
  * Copyright (c) 2014-2015 MongoDB, Inc.
- * Copyright (c) 2008-2014 WiredTiger, Inc.
+ * Copyright (c) 2008-2014 ArchEngine, Inc.
  *	All rights reserved.
  *
  * See the file LICENSE for redistribution information.
  */
 
-#include "wt_internal.h"
+#include "ae_internal.h"
 
 /*
- * __wt_dirlist --
+ * __ae_dirlist --
  *	Get a list of files from a directory, optionally filtered by
  *	a given prefix.
  */
 int
-__wt_dirlist(WT_SESSION_IMPL *session, const char *dir, const char *prefix,
+__ae_dirlist(AE_SESSION_IMPL *session, const char *dir, const char *prefix,
     uint32_t flags, char ***dirlist, u_int *countp)
 {
 	HANDLE findhandle;
 	WIN32_FIND_DATA finddata;
-	WT_DECL_ITEM(pathbuf);
-	WT_DECL_RET;
+	AE_DECL_ITEM(pathbuf);
+	AE_DECL_RET;
 	size_t dirallocsz, pathlen;
 	u_int count, dirsz;
 	bool match;
@@ -32,31 +32,31 @@ __wt_dirlist(WT_SESSION_IMPL *session, const char *dir, const char *prefix,
 	findhandle = INVALID_HANDLE_VALUE;
 	count = 0;
 
-	WT_RET(__wt_filename(session, dir, &path));
+	AE_RET(__ae_filename(session, dir, &path));
 
 	pathlen = strlen(path);
 	if (path[pathlen - 1] == '\\') {
 		path[pathlen - 1] = '\0';
 	}
 
-	WT_ERR(__wt_scr_alloc(session, pathlen + 3, &pathbuf));
-	WT_ERR(__wt_buf_fmt(session, pathbuf, "%s\\*", path));
+	AE_ERR(__ae_scr_alloc(session, pathlen + 3, &pathbuf));
+	AE_ERR(__ae_buf_fmt(session, pathbuf, "%s\\*", path));
 
 	dirallocsz = 0;
 	dirsz = 0;
 	entries = NULL;
 	if (flags == 0)
-	    LF_SET(WT_DIRLIST_INCLUDE);
+	    LF_SET(AE_DIRLIST_INCLUDE);
 
-	WT_ERR(__wt_verbose(session, WT_VERB_FILEOPS,
-	    "wt_dirlist of %s %s prefix %s",
-	    pathbuf->data, LF_ISSET(WT_DIRLIST_INCLUDE) ? "include" : "exclude",
+	AE_ERR(__ae_verbose(session, AE_VERB_FILEOPS,
+	    "ae_dirlist of %s %s prefix %s",
+	    pathbuf->data, LF_ISSET(AE_DIRLIST_INCLUDE) ? "include" : "exclude",
 	    prefix == NULL ? "all" : prefix));
 
 	findhandle = FindFirstFileA(pathbuf->data, &finddata);
 
 	if (INVALID_HANDLE_VALUE == findhandle)
-		WT_ERR_MSG(session, __wt_errno(), "%s: FindFirstFile",
+		AE_ERR_MSG(session, __ae_errno(), "%s: FindFirstFile",
 		    pathbuf->data);
 	else {
 		do {
@@ -68,10 +68,10 @@ __wt_dirlist(WT_SESSION_IMPL *session, const char *dir, const char *prefix,
 				continue;
 			match = false;
 			if (prefix != NULL &&
-			    ((LF_ISSET(WT_DIRLIST_INCLUDE) &&
-			    WT_PREFIX_MATCH(finddata.cFileName, prefix)) ||
-			    (LF_ISSET(WT_DIRLIST_EXCLUDE) &&
-			    !WT_PREFIX_MATCH(finddata.cFileName, prefix))))
+			    ((LF_ISSET(AE_DIRLIST_INCLUDE) &&
+			    AE_PREFIX_MATCH(finddata.cFileName, prefix)) ||
+			    (LF_ISSET(AE_DIRLIST_EXCLUDE) &&
+			    !AE_PREFIX_MATCH(finddata.cFileName, prefix))))
 				match = true;
 			if (prefix == NULL || match) {
 				/*
@@ -79,11 +79,11 @@ __wt_dirlist(WT_SESSION_IMPL *session, const char *dir, const char *prefix,
 				 */
 				count++;
 				if (count > dirsz) {
-					dirsz += WT_DIR_ENTRY;
-					WT_ERR(__wt_realloc_def(session,
+					dirsz += AE_DIR_ENTRY;
+					AE_ERR(__ae_realloc_def(session,
 					    &dirallocsz, dirsz, &entries));
 				}
-				WT_ERR(__wt_strdup(session,
+				AE_ERR(__ae_strdup(session,
 				    finddata.cFileName, &entries[count - 1]));
 			}
 		} while (FindNextFileA(findhandle, &finddata) != 0);
@@ -96,17 +96,17 @@ __wt_dirlist(WT_SESSION_IMPL *session, const char *dir, const char *prefix,
 err:
 	if (findhandle != INVALID_HANDLE_VALUE)
 		(void)FindClose(findhandle);
-	__wt_free(session, path);
-	__wt_scr_free(session, &pathbuf);
+	__ae_free(session, path);
+	__ae_scr_free(session, &pathbuf);
 
 	if (ret == 0)
 		return (0);
 
 	if (*dirlist != NULL) {
 		for (count = dirsz; count > 0; count--)
-			__wt_free(session, entries[count]);
-		__wt_free(session, entries);
+			__ae_free(session, entries[count]);
+		__ae_free(session, entries);
 	}
 
-	WT_RET_MSG(session, ret, "dirlist %s prefix %s", dir, prefix);
+	AE_RET_MSG(session, ret, "dirlist %s prefix %s", dir, prefix);
 }

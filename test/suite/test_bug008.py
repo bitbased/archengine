@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Public Domain 2014-2015 MongoDB, Inc.
-# Public Domain 2008-2014 WiredTiger, Inc.
+# Public Domain 2008-2014 ArchEngine, Inc.
 #
 # This is free and unencumbered software released into the public domain.
 #
@@ -29,12 +29,12 @@
 # test_bug008.py
 #       Regression tests.
 
-import wiredtiger, wttest
+import archengine, aetest
 from helper import simple_populate, key_populate, value_populate
-from wtscenario import check_scenarios
+from aescenario import check_scenarios
 
 # Tests for invisible updates.
-class test_bug008(wttest.WiredTigerTestCase):
+class test_bug008(aetest.ArchEngineTestCase):
     scenarios = check_scenarios([
         ('fix', dict(fmt='key_format=r,value_format=8t', empty=1)),
         ('row', dict(fmt='key_format=S', empty=0)),
@@ -73,7 +73,7 @@ class test_bug008(wttest.WiredTigerTestCase):
             self.assertEqual(cursor.get_value(), 0)
         else:
             # Otherwise, we should not find any matching records.
-            self.assertEqual(cursor.search(), wiredtiger.WT_NOTFOUND)
+            self.assertEqual(cursor.search(), archengine.AE_NOTFOUND)
 
         # Search-near for an invisible record, which should succeed, returning
         # the last visible record.
@@ -136,7 +136,7 @@ class test_bug008(wttest.WiredTigerTestCase):
             self.assertEqual(cursor.get_value(), 0)
         else:
             # Otherwise, we should not find any matching records.
-            self.assertEqual(cursor.search(), wiredtiger.WT_NOTFOUND)
+            self.assertEqual(cursor.search(), archengine.AE_NOTFOUND)
 
         # Search-near for an invisible record, which should succeed, returning
         # the last visible record.
@@ -158,4 +158,4 @@ class test_bug008(wttest.WiredTigerTestCase):
 
 
 if __name__ == '__main__':
-    wttest.run()
+    aetest.run()

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Public Domain 2014-2015 MongoDB, Inc.
-# Public Domain 2008-2014 WiredTiger, Inc.
+# Public Domain 2008-2014 ArchEngine, Inc.
 #
 # This is free and unencumbered software released into the public domain.
 #
@@ -26,40 +26,40 @@
 # ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 # OTHER DEALINGS IN THE SOFTWARE.
 
-import wiredtiger, wtscenario, wttest
+import archengine, aescenario, aetest
 from helper import simple_populate
 
 # test_lsm01.py
 #    Test LSM tree configuration options.
-class test_lsm01(wttest.WiredTigerTestCase):
+class test_lsm01(aetest.ArchEngineTestCase):
     K = 1024
     M = 1024 * K
     G = 1024 * M
     uri = "lsm:test_lsm01"
 
-    chunk_size_scenarios = wtscenario.quick_scenarios('s_chunk_size',
+    chunk_size_scenarios = aescenario.quick_scenarios('s_chunk_size',
         [1*M,20*M,None], [0.6,0.6,0.6])
-    merge_max_scenarios = wtscenario.quick_scenarios('s_merge_max',
+    merge_max_scenarios = aescenario.quick_scenarios('s_merge_max',
         [2,10,20,None], None)
-    bloom_scenarios = wtscenario.quick_scenarios('s_bloom',
+    bloom_scenarios = aescenario.quick_scenarios('s_bloom',
         [True,False,None], None)
-    bloom_bit_scenarios = wtscenario.quick_scenarios('s_bloom_bit_count',
+    bloom_bit_scenarios = aescenario.quick_scenarios('s_bloom_bit_count',
         [2,8,20,None], None)
-    bloom_hash_scenarios = wtscenario.quick_scenarios('s_bloom_hash_count',
+    bloom_hash_scenarios = aescenario.quick_scenarios('s_bloom_hash_count',
         [2,10,20,None], None)
     # Occasionally add a lot of records, so that merges (and bloom) happen.
-    record_count_scenarios = wtscenario.quick_scenarios(
+    record_count_scenarios = aescenario.quick_scenarios(
         'nrecs', [10, 10000], [0.9, 0.1])
 
     config_vars = [ 'chunk_size', 'merge_max', 'bloom',
                     'bloom_bit_count', 'bloom_hash_count' ]
 
-    all_scenarios = wtscenario.multiply_scenarios('_',
+    all_scenarios = aescenario.multiply_scenarios('_',
         chunk_size_scenarios, merge_max_scenarios, bloom_scenarios,
         bloom_bit_scenarios, bloom_hash_scenarios, record_count_scenarios)
 
-    scenarios = wtscenario.prune_scenarios(all_scenarios, 500)
-    scenarios = wtscenario.number_scenarios(scenarios)
+    scenarios = aescenario.prune_scenarios(all_scenarios, 500)
+    scenarios = aescenario.number_scenarios(scenarios)
 
     # Test drop of an object.
     def test_lsm(self):
@@ -86,4 +86,4 @@ class test_lsm01(wttest.WiredTigerTestCase):
         # self.session.drop(self.uri)
 
 if __name__ == '__main__':
-    wttest.run()
+    aetest.run()

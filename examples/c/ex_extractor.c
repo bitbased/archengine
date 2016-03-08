@@ -1,6 +1,6 @@
 /*-
  * Public Domain 2014-2015 MongoDB, Inc.
- * Public Domain 2008-2014 WiredTiger, Inc.
+ * Public Domain 2008-2014 ArchEngine, Inc.
  *
  * This is free and unencumbered software released into the public domain.
  *
@@ -26,7 +26,7 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  *
  * ex_extractor.c
- *	Example of how to use a WiredTiger custom index extractor extension.
+ *	Example of how to use a ArchEngine custom index extractor extension.
  */
 
 #include <inttypes.h>
@@ -35,11 +35,11 @@
 #include <string.h>
 #include <unistd.h>
 
-#include <wiredtiger.h>
+#include <archengine.h>
 
-#define	RET_OK(ret)	((ret) == 0 || (ret) == WT_NOTFOUND)
+#define	RET_OK(ret)	((ret) == 0 || (ret) == AE_NOTFOUND)
 
-int add_extractor(WT_CONNECTION *conn);
+int add_extractor(AE_CONNECTION *conn);
 
 static const char *home;
 
@@ -70,8 +70,8 @@ static const struct president_data example_data[] = {
  * the given president's term.
  */
 static int
-my_extract(WT_EXTRACTOR *extractor, WT_SESSION *session,
-    const WT_ITEM *key, const WT_ITEM *value, WT_CURSOR *result_cursor)
+my_extract(AE_EXTRACTOR *extractor, AE_SESSION *session,
+    const AE_ITEM *key, const AE_ITEM *value, AE_CURSOR *result_cursor)
 {
 	char *last_name, *first_name;
 	uint16_t term_end, term_start, year;
@@ -82,7 +82,7 @@ my_extract(WT_EXTRACTOR *extractor, WT_SESSION *session,
 	(void)key;
 
 	/* Unpack the value. */
-	if ((ret = wiredtiger_struct_unpack(
+	if ((ret = archengine_struct_unpack(
 	    session, value->data, value->size, "SSHH",
 	    &last_name, &first_name, &term_start, &term_end)) != 0)
 		return (ret);
@@ -96,7 +96,7 @@ my_extract(WT_EXTRACTOR *extractor, WT_SESSION *session,
 		 * Note that the extract callback is called for all operations
 		 * that update the table, not just inserts.  The user sets the
 		 * key and uses the cursor->insert() method to return the index
-		 * key(s).  WiredTiger will perform the required operation
+		 * key(s).  ArchEngine will perform the required operation
 		 * (such as a remove()).
 		 */
 		fprintf(stderr, "EXTRACTOR: index op for year %d: %s %s\n",
@@ -116,7 +116,7 @@ my_extract(WT_EXTRACTOR *extractor, WT_SESSION *session,
  * table is closed.  In this example, no cleanup is required.
  */
 static int
-my_extract_terminate(WT_EXTRACTOR *extractor, WT_SESSION *session)
+my_extract_terminate(AE_EXTRACTOR *extractor, AE_SESSION *session)
 {
 	(void)extractor;
 	(void)session;
@@ -125,11 +125,11 @@ my_extract_terminate(WT_EXTRACTOR *extractor, WT_SESSION *session)
 }
 
 int
-add_extractor(WT_CONNECTION *conn)
+add_extractor(AE_CONNECTION *conn)
 {
 	int ret;
 
-	static WT_EXTRACTOR my_extractor = {
+	static AE_EXTRACTOR my_extractor = {
 	    my_extract, NULL, my_extract_terminate
 	};
 	ret = conn->add_extractor(conn, "my_extractor", &my_extractor, NULL);
@@ -141,9 +141,9 @@ add_extractor(WT_CONNECTION *conn)
  * Read the index by year and print out who was in office that year.
  */
 static int
-read_index(WT_SESSION *session)
+read_index(AE_SESSION *session)
 {
-	WT_CURSOR *cursor;
+	AE_CURSOR *cursor;
 	int i, ret;
 	char *first_name, *last_name;
 	uint16_t rec_year, term_end, term_start, year;
@@ -191,9 +191,9 @@ read_index(WT_SESSION *session)
  * Remove some items from the primary table.
  */
 static int
-remove_items(WT_SESSION *session)
+remove_items(AE_SESSION *session)
 {
-	WT_CURSOR *cursor;
+	AE_CURSOR *cursor;
 	struct president_data p;
 	int i, ret;
 
@@ -219,9 +219,9 @@ remove_items(WT_SESSION *session)
  * Set up the table and index of the data.
  */
 static int
-setup_table(WT_SESSION *session)
+setup_table(AE_SESSION *session)
 {
-	WT_CURSOR *cursor;
+	AE_CURSOR *cursor;
 	struct president_data p;
 	int i, ret;
 
@@ -256,21 +256,21 @@ setup_table(WT_SESSION *session)
 int
 main(void)
 {
-	WT_CONNECTION *conn;
-	WT_SESSION *session;
+	AE_CONNECTION *conn;
+	AE_SESSION *session;
 	int ret;
 
 	/*
 	 * Create a clean test directory for this run of the test program if the
 	 * environment variable isn't already set (as is done by make check).
 	 */
-	if (getenv("WIREDTIGER_HOME") == NULL) {
-		home = "WT_HOME";
-		ret = system("rm -rf WT_HOME && mkdir WT_HOME");
+	if (getenv("ARCHENGINE_HOME") == NULL) {
+		home = "AE_HOME";
+		ret = system("rm -rf AE_HOME && mkdir AE_HOME");
 	} else
 		home = NULL;
 
-	ret = wiredtiger_open(home, NULL, "create,cache_size=500M", &conn);
+	ret = archengine_open(home, NULL, "create,cache_size=500M", &conn);
 	ret = add_extractor(conn);
 	ret = conn->open_session(conn, NULL, NULL, &session);
 

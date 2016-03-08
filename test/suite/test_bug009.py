@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Public Domain 2014-2015 MongoDB, Inc.
-# Public Domain 2008-2014 WiredTiger, Inc.
+# Public Domain 2008-2014 ArchEngine, Inc.
 #
 # This is free and unencumbered software released into the public domain.
 #
@@ -31,11 +31,11 @@
 #       when figuring out how to split pages
 #
 
-import wiredtiger, wttest
-from wiredtiger import stat
-from wtscenario import multiply_scenarios, number_scenarios
+import archengine, aetest
+from archengine import stat
+from aescenario import multiply_scenarios, number_scenarios
 
-class test_bug009(wttest.WiredTigerTestCase):
+class test_bug009(aetest.ArchEngineTestCase):
     name = 'test_bug009'
     uri = 'file:' + name
 
@@ -56,4 +56,4 @@ class test_bug009(wttest.WiredTigerTestCase):
         cursor['fill_2__b_28'] = '0' * 3022
 
 if __name__ == '__main__':
-    wttest.run()
+    aetest.run()

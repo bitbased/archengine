@@ -6,7 +6,7 @@ t=__a.c
 trap 'rm -f $t; exit 0' 0 1 2 3 13 15
 
 # Skip this when building release packages
-test -n "$WT_RELEASE_BUILD" && exit 0
+test -n "$AE_RELEASE_BUILD" && exit 0
 
 # We require ctags which may not be installed.
 type ctags > /dev/null 2>&1 || {

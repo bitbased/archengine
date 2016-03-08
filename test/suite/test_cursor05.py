@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Public Domain 2014-2015 MongoDB, Inc.
-# Public Domain 2008-2014 WiredTiger, Inc.
+# Public Domain 2008-2014 ArchEngine, Inc.
 #
 # This is free and unencumbered software released into the public domain.
 #
@@ -26,12 +26,12 @@
 # ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 # OTHER DEALINGS IN THE SOFTWARE.
 
-import wiredtiger, wttest
+import archengine, aetest
 
 # test_cursor05.py
 #    Test cursors at the point where a cursor is first initialized, and when it
 # hits an endpoint.  Mix that in with column groups.
-class test_cursor05(wttest.WiredTigerTestCase):
+class test_cursor05(aetest.ArchEngineTestCase):
     """
     Test basic operations
     """
@@ -174,4 +174,4 @@ class test_cursor05(wttest.WiredTigerTestCase):
         self.common_test(0, True)
 
 if __name__ == '__main__':
-    wttest.run()
+    aetest.run()

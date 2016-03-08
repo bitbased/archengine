@@ -1,5 +1,5 @@
 #
-# This file defines the tasks and platforms for WiredTiger in the
+# This file defines the tasks and platforms for ArchEngine in the
 # MongoDB continuous integration system (see https://mci.mongodb.com).
 #
 
@@ -7,18 +7,18 @@ functions:
   "fetch source" :
     command: git.get_project
     params:
-      directory: wiredtiger
+      directory: archengine
 
 pre:
   - command: shell.exec
     params:
       script: |
-        rm -rf "wiredtiger"
+        rm -rf "archengine"
 post:
   - command: shell.exec
     params:
       script: |
-        rm -rf "wiredtiger"
+        rm -rf "archengine"
 
 tasks:
   - name: compile-posix
@@ -26,10 +26,10 @@ tasks:
       - func: "fetch source"
       - command: git.apply_patch
         params:
-          directory: wiredtiger
+          directory: archengine
       - command: shell.exec
         params:
-          working_dir: "wiredtiger"
+          working_dir: "archengine"
           script: |
             set -o errexit
             set -o verbose
@@ -45,10 +45,10 @@ tasks:
       - func: "fetch source"
       - command: git.apply_patch
         params:
-          directory: wiredtiger
+          directory: archengine
       - command: shell.exec
         params:
-          working_dir: "wiredtiger"
+          working_dir: "archengine"
           script: |
             set -o errexit
             set -o verbose
@@ -62,25 +62,25 @@ tasks:
       - func: "fetch source"
       - command: git.apply_patch
         params:
-          directory: wiredtiger
+          directory: archengine
       - command: shell.exec
         params:
-          working_dir: "wiredtiger"
+          working_dir: "archengine"
           script: |
             set -o errexit
             set -o verbose
 
-            scons.bat ${smp_command|} "CFLAGS=/Gv /wd4090 /wd4996 /we4047 /we4024 /TC /we4100" wiredtiger.dll libwiredtiger.lib
+            scons.bat ${smp_command|} "CFLAGS=/Gv /wd4090 /wd4996 /we4047 /we4024 /TC /we4100" archengine.dll libarchengine.lib
 
   - name: fops-windows
     commands:
       - func: "fetch source"
       - command: git.apply_patch
         params:
-          directory: wiredtiger
+          directory: archengine
       - command: shell.exec
         params:
-          working_dir: "wiredtiger"
+          working_dir: "archengine"
           script: |
             set -o errexit
             set -o verbose

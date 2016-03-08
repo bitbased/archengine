@@ -1,7 +1,7 @@
 #! /bin/sh
 
-# Check WiredTiger error/return macros.
-t=__wt.$$
+# Check ArchEngine error/return macros.
+t=__ae.$$
 trap 'rm -f $t; exit 0' 0 1 2 3 13 15
 
 cd ..
@@ -23,7 +23,7 @@ file_parse()
 # where there's a jump to the error label after the error label.
 for f in `find bench examples ext src test -name '*.[ci]'`; do
 	file_parse $f |
-	egrep '(WT_ERR|WT_ILLEGAL_VALUE_ERR)\(.*(WT_ILLEGAL_VALUE|WT_RET)\(.*err:|[^a-z_]err:.*(WT_ERR|WT_ILLEGAL_VALUE_ERR)\(' |
+	egrep '(AE_ERR|AE_ILLEGAL_VALUE_ERR)\(.*(AE_ILLEGAL_VALUE|AE_RET)\(.*err:|[^a-z_]err:.*(AE_ERR|AE_ILLEGAL_VALUE_ERR)\(' |
 	sed 's/:.*//' > $t
 
 	test -s $t && {
@@ -35,7 +35,7 @@ done
 # Return of 0 in functions after a jump to the error label.
 for f in `find bench examples ext src test -name '*.[ci]'`; do
 	file_parse $f |
-	egrep -v '[^a-z_]err:.*return \(ret|[^a-z_]err:.*WT_RET' |
+	egrep -v '[^a-z_]err:.*return \(ret|[^a-z_]err:.*AE_RET' |
 	egrep '[^a-z_]err:.*return \(0\);' |
 	sed 's/:.*//' > $t
 
@@ -48,11 +48,11 @@ done
 # Jumps inside va_start/va_end pairs.
 for f in `find bench examples ext src test -name '*.[ci]'`; do
 	file_parse $f |
-	egrep 'va_start.*(WT_RET|goto).*va_end' |
+	egrep 'va_start.*(AE_RET|goto).*va_end' |
 	sed 's/:.*//' > $t
 	file_parse $f |
-	egrep -v 'va_start.*WT_ERR.*[^a-z_]err:	va_end' |
-	egrep 'va_start.*WT_ERR.*va_end' |
+	egrep -v 'va_start.*AE_ERR.*[^a-z_]err:	va_end' |
+	egrep 'va_start.*AE_ERR.*va_end' |
 	sed 's/:.*//' >> $t
 
 	test -s $t && {
@@ -67,7 +67,7 @@ for f in `find bench examples ext src test -name '*.[ci]'`; do
 	       -e '/LSM_.*ENTER*;$/,/LSM_.*LEAVE*;/{=;p;}' \
 	       -e '/va_start/,/va_end/{=;p;}' $f | \
 		sed 'N;s/\n/:/' | \
-		egrep -w 'return|WT_RET' | \
+		egrep -w 'return|AE_RET' | \
 		sed -e "s,^,$f:," -e 's/$/ [return skips API_END call]/'
 
 done

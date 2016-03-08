@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Public Domain 2014-2015 MongoDB, Inc.
-# Public Domain 2008-2014 WiredTiger, Inc.
+# Public Domain 2008-2014 ArchEngine, Inc.
 #
 # This is free and unencumbered software released into the public domain.
 #
@@ -26,12 +26,12 @@
 # ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 # OTHER DEALINGS IN THE SOFTWARE.
 
-import wiredtiger, wttest
-from wtscenario import check_scenarios
+import archengine, aetest
+from aescenario import check_scenarios
 
 # test_base04.py
 #     Cursor operations
-class test_cursor04(wttest.WiredTigerTestCase):
+class test_cursor04(aetest.ArchEngineTestCase):
     """
     Test cursor search and search_near
     """
@@ -93,7 +93,7 @@ class test_cursor04(wttest.WiredTigerTestCase):
     def expect_either(self, cursor, lt, gt):
         origkey = cursor.get_key()
         direction = cursor.search_near()
-        self.assertNotEqual(direction, wiredtiger.WT_NOTFOUND)
+        self.assertNotEqual(direction, archengine.AE_NOTFOUND)
 
         # Deletions for 'fix' clear the value, they
         # do not remove the key, so we expect '0' direction
@@ -187,4 +187,4 @@ class test_cursor04(wttest.WiredTigerTestCase):
         cursor.close()
 
 if __name__ == '__main__':
-    wttest.run()
+    aetest.run()

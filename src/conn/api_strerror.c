@@ -1,45 +1,45 @@
 /* DO NOT EDIT: automatically built by dist/api_err.py. */
 
-#include "wt_internal.h"
+#include "ae_internal.h"
 
 /*
- * Historically, there was only the wiredtiger_strerror call because the POSIX
+ * Historically, there was only the archengine_strerror call because the POSIX
  * port didn't need anything more complex; Windows requires memory allocation
- * of error strings, so we added the WT_SESSION.strerror method. Because we
- * want wiredtiger_strerror to continue to be as thread-safe as possible, errors
- * are split into two categories: WiredTiger's or the system's constant strings
+ * of error strings, so we added the AE_SESSION.strerror method. Because we
+ * want archengine_strerror to continue to be as thread-safe as possible, errors
+ * are split into two categories: ArchEngine's or the system's constant strings
  * and Everything Else, and we check constant strings before Everything Else.
  */
 
 /*
- * __wt_wiredtiger_error --
- *	Return a constant string for POSIX-standard and WiredTiger errors.
+ * __ae_archengine_error --
+ *	Return a constant string for POSIX-standard and ArchEngine errors.
  */
 const char *
-__wt_wiredtiger_error(int error)
+__ae_archengine_error(int error)
 {
 	const char *p;
 
 	/*
-	 * Check for WiredTiger specific errors.
+	 * Check for ArchEngine specific errors.
 	 */
 	switch (error) {
-	case WT_ROLLBACK:
-		return ("WT_ROLLBACK: conflict between concurrent operations");
-	case WT_DUPLICATE_KEY:
-		return ("WT_DUPLICATE_KEY: attempt to insert an existing key");
-	case WT_ERROR:
-		return ("WT_ERROR: non-specific WiredTiger error");
-	case WT_NOTFOUND:
-		return ("WT_NOTFOUND: item not found");
-	case WT_PANIC:
-		return ("WT_PANIC: WiredTiger library panic");
-	case WT_RESTART:
-		return ("WT_RESTART: restart the operation (internal)");
-	case WT_RUN_RECOVERY:
-		return ("WT_RUN_RECOVERY: recovery must be run to continue");
-	case WT_CACHE_FULL:
-		return ("WT_CACHE_FULL: operation would overflow cache");
+	case AE_ROLLBACK:
+		return ("AE_ROLLBACK: conflict between concurrent operations");
+	case AE_DUPLICATE_KEY:
+		return ("AE_DUPLICATE_KEY: attempt to insert an existing key");
+	case AE_ERROR:
+		return ("AE_ERROR: non-specific ArchEngine error");
+	case AE_NOTFOUND:
+		return ("AE_NOTFOUND: item not found");
+	case AE_PANIC:
+		return ("AE_PANIC: ArchEngine library panic");
+	case AE_RESTART:
+		return ("AE_RESTART: restart the operation (internal)");
+	case AE_RUN_RECOVERY:
+		return ("AE_RUN_RECOVERY: recovery must be run to continue");
+	case AE_CACHE_FULL:
+		return ("AE_CACHE_FULL: operation would overflow cache");
 	}
 
 	/*
@@ -55,13 +55,13 @@ __wt_wiredtiger_error(int error)
 }
 
 /*
- * wiredtiger_strerror --
+ * archengine_strerror --
  *	Return a string for any error value, non-thread-safe version.
  */
 const char *
-wiredtiger_strerror(int error)
+archengine_strerror(int error)
 {
 	static char buf[128];
 
-	return (__wt_strerror(NULL, error, buf, sizeof(buf)));
+	return (__ae_strerror(NULL, error, buf, sizeof(buf)));
 }

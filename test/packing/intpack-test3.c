@@ -1,6 +1,6 @@
 /*-
  * Public Domain 2014-2015 MongoDB, Inc.
- * Public Domain 2008-2014 WiredTiger, Inc.
+ * Public Domain 2008-2014 ArchEngine, Inc.
  *
  * This is free and unencumbered software released into the public domain.
  *
@@ -28,7 +28,7 @@
 
 #include <assert.h>
 
-#include "wt_internal.h"			/* For __wt_XXX */
+#include "ae_internal.h"			/* For __ae_XXX */
 
 void test_value(int64_t);
 void test_spread(int64_t, int64_t, int64_t);
@@ -44,10 +44,10 @@ test_value(int64_t val)
 
 	sinput = val;
 	p = buf;
-	assert(__wt_vpack_int(&p, sizeof(buf), sinput) == 0);
+	assert(__ae_vpack_int(&p, sizeof(buf), sinput) == 0);
 	used_len = (size_t)(p - buf);
 	cp = buf;
-	assert(__wt_vunpack_int(&cp, used_len, &soutput) == 0);
+	assert(__ae_vunpack_int(&cp, used_len, &soutput) == 0);
 	/* Ensure we got the correct value back */
 	if (sinput != soutput) {
 		fprintf(stderr, "mismatch %" PRIu64 ", %" PRIu64 "\n",
@@ -58,7 +58,7 @@ test_value(int64_t val)
 	if (cp != p) {
 		fprintf(stderr,
 		    "Unpack consumed wrong size for %" PRId64
-		    ", expected %" WT_SIZET_FMT ", got %" WT_SIZET_FMT "\n",
+		    ", expected %" AE_SIZET_FMT ", got %" AE_SIZET_FMT "\n",
 		    sinput, used_len, cp > p ?
 		    used_len + (size_t)(cp - p) : /* More than buf used */
 		    used_len - (size_t)(p - cp)); /* Less than buf used */
@@ -69,9 +69,9 @@ test_value(int64_t val)
 	uinput = (uint64_t)val;
 
 	p = buf;
-	assert(__wt_vpack_uint(&p, sizeof(buf), uinput) == 0);
+	assert(__ae_vpack_uint(&p, sizeof(buf), uinput) == 0);
 	cp = buf;
-	assert(__wt_vunpack_uint(
+	assert(__ae_vunpack_uint(
 	    &cp, sizeof(buf), &uoutput) == 0);
 	/* Ensure we got the correct value back */
 	if (sinput != soutput) {
@@ -83,7 +83,7 @@ test_value(int64_t val)
 	if (cp != p) {
 		fprintf(stderr,
 		    "Unpack consumed wrong size for %" PRId64
-		    ", expected %" WT_SIZET_FMT ", got %" WT_SIZET_FMT "\n",
+		    ", expected %" AE_SIZET_FMT ", got %" AE_SIZET_FMT "\n",
 		    sinput, used_len, cp > p ?
 		    used_len + (size_t)(cp - p) :
 		    used_len - (size_t)(p - cp));

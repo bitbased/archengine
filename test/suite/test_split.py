@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Public Domain 2014-2015 MongoDB, Inc.
-# Public Domain 2008-2014 WiredTiger, Inc.
+# Public Domain 2008-2014 ArchEngine, Inc.
 #
 # This is free and unencumbered software released into the public domain.
 #
@@ -30,15 +30,15 @@
 #       check that splits work as expected
 #
 
-import wiredtiger, wttest
-from wiredtiger import stat
+import archengine, aetest
+from archengine import stat
 from helper import confirm_empty,\
     key_populate, value_populate, simple_populate,\
     complex_populate, complex_value_populate
-from wtscenario import multiply_scenarios, number_scenarios
+from aescenario import multiply_scenarios, number_scenarios
 
 # Test splits
-class test_split(wttest.WiredTigerTestCase):
+class test_split(aetest.ArchEngineTestCase):
     name = 'test_split'
     conn_config = 'statistics=[all]'
     uri = 'file:' + name
@@ -86,4 +86,4 @@ class test_split(wttest.WiredTigerTestCase):
         stat_cursor.close()
 
 if __name__ == '__main__':
-    wttest.run()
+    aetest.run()

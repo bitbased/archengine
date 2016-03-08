@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Public Domain 2014-2015 MongoDB, Inc.
-# Public Domain 2008-2014 WiredTiger, Inc.
+# Public Domain 2008-2014 ArchEngine, Inc.
 #
 # This is free and unencumbered software released into the public domain.
 #
@@ -28,27 +28,27 @@
 
 import os
 from suite_subprocess import suite_subprocess
-import wiredtiger, wttest
+import archengine, aetest
 
 # test_util04.py
-#    Utilities: wt drop
-class test_util04(wttest.WiredTigerTestCase, suite_subprocess):
+#    Utilities: ae drop
+class test_util04(aetest.ArchEngineTestCase, suite_subprocess):
     tablename = 'test_util04.a'
     nentries = 1000
 
     def test_drop_process(self):
         """
-        Test drop in a 'wt' process
+        Test drop in a 'ae' process
         """
         params = 'key_format=S,value_format=S'
         self.session.create('table:' + self.tablename, params)
 
-        self.assertTrue(os.path.exists(self.tablename + ".wt"))
-        self.runWt(["drop", "table:" + self.tablename])
+        self.assertTrue(os.path.exists(self.tablename + ".ae"))
+        self.runAe(["drop", "table:" + self.tablename])
 
-        self.assertFalse(os.path.exists(self.tablename + ".wt"))
-        self.assertRaises(wiredtiger.WiredTigerError, lambda:
+        self.assertFalse(os.path.exists(self.tablename + ".ae"))
+        self.assertRaises(archengine.ArchEngineError, lambda:
             self.session.open_cursor('table:' + self.tablename, None, None))
 
 if __name__ == '__main__':
-    wttest.run()
+    aetest.run()

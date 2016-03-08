@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Public Domain 2014-2015 MongoDB, Inc.
-# Public Domain 2008-2014 WiredTiger, Inc.
+# Public Domain 2008-2014 ArchEngine, Inc.
 #
 # This is free and unencumbered software released into the public domain.
 #
@@ -29,12 +29,12 @@
 import glob
 import os.path
 import time
-import helper, wiredtiger, wttest
-from wiredtiger import stat
+import helper, archengine, aetest
+from archengine import stat
 
 # test_stat_log01.py
 #    Statistics log
-class test_stat_log01(wttest.WiredTigerTestCase):
+class test_stat_log01(aetest.ArchEngineTestCase):
     """
     Test statistics log
     """
@@ -47,40 +47,40 @@ class test_stat_log01(wttest.WiredTigerTestCase):
         return None
 
     def test_stats_log_default(self):
-        self.conn = wiredtiger.wiredtiger_open(
+        self.conn = archengine.archengine_open(
             None, "create,statistics=(fast),statistics_log=(wait=1)")
         # Wait for the default interval, to ensure stats have been written.
         time.sleep(2)
-        self.check_stats_file("WiredTigerStat")
+        self.check_stats_file("ArchEngineStat")
 
     def test_stats_log_name(self):
-        self.conn = wiredtiger.wiredtiger_open(
+        self.conn = archengine.archengine_open(
             None, "create,statistics=(fast),statistics_log=(wait=1,path=foo)")
         # Wait for the default interval, to ensure stats have been written.
         time.sleep(2)
         self.check_stats_file("foo")
 
     def test_stats_log_on_close_and_log(self):
-        self.conn = wiredtiger.wiredtiger_open(None,
+        self.conn = archengine.archengine_open(None,
             "create,statistics=(fast),statistics_log=(on_close=true,wait=1)")
         # Wait for the default interval, to ensure stats have been written.
         time.sleep(2)
         self.close_conn()
-        self.check_stats_file("WiredTigerStat")
+        self.check_stats_file("ArchEngineStat")
 
     def test_stats_log_on_close(self):
-        self.conn = wiredtiger.wiredtiger_open(None,
+        self.conn = archengine.archengine_open(None,
             "create,statistics=(fast),statistics_log=(on_close=true)")
         # Close the connection to ensure the statistics get generated.
         self.close_conn()
-        self.check_stats_file("WiredTigerStat")
+        self.check_stats_file("ArchEngineStat")
 
     def check_stats_file(self, filename):
-        if filename == "WiredTigerStat":
+        if filename == "ArchEngineStat":
             files = glob.glob(filename + '.[0-9]*')
             self.assertTrue(files)
         else:
             self.assertTrue(os.path.isfile(filename))
 
 if __name__ == '__main__':
-    wttest.run()
+    aetest.run()

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Public Domain 2014-2015 MongoDB, Inc.
-# Public Domain 2008-2014 WiredTiger, Inc.
+# Public Domain 2008-2014 ArchEngine, Inc.
 #
 # This is free and unencumbered software released into the public domain.
 #
@@ -29,12 +29,12 @@
 # test_bug005.py
 #       Regression tests.
 
-import wiredtiger, wttest
+import archengine, aetest
 from helper import key_populate, value_populate
 
 # Check that verify works when the file has additional data after the last
 # checkpoint.
-class test_bug005(wttest.WiredTigerTestCase):
+class test_bug005(aetest.ArchEngineTestCase):
     # This is a btree layer test, test files, ignore tables.
     uri = 'file:test_bug005'
 
@@ -61,4 +61,4 @@ class test_bug005(wttest.WiredTigerTestCase):
 
 
 if __name__ == '__main__':
-    wttest.run()
+    aetest.run()

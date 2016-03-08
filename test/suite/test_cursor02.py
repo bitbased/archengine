@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Public Domain 2014-2015 MongoDB, Inc.
-# Public Domain 2008-2014 WiredTiger, Inc.
+# Public Domain 2008-2014 ArchEngine, Inc.
 #
 # This is free and unencumbered software released into the public domain.
 #
@@ -26,9 +26,9 @@
 # ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 # OTHER DEALINGS IN THE SOFTWARE.
 
-import wiredtiger
+import archengine
 from test_cursor_tracker import TestCursorTracker
-from wtscenario import check_scenarios
+from aescenario import check_scenarios
 
 # test_cursor02.py
 #     Cursor operations on small tables.
@@ -115,10 +115,10 @@ class test_cursor02(TestCursorTracker):
         Test iterating an empty table
         """
         cursor = self.create_session_and_cursor(0)
-        self.cur_first(cursor, wiredtiger.WT_NOTFOUND)
+        self.cur_first(cursor, archengine.AE_NOTFOUND)
         self.cur_check_forward(cursor, -1)
         self.cur_check_backward(cursor, -1)
-        self.cur_last(cursor, wiredtiger.WT_NOTFOUND)
+        self.cur_last(cursor, archengine.AE_NOTFOUND)
         self.cur_check_backward(cursor, -1)
         self.cur_check_forward(cursor, -1)
         cursor.close()
@@ -152,4 +152,4 @@ class test_cursor02(TestCursorTracker):
 
 
 if __name__ == '__main__':
-    wttest.run()
+    aetest.run()

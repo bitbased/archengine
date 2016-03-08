@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Public Domain 2014-2015 MongoDB, Inc.
-# Public Domain 2008-2014 WiredTiger, Inc.
+# Public Domain 2008-2014 ArchEngine, Inc.
 #
 # This is free and unencumbered software released into the public domain.
 #
@@ -26,13 +26,13 @@
 # ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 # OTHER DEALINGS IN THE SOFTWARE.
 
-import wiredtiger, wttest, suite_random
-from wtscenario import check_scenarios, multiply_scenarios, number_scenarios
+import archengine, aetest, suite_random
+from aescenario import check_scenarios, multiply_scenarios, number_scenarios
 
 # test_join02.py
 #    Join operations
 # Join several indices together, trying all comparison combinations
-class test_join02(wttest.WiredTigerTestCase):
+class test_join02(aetest.ArchEngineTestCase):
     table_name1 = 'test_join02'
     nentries = 1000
 
@@ -50,7 +50,7 @@ class test_join02(wttest.WiredTigerTestCase):
 
     scenarios = number_scenarios(multiply_scenarios('.', keyscen, bloomscen))
 
-    # Start our range from 1, since WT record numbers start at 1,
+    # Start our range from 1, since AE record numbers start at 1,
     # it makes things work out nicer.
     def range(self):
         return range(1, self.nentries + 1)
@@ -78,7 +78,7 @@ class test_join02(wttest.WiredTigerTestCase):
         # When we're running the bloom scenario, make it so the
         # bloom filters are often shared. Make the number of
         # hashes and number of bits per item so they don't always
-        # match up; WT should allow it.
+        # match up; AE should allow it.
         if self.usebloom:
             c = 10000 if (self.rand.rand32() % 3) != 0 else 100000
             k = 8 if (self.rand.rand32() % 10) != 0 else 10
@@ -287,4 +287,4 @@ class test_join02(wttest.WiredTigerTestCase):
         c4a.close()
 
 if __name__ == '__main__':
-    wttest.run()
+    aetest.run()

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Public Domain 2014-2015 MongoDB, Inc.
-# Public Domain 2008-2014 WiredTiger, Inc.
+# Public Domain 2008-2014 ArchEngine, Inc.
 #
 # This is free and unencumbered software released into the public domain.
 #
@@ -30,10 +30,10 @@
 #    Tests packing using public methods
 #
 
-import wiredtiger, wttest
+import archengine, aetest
 import re, sys
 
-class test_pack(wttest.WiredTigerTestCase):
+class test_pack(aetest.ArchEngineTestCase):
     name = 'test_pack'
 
     def dump_cursor(self, cursor, name):
@@ -101,4 +101,4 @@ class test_pack(wttest.WiredTigerTestCase):
         self.check("2s", "42")
 
 if __name__ == '__main__':
-    wttest.run()
+    aetest.run()

@@ -2,9 +2,9 @@
 
 @section file_formats_formats File formats
 
-WiredTiger supports two underlying file formats: row-store and
+ArchEngine supports two underlying file formats: row-store and
 column-store, where both are B+tree implementations of key/value stores.
-WiredTiger also supports @ref lsm, implemented as a tree of B+trees.
+ArchEngine also supports @ref lsm, implemented as a tree of B+trees.
 
 In a row-store, both keys and data are variable-length byte strings.  In
 a column-store, keys are 64-bit record numbers (key_format type 'r'),
@@ -28,12 +28,12 @@ Additionally, there is no out-of-band fixed-length "deleted" value, and
 deleting a value is the same as storing a value of 0.  For the same
 reason, storing a value of 0 will cause cursor scans to skip the record.
 
-WiredTiger does not support duplicate data items: there can be only a
+ArchEngine does not support duplicate data items: there can be only a
 single value associated with any given key, and applications are
 responsible for creating unique key/value pairs.
 
-WiredTiger allocates space from the underlying files in block units.
-The minimum file allocation unit WiredTiger supports is 512B and the
+ArchEngine allocates space from the underlying files in block units.
+The minimum file allocation unit ArchEngine supports is 512B and the
 maximum is 512MB.  File offsets are signed 8B values, making the maximum
 file size very, very large.
 
@@ -58,7 +58,7 @@ the database, and even in individual tables (for example, a sparse, wide
 table configured with a column-store primary, where indexes are stored
 in an LSM tree).
 
-Finally, as WiredTiger makes it easy to switch back-and-forth between
+Finally, as ArchEngine makes it easy to switch back-and-forth between
 storage configurations, it's usually worthwhile benchmarking possible
 configurations when there is any question.
 
@@ -83,7 +83,7 @@ compression is less useful.
 
   Applications may limit the use of prefix compression by configuring the
 minimum number of bytes that must be gained before prefix compression is
-used with the WT_SESSION::create method's \c prefix_compression_min
+used with the AE_SESSION::create method's \c prefix_compression_min
 configuration string.
 
   Key prefix compression is disabled by default.

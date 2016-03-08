@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Public Domain 2014-2015 MongoDB, Inc.
-# Public Domain 2008-2014 WiredTiger, Inc.
+# Public Domain 2008-2014 ArchEngine, Inc.
 #
 # This is free and unencumbered software released into the public domain.
 #
@@ -26,19 +26,19 @@
 # ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 # OTHER DEALINGS IN THE SOFTWARE.
 
-import itertools, wiredtiger, wttest
+import itertools, archengine, aetest
 from suite_subprocess import suite_subprocess
-from wiredtiger import stat
+from archengine import stat
 
 from helper import complex_populate, complex_populate_lsm, simple_populate
 from helper import key_populate, complex_value_populate, value_populate
 from helper import complex_populate_colgroup_count, complex_populate_index_count
 from helper import complex_populate_colgroup_name, complex_populate_index_name
-from wtscenario import multiply_scenarios, number_scenarios
+from aescenario import multiply_scenarios, number_scenarios
 
 # test_stat03.py
 #    Statistics reset test.
-class test_stat_cursor_reset(wttest.WiredTigerTestCase):
+class test_stat_cursor_reset(aetest.ArchEngineTestCase):
     pfx = 'test_stat_cursor_reset'
     uri = [
         ('file-simple',
@@ -53,9 +53,9 @@ class test_stat_cursor_reset(wttest.WiredTigerTestCase):
 
     scenarios = number_scenarios(multiply_scenarios('.', uri))
 
-    # Override WiredTigerTestCase, we have extensions.
+    # Override ArchEngineTestCase, we have extensions.
     def setUpConnectionOpen(self, dir):
-        conn = wiredtiger.wiredtiger_open(dir,
+        conn = archengine.archengine_open(dir,
             'create,statistics=(all),' +
             'error_prefix="%s: "' % self.shortid())
         return conn
@@ -107,4 +107,4 @@ class test_stat_cursor_reset(wttest.WiredTigerTestCase):
 
 
 if __name__ == '__main__':
-    wttest.run()
+    aetest.run()

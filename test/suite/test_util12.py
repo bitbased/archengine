@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Public Domain 2014-2015 MongoDB, Inc.
-# Public Domain 2008-2014 WiredTiger, Inc.
+# Public Domain 2008-2014 ArchEngine, Inc.
 #
 # This is free and unencumbered software released into the public domain.
 #
@@ -28,17 +28,17 @@
 
 import os, struct
 from suite_subprocess import suite_subprocess
-import wiredtiger, wttest
+import archengine, aetest
 
 # test_util12.py
-#    Utilities: wt write
-class test_util12(wttest.WiredTigerTestCase, suite_subprocess):
+#    Utilities: ae write
+class test_util12(aetest.ArchEngineTestCase, suite_subprocess):
     tablename = 'test_util12.a'
     session_params = 'key_format=S,value_format=S'
 
     def test_write(self):
         self.session.create('table:' + self.tablename, self.session_params)
-        self.runWt(['write', 'table:' + self.tablename,
+        self.runAe(['write', 'table:' + self.tablename,
                     'def', '456', 'abc', '123'])
         cursor = self.session.open_cursor('table:' + self.tablename, None, None)
         self.assertEqual(cursor.next(), 0)
@@ -47,17 +47,17 @@ class test_util12(wttest.WiredTigerTestCase, suite_subprocess):
         self.assertEqual(cursor.next(), 0)
         self.assertEqual(cursor.get_key(), 'def')
         self.assertEqual(cursor.get_value(), '456')
-        self.assertEqual(cursor.next(), wiredtiger.WT_NOTFOUND)
+        self.assertEqual(cursor.next(), archengine.AE_NOTFOUND)
         cursor.close()
 
     def test_write_no_keys(self):
         """
-        Test write in a 'wt' process, with no args
+        Test write in a 'ae' process, with no args
         """
         self.session.create('table:' + self.tablename, self.session_params)
 
         errfile = 'writeerr.txt'
-        self.runWt(['write', 'table:' + self.tablename], errfilename=errfile)
+        self.runAe(['write', 'table:' + self.tablename], errfilename=errfile)
         self.check_file_contains(errfile, 'usage:')
 
     def test_write_overwrite(self):
@@ -66,7 +66,7 @@ class test_util12(wttest.WiredTigerTestCase, suite_subprocess):
         cursor.set_key('def')
         cursor.set_value('789')
         cursor.close()
-        self.runWt(['write', 'table:' + self.tablename,
+        self.runAe(['write', 'table:' + self.tablename,
                     'def', '456', 'abc', '123'])
         cursor = self.session.open_cursor('table:' + self.tablename, None, None)
         self.assertEqual(cursor.next(), 0)
@@ -75,16 +75,16 @@ class test_util12(wttest.WiredTigerTestCase, suite_subprocess):
         self.assertEqual(cursor.next(), 0)
         self.assertEqual(cursor.get_key(), 'def')
         self.assertEqual(cursor.get_value(), '456')
-        self.assertEqual(cursor.next(), wiredtiger.WT_NOTFOUND)
+        self.assertEqual(cursor.next(), archengine.AE_NOTFOUND)
         cursor.close()
 
     def test_write_bad_args(self):
         self.session.create('table:' + self.tablename, self.session_params)
         errfile = 'writeerr.txt'
-        self.runWt(['write', 'table:' + self.tablename,
+        self.runAe(['write', 'table:' + self.tablename,
                     'def', '456', 'abc'], errfilename=errfile)
         self.check_file_contains(errfile, 'usage:')
 
 
 if __name__ == '__main__':
-    wttest.run()
+    aetest.run()

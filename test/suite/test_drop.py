@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Public Domain 2014-2015 MongoDB, Inc.
-# Public Domain 2008-2014 WiredTiger, Inc.
+# Public Domain 2008-2014 ArchEngine, Inc.
 #
 # This is free and unencumbered software released into the public domain.
 #
@@ -27,14 +27,14 @@
 # OTHER DEALINGS IN THE SOFTWARE.
 
 import os, time
-import wiredtiger, wttest
+import archengine, aetest
 from helper import confirm_does_not_exist, complex_populate, \
     complex_populate_index_name, simple_populate
-from wtscenario import check_scenarios
+from aescenario import check_scenarios
 
 # test_drop.py
 #    session level drop operation
-class test_drop(wttest.WiredTigerTestCase):
+class test_drop(aetest.ArchEngineTestCase):
     name = 'test_drop'
     extra_config = ''
 
@@ -53,7 +53,7 @@ class test_drop(wttest.WiredTigerTestCase):
         # Open cursors should cause failure.
         if with_cursor:
             cursor = self.session.open_cursor(uri, None, None)
-            self.assertRaises(wiredtiger.WiredTigerError,
+            self.assertRaises(archengine.ArchEngineError,
                 lambda: self.session.drop(uri, None))
             cursor.close()
 
@@ -94,16 +94,16 @@ class test_drop(wttest.WiredTigerTestCase):
         confirm_does_not_exist(self, uri)
         self.session.drop(uri, 'force')
         self.assertRaises(
-            wiredtiger.WiredTigerError, lambda: self.session.drop(uri, None))
+            archengine.ArchEngineError, lambda: self.session.drop(uri, None))
         self.session.drop(cguri, 'force')
         self.assertRaises(
-            wiredtiger.WiredTigerError, lambda: self.session.drop(cguri, None))
+            archengine.ArchEngineError, lambda: self.session.drop(cguri, None))
         self.session.drop(idxuri, 'force')
         self.assertRaises(
-            wiredtiger.WiredTigerError, lambda: self.session.drop(idxuri, None))
+            archengine.ArchEngineError, lambda: self.session.drop(idxuri, None))
         self.session.drop(lsmuri, 'force')
         self.assertRaises(
-            wiredtiger.WiredTigerError, lambda: self.session.drop(lsmuri, None))
+            archengine.ArchEngineError, lambda: self.session.drop(lsmuri, None))
 
 if __name__ == '__main__':
-    wttest.run()
+    aetest.run()

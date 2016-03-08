@@ -1,6 +1,6 @@
 /*-
  * Public Domain 2014-2015 MongoDB, Inc.
- * Public Domain 2008-2014 WiredTiger, Inc.
+ * Public Domain 2008-2014 ArchEngine, Inc.
  *
  * This is free and unencumbered software released into the public domain.
  *
@@ -28,7 +28,7 @@
 
 #include <assert.h>
 
-#include "wt_internal.h"			/* For __wt_XXX */
+#include "ae_internal.h"			/* For __ae_XXX */
 
 int
 main(void)
@@ -38,14 +38,14 @@ main(void)
 
 	for (i = 1; i < 1LL << 60; i <<= 1) {
 		end = buf;
-		assert(__wt_vpack_uint(&end, sizeof(buf), (uint64_t)i) == 0);
+		assert(__ae_vpack_uint(&end, sizeof(buf), (uint64_t)i) == 0);
 		printf("%" PRId64 " ", i);
 		for (p = buf; p < end; p++)
 			printf("%02x", *p);
 		printf("\n");
 
 		end = buf;
-		assert(__wt_vpack_int(&end, sizeof(buf), -i) == 0);
+		assert(__ae_vpack_int(&end, sizeof(buf), -i) == 0);
 		printf("%" PRId64 " ", -i);
 		for (p = buf; p < end; p++)
 			printf("%02x", *p);

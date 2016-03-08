@@ -1,7 +1,7 @@
 #!usr/bin/env python
 #
 # Public Domain 2014-2015 MongoDB, Inc.
-# Public Domain 2008-2014 WiredTiger, Inc.
+# Public Domain 2008-2014 ArchEngine, Inc.
 #
 # This is free and unencumbered software released into the public domain.
 #
@@ -26,14 +26,14 @@
 # ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 # OTHER DEALINGS IN THE SOFTWARE.
 
-import wiredtiger, wttest
+import archengine, aetest
 from helper import simple_populate, key_populate, value_populate
-from wtscenario import check_scenarios
+from aescenario import check_scenarios
 
 # test_cursor_pin.py
 #       Smoke-test fast-path searching for pinned pages before re-descending
 # the tree.
-class test_cursor_pin(wttest.WiredTigerTestCase):
+class test_cursor_pin(aetest.ArchEngineTestCase):
     uri = 'file:cursor_pin'
     nentries = 10000
     config = 'allocation_size=512,leaf_page_max=512,value_format=S,key_format='
@@ -64,7 +64,7 @@ class test_cursor_pin(wttest.WiredTigerTestCase):
         for i in range(1, max + 1):
             c.set_key(key_populate(c, i))
             if i in notfound:
-                self.assertEqual(c.search(), wiredtiger.WT_NOTFOUND)
+                self.assertEqual(c.search(), archengine.AE_NOTFOUND)
             else:
                 self.assertEqual(c.search(), 0)
                 self.assertEqual(c.get_value(), value_populate(c, i))
@@ -74,7 +74,7 @@ class test_cursor_pin(wttest.WiredTigerTestCase):
         for i in range(max, 0, -1):
             c.set_key(key_populate(c, i))
             if i in notfound:
-                self.assertEqual(c.search(), wiredtiger.WT_NOTFOUND)
+                self.assertEqual(c.search(), archengine.AE_NOTFOUND)
             else:
                 self.assertEqual(c.search(), 0)
                 self.assertEqual(c.get_value(), value_populate(c, i))
@@ -116,4 +116,4 @@ class test_cursor_pin(wttest.WiredTigerTestCase):
 
 
 if __name__ == '__main__':
-    wttest.run()
+    aetest.run()

@@ -3,7 +3,7 @@ AM_CPPFLAGS = -I$(top_builddir) -I$(top_srcdir)/src/include \
 
 noinst_PROGRAMS = t
 t_SOURCES = recovery.c
-t_LDADD = $(top_builddir)/libwiredtiger.la
+t_LDADD = $(top_builddir)/libarchengine.la
 t_LDFLAGS = -static
 
 # Run this during a "make check" smoke test.
@@ -11,4 +11,4 @@ TESTS = $(noinst_PROGRAMS)
 LOG_COMPILER = $(TEST_WRAPPER)
 
 clean-local:
-	rm -rf WiredTiger* *.core __*
+	rm -rf ArchEngine* *.core __*

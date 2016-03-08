@@ -1,6 +1,6 @@
 /*-
  * Copyright (c) 2014-2015 MongoDB, Inc.
- * Copyright (c) 2008-2014 WiredTiger, Inc.
+ * Copyright (c) 2008-2014 ArchEngine, Inc.
  *	All rights reserved.
  *
  * See the file LICENSE for redistribution information.
@@ -11,19 +11,19 @@
 static int usage(void);
 
 int
-util_printlog(WT_SESSION *session, int argc, char *argv[])
+util_printlog(AE_SESSION *session, int argc, char *argv[])
 {
-	WT_DECL_RET;
+	AE_DECL_RET;
 	int ch;
 	bool printable;
 
 	printable = false;
-	while ((ch = __wt_getopt(progname, argc, argv, "f:p")) != EOF)
+	while ((ch = __ae_getopt(progname, argc, argv, "f:p")) != EOF)
 		switch (ch) {
 		case 'f':			/* output file */
-			if (freopen(__wt_optarg, "w", stdout) == NULL) {
+			if (freopen(__ae_optarg, "w", stdout) == NULL) {
 				fprintf(stderr, "%s: %s: reopen: %s\n",
-				    progname, __wt_optarg, strerror(errno));
+				    progname, __ae_optarg, strerror(errno));
 				return (1);
 			}
 			break;
@@ -34,15 +34,15 @@ util_printlog(WT_SESSION *session, int argc, char *argv[])
 		default:
 			return (usage());
 		}
-	argc -= __wt_optind;
-	argv += __wt_optind;
+	argc -= __ae_optind;
+	argv += __ae_optind;
 
 	/* There should not be any more arguments. */
 	if (argc != 0)
 		return (usage());
 
-	WT_UNUSED(printable);
-	ret = __wt_txn_printlog(session, stdout);
+	AE_UNUSED(printable);
+	ret = __ae_txn_printlog(session, stdout);
 
 	if (ret != 0) {
 		fprintf(stderr, "%s: printlog failed: %s\n",

@@ -2,14 +2,14 @@
 
 # Check the copyrights.
 
-c1=__wt.copyright.1
-c2=__wt.copyright.2
-c3=__wt.copyright.3
-c4=__wt.copyright.4
+c1=__ae.copyright.1
+c2=__ae.copyright.2
+c3=__ae.copyright.3
+c4=__ae.copyright.4
 
 check()
 {
-	# Skip files in which WiredTiger holds no rights.
+	# Skip files in which ArchEngine holds no rights.
 	if `egrep "skip	$1" dist/s_copyright.list > /dev/null`; then
 		return;
 	fi
@@ -52,23 +52,23 @@ year=`date +%Y`
 
 cat > $c1 <<ENDOFTEXT
  * Copyright (c) 2014-$year MongoDB, Inc.
- * Copyright (c) 2008-2014 WiredTiger, Inc.
+ * Copyright (c) 2008-2014 ArchEngine, Inc.
  *	All rights reserved.
  *
  * See the file LICENSE for redistribution information.
 ENDOFTEXT
 
-# Copyright for files WiredTiger does not own.
+# Copyright for files ArchEngine does not own.
 cat > $c2 <<ENDOFTEXT
  * Public Domain 2014-$year MongoDB, Inc.
- * Public Domain 2008-2014 WiredTiger, Inc.
+ * Public Domain 2008-2014 ArchEngine, Inc.
  *
  * This is free and unencumbered software released into the public domain.
 ENDOFTEXT
 
 cat > $c3 <<ENDOFTEXT
 # Copyright (c) 2014-$year MongoDB, Inc.
-# Copyright (c) 2008-2014 WiredTiger, Inc.
+# Copyright (c) 2008-2014 ArchEngine, Inc.
 #	All rights reserved.
 #
 # See the file LICENSE for redistribution information.
@@ -76,7 +76,7 @@ ENDOFTEXT
 
 cat > $c4 <<ENDOFTEXT
 # Public Domain 2014-$year MongoDB, Inc.
-# Public Domain 2008-2014 WiredTiger, Inc.
+# Public Domain 2008-2014 ArchEngine, Inc.
 #
 # This is free and unencumbered software released into the public domain.
 ENDOFTEXT
@@ -99,7 +99,7 @@ ENDOFTEXT
 	-e 's/^\.\///' |
     xargs -P 20 -n 1 -I{} sh dist/s_copyright {})
 
-# A few special cases: LICENSE, documentation, wt utility, some of which have
+# A few special cases: LICENSE, documentation, ae utility, some of which have
 # more than one copyright notice in the file. For files that have only a single
 # copyright notice, we give it to MongoDB, from 2008 to now.
 string1="Copyright \(c\) 2014-$year MongoDB, Inc."

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Public Domain 2014-2015 MongoDB, Inc.
-# Public Domain 2008-2014 WiredTiger, Inc.
+# Public Domain 2008-2014 ArchEngine, Inc.
 #
 # This is free and unencumbered software released into the public domain.
 #
@@ -28,13 +28,13 @@
 
 import os, struct
 from suite_subprocess import suite_subprocess
-from wtscenario import number_scenarios, multiply_scenarios
-import wiredtiger, wttest
-from wiredtiger import stat
+from aescenario import number_scenarios, multiply_scenarios
+import archengine, aetest
+from archengine import stat
 
 # test_stat04.py
 #    Statistics key/value pair count
-class test_stat04(wttest.WiredTigerTestCase, suite_subprocess):
+class test_stat04(aetest.ArchEngineTestCase, suite_subprocess):
     uripfx = 'table:test_stat04.'
 
     # Note: stats for fixed length bit fields (valuefmt='8t')
@@ -51,9 +51,9 @@ class test_stat04(wttest.WiredTigerTestCase, suite_subprocess):
     ]
     scenarios = number_scenarios(multiply_scenarios('.', keyfmt, nentries))
 
-    # Override WiredTigerTestCase
+    # Override ArchEngineTestCase
     def setUpConnectionOpen(self, dir):
-        return wiredtiger.wiredtiger_open(dir,
+        return archengine.archengine_open(dir,
             'create,' +
             'statistics=(all),' +
             'error_prefix="%s: "' % self.shortid())
@@ -106,4 +106,4 @@ class test_stat04(wttest.WiredTigerTestCase, suite_subprocess):
         cursor.close()
 
 if __name__ == '__main__':
-    wttest.run()
+    aetest.run()

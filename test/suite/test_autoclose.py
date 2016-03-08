@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Public Domain 2014-2015 MongoDB, Inc.
-# Public Domain 2008-2014 WiredTiger, Inc.
+# Public Domain 2008-2014 ArchEngine, Inc.
 #
 # This is free and unencumbered software released into the public domain.
 #
@@ -26,10 +26,10 @@
 # ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 # OTHER DEALINGS IN THE SOFTWARE.
 
-import wiredtiger, wttest, exceptions
+import archengine, aetest, exceptions
 
 # test_autoclose
-class test_autoclose(wttest.WiredTigerTestCase):
+class test_autoclose(aetest.ArchEngineTestCase):
     """
     Check that when closed handles are used, there is a catchable
     error thrown, and that when a handle is closed, any subordinate
@@ -59,7 +59,7 @@ class test_autoclose(wttest.WiredTigerTestCase):
         inscursor.close()
         self.assertRaisesHavingMessage(exceptions.RuntimeError,
                                        lambda: inscursor.next(),
-                                       '/wt_cursor.* is None/')
+                                       '/ae_cursor.* is None/')
         self.drop_table()
         self.close_conn()
 
@@ -74,7 +74,7 @@ class test_autoclose(wttest.WiredTigerTestCase):
         self.session.close()
         self.assertRaisesHavingMessage(exceptions.RuntimeError,
                                        lambda: inscursor.next(),
-                                       '/wt_cursor.* is None/')
+                                       '/ae_cursor.* is None/')
         self.close_conn()
 
     def test_close_cursor3(self):
@@ -88,7 +88,7 @@ class test_autoclose(wttest.WiredTigerTestCase):
         self.close_conn()
         self.assertRaisesHavingMessage(exceptions.RuntimeError,
                                        lambda: inscursor.next(),
-                                       '/wt_cursor.* is None/')
+                                       '/ae_cursor.* is None/')
 
     def test_close_cursor4(self):
         """
@@ -126,7 +126,7 @@ class test_autoclose(wttest.WiredTigerTestCase):
         inscursor2 = None
         self.assertRaisesHavingMessage(exceptions.RuntimeError,
                                        lambda: inscursor.compare(inscursor2),
-                                       '/wt_cursor.* is None/')
+                                       '/ae_cursor.* is None/')
 
     def test_close_session1(self):
         """
@@ -135,7 +135,7 @@ class test_autoclose(wttest.WiredTigerTestCase):
         self.session.close()
         self.assertRaisesHavingMessage(exceptions.RuntimeError,
                                        lambda: self.create_table(),
-                                       '/wt_session.* is None/')
+                                       '/ae_session.* is None/')
         self.close_conn()
 
     def test_close_session2(self):
@@ -145,7 +145,7 @@ class test_autoclose(wttest.WiredTigerTestCase):
         self.close_conn()
         self.assertRaisesHavingMessage(exceptions.RuntimeError,
                                        lambda: self.create_table(),
-                                       '/wt_session.* is None/')
+                                       '/ae_session.* is None/')
 
     def test_close_connection1(self):
         """
@@ -155,7 +155,7 @@ class test_autoclose(wttest.WiredTigerTestCase):
         self.close_conn()
         self.assertRaisesHavingMessage(exceptions.RuntimeError,
                                        lambda: conn.open_session(None),
-                                       '/wt_connection.* is None/')
+                                       '/ae_connection.* is None/')
 
 if __name__ == '__main__':
-    wttest.run()
+    aetest.run()

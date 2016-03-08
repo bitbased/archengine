@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Public Domain 2014-2015 MongoDB, Inc.
-# Public Domain 2008-2014 WiredTiger, Inc.
+# Public Domain 2008-2014 ArchEngine, Inc.
 #
 # This is free and unencumbered software released into the public domain.
 #
@@ -28,11 +28,11 @@
 
 import os, struct
 from suite_subprocess import suite_subprocess
-import wiredtiger, wttest
+import archengine, aetest
 
 # test_util11.py
-#    Utilities: wt list
-class test_util11(wttest.WiredTigerTestCase, suite_subprocess):
+#    Utilities: ae list
+class test_util11(aetest.ArchEngineTestCase, suite_subprocess):
     tablenamepfx = 'test_util11.'
     session_params = 'key_format=S,value_format=S'
 
@@ -46,18 +46,18 @@ class test_util11(wttest.WiredTigerTestCase, suite_subprocess):
 
     def test_list_none(self):
         """
-        Test list in a 'wt' process, with no tables
+        Test list in a 'ae' process, with no tables
         """
 
         # Construct what we think we'll find
         filelist = ''
         outfile = "listout.txt"
-        self.runWt(["list"], outfilename=outfile)
+        self.runAe(["list"], outfilename=outfile)
         self.check_file_content(outfile, filelist)
 
     def test_list(self):
         """
-        Test list in a 'wt' process, with a mix of populated and empty tables
+        Test list in a 'ae' process, with a mix of populated and empty tables
         """
         pfx = self.tablenamepfx
         params = self.session_params
@@ -75,12 +75,12 @@ class test_util11(wttest.WiredTigerTestCase, suite_subprocess):
             tablelist += 'table:' + pfx + str(i) + '\n'
 
         outfile = "listout.txt"
-        self.runWt(["list", "table:"], outfilename=outfile)
+        self.runAe(["list", "table:"], outfilename=outfile)
         self.check_file_content(outfile, tablelist)
 
     def test_list_drop(self):
         """
-        Test list in a 'wt' process, with a mix of populated and empty tables,
+        Test list in a 'ae' process, with a mix of populated and empty tables,
         after some tables have been dropped.
         """
         pfx = self.tablenamepfx
@@ -99,12 +99,12 @@ class test_util11(wttest.WiredTigerTestCase, suite_subprocess):
         tablelist = ''.join('table:' + pfx + str(i) + '\n' for i in (1, 3, 5))
 
         outfile = "listout.txt"
-        self.runWt(["list", "table:"], outfilename=outfile)
+        self.runAe(["list", "table:"], outfilename=outfile)
         self.check_file_content(outfile, tablelist)
 
     def test_list_drop_all(self):
         """
-        Test list in a 'wt' process, with a mix of populated and empty tables,
+        Test list in a 'ae' process, with a mix of populated and empty tables,
         after all tables have been dropped.
         """
         pfx = self.tablenamepfx
@@ -125,9 +125,9 @@ class test_util11(wttest.WiredTigerTestCase, suite_subprocess):
         # Construct what we think we'll find
         filelist = ''
         outfile = "listout.txt"
-        self.runWt(["list"], outfilename=outfile)
+        self.runAe(["list"], outfilename=outfile)
         self.check_file_content(outfile, filelist)
 
 
 if __name__ == '__main__':
-    wttest.run()
+    aetest.run()

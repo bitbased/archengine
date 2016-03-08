@@ -7,7 +7,7 @@ There are seven page and key/value size configuration strings:
 - key and value sizes (\c internal_key_max, \c leaf_key_max and \c leaf_value_max), and the
 - page-split percentage (\c split_pct).
 
-All seven are specified to the WT_SESSION::create method, in other
+All seven are specified to the AE_SESSION::create method, in other
 words, they are configurable on a per-file basis.
 
 Applications commonly configure page sizes, based on their workload's
@@ -44,12 +44,12 @@ size to better match the underlying storage block size.
 
 When block compression has been configured, configured page sizes will
 not match the actual size of the page on disk. Block compression in
-WiredTiger happens within the I/O subsystem, and so a page might split
+ArchEngine happens within the I/O subsystem, and so a page might split
 even if subsequent compression would result in a resulting page size
 small enough to leave as a single page.  In other words, page sizes are
 based on in-memory sizes, not on-disk sizes. Applications needing to
 write specific sized blocks may want to consider implementing a
-WT_COMPRESSOR::compress_raw function.
+AE_COMPRESSOR::compress_raw function.
 
 The page sizes also determine the default size of overflow items, that
 is, keys and values too large to easily store on a page.  Overflow items
@@ -86,7 +86,7 @@ The value of \c internal_key_max is relative to the maximum internal
 page size.  Because the number of keys on an internal page determines
 the depth of the tree, the \c internal_key_max value can only be
 adjusted within a certain range, and the configured value will be
-automatically adjusted by WiredTiger, if necessary to ensure a
+automatically adjusted by ArchEngine, if necessary to ensure a
 reasonable number of keys fit on an internal page.
 
 The values of \c leaf_key_max and \c leaf_value_max are not relative to

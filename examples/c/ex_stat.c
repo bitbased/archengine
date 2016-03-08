@@ -1,6 +1,6 @@
 /*-
  * Public Domain 2014-2015 MongoDB, Inc.
- * Public Domain 2008-2014 WiredTiger, Inc.
+ * Public Domain 2008-2014 ArchEngine, Inc.
  *
  * This is free and unencumbered software released into the public domain.
  *
@@ -34,20 +34,20 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <wiredtiger.h>
+#include <archengine.h>
 
-int print_cursor(WT_CURSOR *);
-int print_database_stats(WT_SESSION *);
-int print_file_stats(WT_SESSION *);
-int print_overflow_pages(WT_SESSION *);
-int get_stat(WT_CURSOR *cursor, int stat_field, uint64_t *valuep);
-int print_derived_stats(WT_SESSION *);
+int print_cursor(AE_CURSOR *);
+int print_database_stats(AE_SESSION *);
+int print_file_stats(AE_SESSION *);
+int print_overflow_pages(AE_SESSION *);
+int get_stat(AE_CURSOR *cursor, int stat_field, uint64_t *valuep);
+int print_derived_stats(AE_SESSION *);
 
 static const char *home;
 
 /*! [statistics display function] */
 int
-print_cursor(WT_CURSOR *cursor)
+print_cursor(AE_CURSOR *cursor)
 {
 	const char *desc, *pvalue;
 	uint64_t value;
@@ -58,14 +58,14 @@ print_cursor(WT_CURSOR *cursor)
 		if (value != 0)
 			printf("%s=%s\n", desc, pvalue);
 
-	return (ret == WT_NOTFOUND ? 0 : ret);
+	return (ret == AE_NOTFOUND ? 0 : ret);
 }
 /*! [statistics display function] */
 
 int 
-print_database_stats(WT_SESSION *session)
+print_database_stats(AE_SESSION *session)
 {
-	WT_CURSOR *cursor;
+	AE_CURSOR *cursor;
 	int ret;
 
 	/*! [statistics database function] */
@@ -81,9 +81,9 @@ print_database_stats(WT_SESSION *session)
 }
 
 int 
-print_file_stats(WT_SESSION *session)
+print_file_stats(AE_SESSION *session)
 {
-	WT_CURSOR *cursor;
+	AE_CURSOR *cursor;
 	int ret;
 
 	/*! [statistics table function] */
@@ -99,10 +99,10 @@ print_file_stats(WT_SESSION *session)
 }
 
 int 
-print_overflow_pages(WT_SESSION *session)
+print_overflow_pages(AE_SESSION *session)
 {
 	/*! [statistics retrieve by key] */
-	WT_CURSOR *cursor;
+	AE_CURSOR *cursor;
 	const char *desc, *pvalue;
 	uint64_t value;
 	int ret;
@@ -111,7 +111,7 @@ print_overflow_pages(WT_SESSION *session)
 	    "statistics:table:access", NULL, NULL, &cursor)) != 0)
 		return (ret);
 
-	cursor->set_key(cursor, WT_STAT_DSRC_BTREE_OVERFLOW);
+	cursor->set_key(cursor, AE_STAT_DSRC_BTREE_OVERFLOW);
 	ret = cursor->search(cursor);
 	ret = cursor->get_value(cursor, &desc, &pvalue, &value);
 	printf("%s=%s\n", desc, pvalue);
@@ -124,7 +124,7 @@ print_overflow_pages(WT_SESSION *session)
 
 /*! [statistics calculation helper function] */
 int
-get_stat(WT_CURSOR *cursor, int stat_field, uint64_t *valuep)
+get_stat(AE_CURSOR *cursor, int stat_field, uint64_t *valuep)
 {
 	const char *desc, *pvalue;
 	int ret;
@@ -138,9 +138,9 @@ get_stat(WT_CURSOR *cursor, int stat_field, uint64_t *valuep)
 /*! [statistics calculation helper function] */
 
 int
-print_derived_stats(WT_SESSION *session)
+print_derived_stats(AE_SESSION *session)
 {
-	WT_CURSOR *cursor;
+	AE_CURSOR *cursor;
 	int ret;
 
 	/*! [statistics calculate open table stats] */
@@ -152,8 +152,8 @@ print_derived_stats(WT_SESSION *session)
 	{
 	/*! [statistics calculate table fragmentation] */
 	uint64_t ckpt_size, file_size, percent;
-	ret = get_stat(cursor, WT_STAT_DSRC_BLOCK_CHECKPOINT_SIZE, &ckpt_size);
-	ret = get_stat(cursor, WT_STAT_DSRC_BLOCK_SIZE, &file_size);
+	ret = get_stat(cursor, AE_STAT_DSRC_BLOCK_CHECKPOINT_SIZE, &ckpt_size);
+	ret = get_stat(cursor, AE_STAT_DSRC_BLOCK_SIZE, &file_size);
 
 	percent = 0;
 	if (file_size != 0)
@@ -166,11 +166,11 @@ print_derived_stats(WT_SESSION *session)
 	/*! [statistics calculate write amplification] */
 	uint64_t app_insert, app_remove, app_update, fs_writes;
 
-	ret = get_stat(cursor, WT_STAT_DSRC_CURSOR_INSERT_BYTES, &app_insert);
-	ret = get_stat(cursor, WT_STAT_DSRC_CURSOR_REMOVE_BYTES, &app_remove);
-	ret = get_stat(cursor, WT_STAT_DSRC_CURSOR_UPDATE_BYTES, &app_update);
+	ret = get_stat(cursor, AE_STAT_DSRC_CURSOR_INSERT_BYTES, &app_insert);
+	ret = get_stat(cursor, AE_STAT_DSRC_CURSOR_REMOVE_BYTES, &app_remove);
+	ret = get_stat(cursor, AE_STAT_DSRC_CURSOR_UPDATE_BYTES, &app_update);
 
-	ret = get_stat(cursor, WT_STAT_DSRC_CACHE_BYTES_WRITE, &fs_writes);
+	ret = get_stat(cursor, AE_STAT_DSRC_CACHE_BYTES_WRITE, &fs_writes);
 
 	if (app_insert + app_remove + app_update != 0)
 		printf("Write amplification is %.2lf\n",
@@ -186,22 +186,22 @@ print_derived_stats(WT_SESSION *session)
 int
 main(void)
 {
-	WT_CONNECTION *conn;
-	WT_CURSOR *cursor;
-	WT_SESSION *session;
+	AE_CONNECTION *conn;
+	AE_CURSOR *cursor;
+	AE_SESSION *session;
 	int ret;
 
 	/*
 	 * Create a clean test directory for this run of the test program if the
 	 * environment variable isn't already set (as is done by make check).
 	 */
-	if (getenv("WIREDTIGER_HOME") == NULL) {
-		home = "WT_HOME";
-		ret = system("rm -rf WT_HOME && mkdir WT_HOME");
+	if (getenv("ARCHENGINE_HOME") == NULL) {
+		home = "AE_HOME";
+		ret = system("rm -rf AE_HOME && mkdir AE_HOME");
 	} else
 		home = NULL;
 
-	ret = wiredtiger_open(home, NULL, "create,statistics=(all)", &conn);
+	ret = archengine_open(home, NULL, "create,statistics=(all)", &conn);
 	ret = conn->open_session(conn, NULL, NULL, &session);
 	ret = session->create(
 	    session, "table:access", "key_format=S,value_format=S");

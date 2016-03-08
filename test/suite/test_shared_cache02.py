@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Public Domain 2014-2015 MongoDB, Inc.
-# Public Domain 2008-2014 WiredTiger, Inc.
+# Public Domain 2008-2014 ArchEngine, Inc.
 #
 # This is free and unencumbered software released into the public domain.
 #
@@ -29,14 +29,14 @@
 
 import os
 import shutil
-import wiredtiger, wttest
-from wttest import unittest
+import archengine, aetest
+from aetest import unittest
 from helper import key_populate, simple_populate
 
 # test_shared_cache02.py
 #    Shared cache tests
 # Test shared cache shared amongst multiple connections.
-class test_shared_cache02(wttest.WiredTigerTestCase):
+class test_shared_cache02(aetest.ArchEngineTestCase):
 
     uri = 'table:test_shared_cache02'
     # Setup fairly large items to use up cache
@@ -72,7 +72,7 @@ class test_shared_cache02(wttest.WiredTigerTestCase):
         for name in connections:
             shutil.rmtree(name, True)
             os.mkdir(name)
-            next_conn =  wiredtiger.wiredtiger_open(
+            next_conn =  archengine.archengine_open(
                 name,
                 'create,error_prefix="' + self.shortid() + ': "' +
                 pool_opts + extra_opts)
@@ -89,7 +89,7 @@ class test_shared_cache02(wttest.WiredTigerTestCase):
     # Test reconfigure API
     def test_shared_cache_reconfig01(self):
         nops = 1000
-        self.openConnections(['WT_TEST1', 'WT_TEST2'])
+        self.openConnections(['AE_TEST1', 'AE_TEST2'])
 
         for sess in self.sessions:
             sess.create(self.uri, "key_format=S,value_format=S")
@@ -102,7 +102,7 @@ class test_shared_cache02(wttest.WiredTigerTestCase):
     # Test reconfigure that grows the usage over quota fails
     def test_shared_cache_reconfig02(self):
         nops = 1000
-        self.openConnections(['WT_TEST1', 'WT_TEST2'],
+        self.openConnections(['AE_TEST1', 'AE_TEST2'],
             pool_opts = ',shared_cache=(name=pool,size=50M,reserve=20M),')
 
         for sess in self.sessions:
@@ -111,7 +111,7 @@ class test_shared_cache02(wttest.WiredTigerTestCase):
 
         connection = self.conns[0]
         # Reconfigure to over-subscribe, call should fail with an error
-        self.assertRaisesWithMessage(wiredtiger.WiredTigerError,
+        self.assertRaisesWithMessage(archengine.ArchEngineError,
             lambda: connection.reconfigure("shared_cache=(name=pool,reserve=40M)"),
             '/Shared cache unable to accommodate this configuration/')
         # TODO: Ensure that the reserve size wasn't updated.
@@ -125,7 +125,7 @@ class test_shared_cache02(wttest.WiredTigerTestCase):
     # previous reserve size isn't taken into account
     def test_shared_cache_reconfig03(self):
         nops = 1000
-        self.openConnections(['WT_TEST1', 'WT_TEST2'],
+        self.openConnections(['AE_TEST1', 'AE_TEST2'],
             pool_opts = ',shared_cache=(name=pool,size=50M,reserve=20M),')
 
         for sess in self.sessions:
@@ -147,7 +147,7 @@ class test_shared_cache02(wttest.WiredTigerTestCase):
     # previous reserve size isn't taken into account
     def test_shared_cache_reconfig03(self):
         nops = 1000
-        self.openConnections(['WT_TEST1', 'WT_TEST2'], pool_opts = ',')
+        self.openConnections(['AE_TEST1', 'AE_TEST2'], pool_opts = ',')
 
         for sess in self.sessions:
             sess.create(self.uri, "key_format=S,value_format=S")
@@ -164,4 +164,4 @@ class test_shared_cache02(wttest.WiredTigerTestCase):
         self.closeConnections()
 
 if __name__ == '__main__':
-    wttest.run()
+    aetest.run()

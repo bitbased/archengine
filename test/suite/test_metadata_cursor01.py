@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Public Domain 2014-2015 MongoDB, Inc.
-# Public Domain 2008-2014 WiredTiger, Inc.
+# Public Domain 2008-2014 ArchEngine, Inc.
 #
 # This is free and unencumbered software released into the public domain.
 #
@@ -26,14 +26,14 @@
 # ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 # OTHER DEALINGS IN THE SOFTWARE.
 
-import wiredtiger, wttest
-from wtscenario import check_scenarios
+import archengine, aetest
+from aescenario import check_scenarios
 
 # test_metadata_cursor01.py
 #    Metadata cursor operations
 # Basic smoke-test of metadata cursor: test backward and forward iteration
 # as well as search.
-class test_metadata_cursor01(wttest.WiredTigerTestCase):
+class test_metadata_cursor01(aetest.ArchEngineTestCase):
     """
     Test basic operations
     """
@@ -60,9 +60,9 @@ class test_metadata_cursor01(wttest.WiredTigerTestCase):
         keymsg = '/requires key be set/'
         valuemsg = '/requires value be set/'
         self.assertRaisesWithMessage(
-            wiredtiger.WiredTigerError, cursor.get_key, keymsg)
+            archengine.ArchEngineError, cursor.get_key, keymsg)
         self.assertRaisesWithMessage(
-            wiredtiger.WiredTigerError, cursor.get_value, valuemsg)
+            archengine.ArchEngineError, cursor.get_value, valuemsg)
 
     def session_create(self, name, args):
         """
@@ -97,7 +97,7 @@ class test_metadata_cursor01(wttest.WiredTigerTestCase):
             self.assertIsNotNone(cursor.get_key())
             self.assertIsNotNone(cursor.get_value())
 
-        self.assertEqual(nextret, wiredtiger.WT_NOTFOUND)
+        self.assertEqual(nextret, archengine.AE_NOTFOUND)
         cursor.reset()
         self.assertCursorHasNoKeyValue(cursor)
         cursor.close()
@@ -115,7 +115,7 @@ class test_metadata_cursor01(wttest.WiredTigerTestCase):
             self.assertIsNotNone(cursor.get_key())
             self.assertIsNotNone(cursor.get_value())
 
-        self.assertEqual(prevret, wiredtiger.WT_NOTFOUND)
+        self.assertEqual(prevret, archengine.AE_NOTFOUND)
         self.assertCursorHasNoKeyValue(cursor)
         cursor.close()
 
@@ -134,4 +134,4 @@ class test_metadata_cursor01(wttest.WiredTigerTestCase):
         self.assertTrue(value.find('key_format') != -1)
 
 if __name__ == '__main__':
-    wttest.run()
+    aetest.run()

@@ -1,33 +1,33 @@
 /*-
  * Copyright (c) 2014-2015 MongoDB, Inc.
- * Copyright (c) 2008-2014 WiredTiger, Inc.
+ * Copyright (c) 2008-2014 ArchEngine, Inc.
  *	All rights reserved.
  *
  * See the file LICENSE for redistribution information.
  */
 
-#include "wt_internal.h"
+#include "ae_internal.h"
 
 static void __inmem_row_leaf_slots(uint8_t *, uint32_t, uint32_t, uint32_t);
 
 /*
- * __wt_row_leaf_keys --
+ * __ae_row_leaf_keys --
  *	Instantiate the interesting keys for random search of a page.
  */
 int
-__wt_row_leaf_keys(WT_SESSION_IMPL *session, WT_PAGE *page)
+__ae_row_leaf_keys(AE_SESSION_IMPL *session, AE_PAGE *page)
 {
-	WT_BTREE *btree;
-	WT_DECL_ITEM(key);
-	WT_DECL_ITEM(tmp);
-	WT_DECL_RET;
-	WT_ROW *rip;
+	AE_BTREE *btree;
+	AE_DECL_ITEM(key);
+	AE_DECL_ITEM(tmp);
+	AE_DECL_RET;
+	AE_ROW *rip;
 	uint32_t gap, i;
 
 	btree = S2BT(session);
 
 	if (page->pg_row_entries == 0) {		/* Just checking... */
-		F_SET_ATOMIC(page, WT_PAGE_BUILD_KEYS);
+		F_SET_ATOMIC(page, AE_PAGE_BUILD_KEYS);
 		return (0);
 	}
 
@@ -49,8 +49,8 @@ __wt_row_leaf_keys(WT_SESSION_IMPL *session, WT_PAGE *page)
 	 * Allocate a bit array and figure out the set of "interesting" keys,
 	 * marking up the array.
 	 */
-	WT_RET(__wt_scr_alloc(session, 0, &key));
-	WT_RET(__wt_scr_alloc(session,
+	AE_RET(__ae_scr_alloc(session, 0, &key));
+	AE_RET(__ae_scr_alloc(session,
 	    (uint32_t)__bitstr_size(page->pg_row_entries), &tmp));
 
 	if ((gap = btree->key_gap) == 0)
@@ -60,13 +60,13 @@ __wt_row_leaf_keys(WT_SESSION_IMPL *session, WT_PAGE *page)
 	/* Instantiate the keys. */
 	for (rip = page->pg_row_d, i = 0; i < page->pg_row_entries; ++rip, ++i)
 		if (__bit_test(tmp->mem, i))
-			WT_ERR(__wt_row_leaf_key_work(
+			AE_ERR(__ae_row_leaf_key_work(
 			    session, page, rip, key, true));
 
-	F_SET_ATOMIC(page, WT_PAGE_BUILD_KEYS);
+	F_SET_ATOMIC(page, AE_PAGE_BUILD_KEYS);
 
-err:	__wt_scr_free(session, &key);
-	__wt_scr_free(session, &tmp);
+err:	__ae_scr_free(session, &key);
+	__ae_scr_free(session, &tmp);
 	return (ret);
 }
 
@@ -105,39 +105,39 @@ __inmem_row_leaf_slots(
 }
 
 /*
- * __wt_row_leaf_key_copy --
+ * __ae_row_leaf_key_copy --
  *	Get a copy of a row-store leaf-page key.
  */
 int
-__wt_row_leaf_key_copy(
-    WT_SESSION_IMPL *session, WT_PAGE *page, WT_ROW *rip, WT_ITEM *key)
+__ae_row_leaf_key_copy(
+    AE_SESSION_IMPL *session, AE_PAGE *page, AE_ROW *rip, AE_ITEM *key)
 {
-	WT_RET(__wt_row_leaf_key(session, page, rip, key, false));
+	AE_RET(__ae_row_leaf_key(session, page, rip, key, false));
 
 	/* The return buffer may only hold a reference to a key, copy it. */
-	if (!WT_DATA_IN_ITEM(key))
-		WT_RET(__wt_buf_set(session, key, key->data, key->size));
+	if (!AE_DATA_IN_ITEM(key))
+		AE_RET(__ae_buf_set(session, key, key->data, key->size));
 
 	return (0);
 }
 
 /*
- * __wt_row_leaf_key_work --
+ * __ae_row_leaf_key_work --
  *	Return a reference to, a row-store leaf-page key, optionally instantiate
  * the key into the in-memory page.
  */
 int
-__wt_row_leaf_key_work(WT_SESSION_IMPL *session,
-    WT_PAGE *page, WT_ROW *rip_arg, WT_ITEM *keyb, bool instantiate)
+__ae_row_leaf_key_work(AE_SESSION_IMPL *session,
+    AE_PAGE *page, AE_ROW *rip_arg, AE_ITEM *keyb, bool instantiate)
 {
 	enum { FORWARD, BACKWARD } direction;
-	WT_BTREE *btree;
-	WT_CELL *cell;
-	WT_CELL_UNPACK *unpack, _unpack;
-	WT_DECL_ITEM(tmp);
-	WT_DECL_RET;
-	WT_IKEY *ikey;
-	WT_ROW *rip, *jump_rip;
+	AE_BTREE *btree;
+	AE_CELL *cell;
+	AE_CELL_UNPACK *unpack, _unpack;
+	AE_DECL_ITEM(tmp);
+	AE_DECL_RET;
+	AE_IKEY *ikey;
+	AE_ROW *rip, *jump_rip;
 	size_t size;
 	u_int last_prefix;
 	int jump_slot_offset, slot_offset;
@@ -147,7 +147,7 @@ __wt_row_leaf_key_work(WT_SESSION_IMPL *session,
 	/*
 	 * !!!
 	 * It is unusual to call this function: most code should be calling the
-	 * front-end, __wt_row_leaf_key, be careful if you're calling this code
+	 * front-end, __ae_row_leaf_key, be careful if you're calling this code
 	 * directly.
 	 */
 
@@ -166,19 +166,19 @@ __wt_row_leaf_key_work(WT_SESSION_IMPL *session,
 	for (slot_offset = 0;;) {
 		if (0) {
 switch_and_jump:	/* Switching to a forward roll. */
-			WT_ASSERT(session, direction == BACKWARD);
+			AE_ASSERT(session, direction == BACKWARD);
 			direction = FORWARD;
 
 			/* Skip list of keys with compatible prefixes. */
 			rip = jump_rip;
 			slot_offset = jump_slot_offset;
 		}
-		copy = WT_ROW_KEY_COPY(rip);
+		copy = AE_ROW_KEY_COPY(rip);
 
 		/*
 		 * Figure out what the key looks like.
 		 */
-		(void)__wt_row_leaf_key_info(
+		(void)__ae_row_leaf_key_info(
 		    page, copy, &ikey, &cell, &p, &size);
 
 		/* 1: the test for a directly referenced on-page key. */
@@ -238,7 +238,7 @@ switch_and_jump:	/* Switching to a forward roll. */
 			 * done because prefixes skip overflow keys: keep
 			 * rolling forward.
 			 */
-			if (__wt_cell_type(cell) == WT_CELL_KEY_OVFL)
+			if (__ae_cell_type(cell) == AE_CELL_KEY_OVFL)
 				goto next;
 
 			/*
@@ -261,10 +261,10 @@ switch_and_jump:	/* Switching to a forward roll. */
 		/*
 		 * It must be an on-page cell, unpack it.
 		 */
-		__wt_cell_unpack(cell, unpack);
+		__ae_cell_unpack(cell, unpack);
 
 		/* 3: the test for an on-page reference to an overflow key. */
-		if (unpack->type == WT_CELL_KEY_OVFL) {
+		if (unpack->type == AE_CELL_KEY_OVFL) {
 			/*
 			 * If this is the key we wanted from the start, we don't
 			 * care if it's an overflow key, get a copy and wrap up.
@@ -281,18 +281,18 @@ switch_and_jump:	/* Switching to a forward roll. */
 			 * the tracking cache.
 			 */
 			if (slot_offset == 0) {
-				WT_ERR(
-				    __wt_readlock(session, btree->ovfl_lock));
-				copy = WT_ROW_KEY_COPY(rip);
-				if (!__wt_row_leaf_key_info(page, copy,
+				AE_ERR(
+				    __ae_readlock(session, btree->ovfl_lock));
+				copy = AE_ROW_KEY_COPY(rip);
+				if (!__ae_row_leaf_key_info(page, copy,
 				    NULL, &cell, &keyb->data, &keyb->size)) {
-					__wt_cell_unpack(cell, unpack);
-					ret = __wt_dsk_cell_data_ref(session,
-					    WT_PAGE_ROW_LEAF, unpack, keyb);
+					__ae_cell_unpack(cell, unpack);
+					ret = __ae_dsk_cell_data_ref(session,
+					    AE_PAGE_ROW_LEAF, unpack, keyb);
 				}
-				WT_TRET(
-				    __wt_readunlock(session, btree->ovfl_lock));
-				WT_ERR(ret);
+				AE_TRET(
+				    __ae_readunlock(session, btree->ovfl_lock));
+				AE_ERR(ret);
 				break;
 			}
 
@@ -319,7 +319,7 @@ switch_and_jump:	/* Switching to a forward roll. */
 			 * have been directly referenced, and we should not have
 			 * needed to unpack its cell.
 			 */
-			WT_ASSERT(session, btree->huffman_key != NULL);
+			AE_ASSERT(session, btree->huffman_key != NULL);
 
 			/*
 			 * If this is the key we originally wanted, we don't
@@ -337,8 +337,8 @@ switch_and_jump:	/* Switching to a forward roll. */
 			 * The key doesn't need to be instantiated, skip past
 			 * that test.
 			 */
-			WT_ERR(__wt_dsk_cell_data_ref(
-			    session, WT_PAGE_ROW_LEAF, unpack, keyb));
+			AE_ERR(__ae_dsk_cell_data_ref(
+			    session, AE_PAGE_ROW_LEAF, unpack, keyb));
 			if (slot_offset == 0)
 				goto done;
 			goto switch_and_jump;
@@ -382,10 +382,10 @@ switch_and_jump:	/* Switching to a forward roll. */
 				size = unpack->size;
 			} else {
 				if (tmp == NULL)
-					WT_ERR(
-					__wt_scr_alloc(session, 0, &tmp));
-				WT_ERR(__wt_dsk_cell_data_ref(
-				    session, WT_PAGE_ROW_LEAF, unpack, tmp));
+					AE_ERR(
+					__ae_scr_alloc(session, 0, &tmp));
+				AE_ERR(__ae_dsk_cell_data_ref(
+				    session, AE_PAGE_ROW_LEAF, unpack, tmp));
 				p = tmp->data;
 				size = tmp->size;
 			}
@@ -400,7 +400,7 @@ switch_and_jump:	/* Switching to a forward roll. */
 			 * prefix bytes.
 			 */
 			keyb->size = unpack->prefix;
-			WT_ERR(__wt_buf_grow(session, keyb, keyb->size + size));
+			AE_ERR(__ae_buf_grow(session, keyb, keyb->size + size));
 			memcpy((uint8_t *)keyb->data + keyb->size, p, size);
 			keyb->size += size;
 
@@ -435,12 +435,12 @@ next:		switch (direction) {
 	 * that half of the page).
 	 */
 	if (instantiate) {
-		copy = WT_ROW_KEY_COPY(rip_arg);
-		(void)__wt_row_leaf_key_info(
+		copy = AE_ROW_KEY_COPY(rip_arg);
+		(void)__ae_row_leaf_key_info(
 		    page, copy, &ikey, &cell, NULL, NULL);
 		if (ikey == NULL) {
-			WT_ERR(__wt_row_ikey_alloc(session,
-			    WT_PAGE_DISK_OFFSET(page, cell),
+			AE_ERR(__ae_row_ikey_alloc(session,
+			    AE_PAGE_DISK_OFFSET(page, cell),
 			    keyb->data, keyb->size, &ikey));
 
 			/*
@@ -448,85 +448,85 @@ next:		switch (direction) {
 			 * update the page's memory footprint, on failure, free
 			 * the allocated memory.
 			 */
-			if (__wt_atomic_cas_ptr(
-			    (void *)&WT_ROW_KEY_COPY(rip), copy, ikey))
-				__wt_cache_page_inmem_incr(session,
-				    page, sizeof(WT_IKEY) + ikey->size);
+			if (__ae_atomic_cas_ptr(
+			    (void *)&AE_ROW_KEY_COPY(rip), copy, ikey))
+				__ae_cache_page_inmem_incr(session,
+				    page, sizeof(AE_IKEY) + ikey->size);
 			else
-				__wt_free(session, ikey);
+				__ae_free(session, ikey);
 		}
 	}
 
 done:
-err:	__wt_scr_free(session, &tmp);
+err:	__ae_scr_free(session, &tmp);
 	return (ret);
 }
 
 /*
- * __wt_row_ikey_alloc --
- *	Instantiate a key in a WT_IKEY structure.
+ * __ae_row_ikey_alloc --
+ *	Instantiate a key in a AE_IKEY structure.
  */
 int
-__wt_row_ikey_alloc(WT_SESSION_IMPL *session,
-    uint32_t cell_offset, const void *key, size_t size, WT_IKEY **ikeyp)
+__ae_row_ikey_alloc(AE_SESSION_IMPL *session,
+    uint32_t cell_offset, const void *key, size_t size, AE_IKEY **ikeyp)
 {
-	WT_IKEY *ikey;
+	AE_IKEY *ikey;
 
 	/*
-	 * Allocate memory for the WT_IKEY structure and the key, then copy
+	 * Allocate memory for the AE_IKEY structure and the key, then copy
 	 * the key into place.
 	 */
-	WT_RET(__wt_calloc(session, 1, sizeof(WT_IKEY) + size, &ikey));
-	ikey->size = WT_STORE_SIZE(size);
+	AE_RET(__ae_calloc(session, 1, sizeof(AE_IKEY) + size, &ikey));
+	ikey->size = AE_STORE_SIZE(size);
 	ikey->cell_offset = cell_offset;
-	memcpy(WT_IKEY_DATA(ikey), key, size);
+	memcpy(AE_IKEY_DATA(ikey), key, size);
 	*ikeyp = ikey;
 	return (0);
 }
 
 /*
- * __wt_row_ikey_incr --
- *	Instantiate a key in a WT_IKEY structure and increment the page's
+ * __ae_row_ikey_incr --
+ *	Instantiate a key in a AE_IKEY structure and increment the page's
  * memory footprint.
  */
 int
-__wt_row_ikey_incr(WT_SESSION_IMPL *session, WT_PAGE *page,
-    uint32_t cell_offset, const void *key, size_t size, WT_REF *ref)
+__ae_row_ikey_incr(AE_SESSION_IMPL *session, AE_PAGE *page,
+    uint32_t cell_offset, const void *key, size_t size, AE_REF *ref)
 {
-	WT_RET(__wt_row_ikey(session, cell_offset, key, size, ref));
+	AE_RET(__ae_row_ikey(session, cell_offset, key, size, ref));
 
-	__wt_cache_page_inmem_incr(session, page, sizeof(WT_IKEY) + size);
+	__ae_cache_page_inmem_incr(session, page, sizeof(AE_IKEY) + size);
 
 	return (0);
 }
 
 /*
- * __wt_row_ikey --
- *	Instantiate a key in a WT_IKEY structure.
+ * __ae_row_ikey --
+ *	Instantiate a key in a AE_IKEY structure.
  */
 int
-__wt_row_ikey(WT_SESSION_IMPL *session,
-    uint32_t cell_offset, const void *key, size_t size, WT_REF *ref)
+__ae_row_ikey(AE_SESSION_IMPL *session,
+    uint32_t cell_offset, const void *key, size_t size, AE_REF *ref)
 {
-	WT_IKEY *ikey;
+	AE_IKEY *ikey;
 
-	WT_RET(__wt_row_ikey_alloc(session, cell_offset, key, size, &ikey));
+	AE_RET(__ae_row_ikey_alloc(session, cell_offset, key, size, &ikey));
 
 #ifdef HAVE_DIAGNOSTIC
 	{
 	uintptr_t oldv;
 
 	oldv = (uintptr_t)ref->key.ikey;
-	WT_DIAGNOSTIC_YIELD;
+	AE_DIAGNOSTIC_YIELD;
 
 	/*
 	 * We should never overwrite an instantiated key, and we should
 	 * never instantiate a key after a split.
 	 */
-	WT_ASSERT(session, oldv == 0 || (oldv & WT_IK_FLAG) != 0);
-	WT_ASSERT(session, ref->state != WT_REF_SPLIT);
-	WT_ASSERT(session,
-	    __wt_atomic_cas_ptr(&ref->key.ikey, (WT_IKEY *)oldv, ikey));
+	AE_ASSERT(session, oldv == 0 || (oldv & AE_IK_FLAG) != 0);
+	AE_ASSERT(session, ref->state != AE_REF_SPLIT);
+	AE_ASSERT(session,
+	    __ae_atomic_cas_ptr(&ref->key.ikey, (AE_IKEY *)oldv, ikey));
 	}
 #else
 	ref->key.ikey = ikey;

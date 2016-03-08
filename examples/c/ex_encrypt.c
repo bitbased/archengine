@@ -1,6 +1,6 @@
 /*-
  * Public Domain 2014-2015 MongoDB, Inc.
- * Public Domain 2008-2014 WiredTiger, Inc.
+ * Public Domain 2008-2014 ArchEngine, Inc.
  *
  * This is free and unencumbered software released into the public domain.
  *
@@ -40,8 +40,8 @@
 #include "windows_shim.h"
 #endif
 
-#include <wiredtiger.h>
-#include <wiredtiger_ext.h>
+#include <archengine.h>
+#include <archengine_ext.h>
 
 #ifdef _WIN32
 /*
@@ -49,7 +49,7 @@
  */
 __declspec(dllexport)
 #endif
-int add_my_encryptors(WT_CONNECTION *connection);
+int add_my_encryptors(AE_CONNECTION *connection);
 
 static const char *home = NULL;
 
@@ -65,7 +65,7 @@ static const char *home = NULL;
 
 /*! [encryption example callback implementation] */
 typedef struct {
-	WT_ENCRYPTOR encryptor;	/* Must come first */
+	AE_ENCRYPTOR encryptor;	/* Must come first */
 	int rot_N;		/* rotN value */
 	uint32_t num_calls;	/* Count of calls */
 	char *keyid;		/* Saved keyid */
@@ -135,7 +135,7 @@ do_rotate(char *buf, size_t len, int rotn)
  *	A simple rotate decryption.
  */
 static int
-rotate_decrypt(WT_ENCRYPTOR *encryptor, WT_SESSION *session,
+rotate_decrypt(AE_ENCRYPTOR *encryptor, AE_SESSION *session,
     uint8_t *src, size_t src_len,
     uint8_t *dst, size_t dst_len,
     size_t *result_lenp)
@@ -187,7 +187,7 @@ rotate_decrypt(WT_ENCRYPTOR *encryptor, WT_SESSION *session,
  *	A simple rotate encryption.
  */
 static int
-rotate_encrypt(WT_ENCRYPTOR *encryptor, WT_SESSION *session,
+rotate_encrypt(AE_ENCRYPTOR *encryptor, AE_SESSION *session,
     uint8_t *src, size_t src_len,
     uint8_t *dst, size_t dst_len,
     size_t *result_lenp)
@@ -232,7 +232,7 @@ rotate_encrypt(WT_ENCRYPTOR *encryptor, WT_SESSION *session,
  *	A sizing example that returns the header size needed.
  */
 static int
-rotate_sizing(WT_ENCRYPTOR *encryptor, WT_SESSION *session,
+rotate_sizing(AE_ENCRYPTOR *encryptor, AE_SESSION *session,
     size_t *expansion_constantp)
 {
 	MY_CRYPTO *my_crypto = (MY_CRYPTO *)encryptor;
@@ -250,12 +250,12 @@ rotate_sizing(WT_ENCRYPTOR *encryptor, WT_SESSION *session,
  *	The customize function creates a customized encryptor
  */
 static int
-rotate_customize(WT_ENCRYPTOR *encryptor, WT_SESSION *session,
-    WT_CONFIG_ARG *encrypt_config, WT_ENCRYPTOR **customp)
+rotate_customize(AE_ENCRYPTOR *encryptor, AE_SESSION *session,
+    AE_CONFIG_ARG *encrypt_config, AE_ENCRYPTOR **customp)
 {
 	MY_CRYPTO *my_crypto;
-	WT_CONFIG_ITEM keyid, secret;
-	WT_EXTENSION_API *extapi;
+	AE_CONFIG_ITEM keyid, secret;
+	AE_EXTENSION_API *extapi;
 	int ret;
 	const MY_CRYPTO *orig_crypto;
 
@@ -314,7 +314,7 @@ rotate_customize(WT_ENCRYPTOR *encryptor, WT_SESSION *session,
 
 	++my_crypto->num_calls;		/* Call count */
 
-	*customp = (WT_ENCRYPTOR *)my_crypto;
+	*customp = (AE_ENCRYPTOR *)my_crypto;
 	return (0);
 
 err:	free(my_crypto->keyid);
@@ -325,10 +325,10 @@ err:	free(my_crypto->keyid);
 
 /*
  * rotate_terminate --
- *	WiredTiger rotate encryption termination.
+ *	ArchEngine rotate encryption termination.
  */
 static int
-rotate_terminate(WT_ENCRYPTOR *encryptor, WT_SESSION *session)
+rotate_terminate(AE_ENCRYPTOR *encryptor, AE_SESSION *session)
 {
 	MY_CRYPTO *my_crypto = (MY_CRYPTO *)encryptor;
 
@@ -353,10 +353,10 @@ rotate_terminate(WT_ENCRYPTOR *encryptor, WT_SESSION *session)
  *	A simple example of adding encryption callbacks.
  */
 int
-add_my_encryptors(WT_CONNECTION *connection)
+add_my_encryptors(AE_CONNECTION *connection)
 {
 	MY_CRYPTO *m;
-	WT_ENCRYPTOR *wt;
+	AE_ENCRYPTOR *ae;
 	int ret;
 
 	/*
@@ -364,15 +364,15 @@ add_my_encryptors(WT_CONNECTION *connection)
 	 */
 	if ((m = calloc(1, sizeof(MY_CRYPTO))) == NULL)
 		return (errno);
-	wt = (WT_ENCRYPTOR *)&m->encryptor;
-	wt->encrypt = rotate_encrypt;
-	wt->decrypt = rotate_decrypt;
-	wt->sizing = rotate_sizing;
-	wt->customize = rotate_customize;
-	wt->terminate = rotate_terminate;
+	ae = (AE_ENCRYPTOR *)&m->encryptor;
+	ae->encrypt = rotate_encrypt;
+	ae->decrypt = rotate_decrypt;
+	ae->sizing = rotate_sizing;
+	ae->customize = rotate_customize;
+	ae->terminate = rotate_terminate;
 	m->num_calls = 0;
 	if ((ret = connection->add_encryptor(
-	    connection, "rotn", (WT_ENCRYPTOR *)m, NULL)) != 0)
+	    connection, "rotn", (AE_ENCRYPTOR *)m, NULL)) != 0)
 		return (ret);
 
 	return (0);
@@ -385,11 +385,11 @@ add_my_encryptors(WT_CONNECTION *connection)
  *	This verifies we're decrypting properly.
  */
 static int
-simple_walk_log(WT_SESSION *session)
+simple_walk_log(AE_SESSION *session)
 {
-	WT_CURSOR *cursor;
-	WT_ITEM logrec_key, logrec_value;
-	WT_LSN lsn;
+	AE_CURSOR *cursor;
+	AE_ITEM logrec_key, logrec_value;
+	AE_LSN lsn;
 	uint64_t txnid;
 	uint32_t fileid, opcount, optype, rectype;
 	int found, ret;
@@ -402,13 +402,13 @@ simple_walk_log(WT_SESSION *session)
 		ret = cursor->get_value(cursor, &txnid,
 		    &rectype, &optype, &fileid, &logrec_key, &logrec_value);
 
-		if (rectype == WT_LOGREC_MESSAGE) {
+		if (rectype == AE_LOGREC_MESSAGE) {
 			found = 1;
 			printf("Application Log Record: %s\n",
 			    (char *)logrec_value.data);
 		}
 	}
-	if (ret == WT_NOTFOUND)
+	if (ret == AE_NOTFOUND)
 		ret = 0;
 	ret = cursor->close(cursor);
 	if (found == 0) {
@@ -422,12 +422,12 @@ simple_walk_log(WT_SESSION *session)
 
 #define	EXTENSION_NAME  "local=(entry=add_my_encryptors)"
 
-#define	WT_OPEN_CONFIG_COMMON \
+#define	AE_OPEN_CONFIG_COMMON \
     "create,cache_size=100MB,extensions=[" EXTENSION_NAME "],"\
     "log=(archive=false,enabled=true)," \
 
-#define	WT_OPEN_CONFIG_GOOD \
-    WT_OPEN_CONFIG_COMMON \
+#define	AE_OPEN_CONFIG_GOOD \
+    AE_OPEN_CONFIG_COMMON \
     "encryption=(name=rotn,keyid=" SYS_KEYID ",secretkey=" SYS_PW ")"
 
 #define	COMP_A	"AAAAAAAAAAAAAAAAAA"
@@ -437,9 +437,9 @@ simple_walk_log(WT_SESSION *session)
 int
 main(void)
 {
-	WT_CONNECTION *conn;
-	WT_CURSOR *c1, *c2, *nc;
-	WT_SESSION *session;
+	AE_CONNECTION *conn;
+	AE_CURSOR *c1, *c2, *nc;
+	AE_SESSION *session;
 	int i, ret;
 	char keybuf[16], valbuf[16];
 	char *key1, *key2, *key3, *val1, *val2, *val3;
@@ -448,13 +448,13 @@ main(void)
 	 * Create a clean test directory for this run of the test program if the
 	 * environment variable isn't already set (as is done by make check).
 	 */
-	if (getenv("WIREDTIGER_HOME") == NULL) {
-		home = "WT_HOME";
-		ret = system("rm -rf WT_HOME && mkdir WT_HOME");
+	if (getenv("ARCHENGINE_HOME") == NULL) {
+		home = "AE_HOME";
+		ret = system("rm -rf AE_HOME && mkdir AE_HOME");
 	} else
 		home = NULL;
 
-	ret = wiredtiger_open(home, NULL, WT_OPEN_CONFIG_GOOD, &conn);
+	ret = archengine_open(home, NULL, AE_OPEN_CONFIG_GOOD, &conn);
 
 	ret = conn->open_session(conn, NULL, NULL, &session);
 
@@ -486,7 +486,7 @@ main(void)
 	    "key_format=S,value_format=S");
 
 	/*
-	 * Send in an unknown keyid.  WiredTiger will try to add in the
+	 * Send in an unknown keyid.  ArchEngine will try to add in the
 	 * new keyid, but the customize function above will return an
 	 * error since it is unrecognized.
 	 */
@@ -502,7 +502,7 @@ main(void)
 	ret = session->open_cursor(session, "table:crypto2", NULL, NULL, &c2);
 	ret = session->open_cursor(session, "table:nocrypto", NULL, NULL, &nc);
 
-	/* 
+	/*
 	 * Insert a set of keys and values.  Insert the same data into
 	 * all tables so that we can verify they're all the same after
 	 * we decrypt on read.
@@ -543,7 +543,7 @@ main(void)
 	 */
 	printf("REOPEN and VERIFY encrypted data\n");
 
-	ret = wiredtiger_open(home, NULL, WT_OPEN_CONFIG_GOOD, &conn);
+	ret = archengine_open(home, NULL, AE_OPEN_CONFIG_GOOD, &conn);
 
 	ret = conn->open_session(conn, NULL, NULL, &session);
 	/*

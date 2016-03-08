@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Public Domain 2014-2015 MongoDB, Inc.
-# Public Domain 2008-2014 WiredTiger, Inc.
+# Public Domain 2008-2014 ArchEngine, Inc.
 #
 # This is free and unencumbered software released into the public domain.
 #
@@ -31,11 +31,11 @@
 #
 
 import json
-import wiredtiger, wttest
-from wtscenario import check_scenarios
+import archengine, aetest
+from aescenario import check_scenarios
 
 # Test configuration strings.
-class test_base02(wttest.WiredTigerTestCase):
+class test_base02(aetest.ArchEngineTestCase):
     name = 'test_base02a'
     extra_config = ''
 
@@ -98,4 +98,4 @@ class test_base02(wttest.WiredTigerTestCase):
             self.create_and_drop(confstr)
 
 if __name__ == '__main__':
-    wttest.run()
+    aetest.run()

@@ -1,6 +1,6 @@
 /*-
  * Public Domain 2014-2015 MongoDB, Inc.
- * Public Domain 2008-2014 WiredTiger, Inc.
+ * Public Domain 2008-2014 ArchEngine, Inc.
  *
  * This is free and unencumbered software released into the public domain.
  *
@@ -118,7 +118,7 @@ config_setup(void)
 	strcpy(g.uri, DATASOURCE("file") ? "file:" : "table:");
 	if (DATASOURCE("helium"))
 		strcat(g.uri, "dev1/");
-	strcat(g.uri, WT_NAME);
+	strcat(g.uri, AE_NAME);
 
 	/* Fill in random values for the rest of the run. */
 	for (cp = c; cp->name != NULL; ++cp) {
@@ -249,7 +249,7 @@ config_compression(const char *conf_name)
 	 * otherwise confirm the appropriate shared library is available.
 	 * We used to verify that the libraries existed but that's no longer
 	 * robust, since it's possible to build compression libraries into
-	 * the WiredTiger library.
+	 * the ArchEngine library.
 	 */
 	if (!config_is_perm(conf_name)) {
 		cstr = "none";
@@ -390,7 +390,7 @@ static void
 config_lrt(void)
 {
 	/*
-	 * WiredTiger doesn't support a lookaside file for fixed-length column
+	 * ArchEngine doesn't support a lookaside file for fixed-length column
 	 * stores.
 	 */
 	if (g.type == FIX) {

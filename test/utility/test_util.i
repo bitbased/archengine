@@ -1,6 +1,6 @@
 /*-
  * Public Domain 2014-2015 MongoDB, Inc.
- * Public Domain 2008-2014 WiredTiger, Inc.
+ * Public Domain 2008-2014 ArchEngine, Inc.
  *
  * This is free and unencumbered software released into the public domain.
  *
@@ -25,7 +25,7 @@
  * ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  * OTHER DEALINGS IN THE SOFTWARE.
  */
-#include "wt_internal.h"			/* For __wt_XXX */
+#include "ae_internal.h"			/* For __ae_XXX */
 
 #ifdef _WIN32
 #include "windows_shim.h"
@@ -39,7 +39,7 @@
 	#define RM_COMMAND "rm -rf "
 #endif
 
-#define	DEFAULT_DIR "WT_TEST"
+#define	DEFAULT_DIR "AE_TEST"
 #define	MKDIR_COMMAND "mkdir "
 
 /*
@@ -55,7 +55,7 @@ testutil_die(int e, const char *fmt, ...)
 	vfprintf(stderr, fmt, ap);
 	va_end(ap);
 	if (e != 0)
-		fprintf(stderr, ": %s", wiredtiger_strerror(e));
+		fprintf(stderr, ": %s", archengine_strerror(e));
 	fprintf(stderr, "\n");
 	exit(EXIT_FAILURE);
 }
@@ -79,7 +79,7 @@ testutil_work_dir_from_path(char *buffer, size_t inputSize, char *dir)
 		return;
 	}
 
-	/* Additional bytes for the directory and WT_TEST. */
+	/* Additional bytes for the directory and AE_TEST. */
 	if (inputSize < strlen(dir) + sizeof(DEFAULT_DIR) + sizeof(DIR_DELIM))
 		testutil_die(ENOMEM,
 		    "Not enough memory in buffer for directory %s%c%s",
@@ -108,7 +108,7 @@ testutil_clean_work_dir(char *dir)
 	snprintf(buffer, inputSize, "%s%s", RM_COMMAND, dir);
 
 	exist = 0;
-	if ((ret = __wt_exist(NULL, dir, &exist)) != 0)
+	if ((ret = __ae_exist(NULL, dir, &exist)) != 0)
 		testutil_die(ret,
 		    "Unable to check if directory exists");
 	if (exist == 1 && (ret = system(buffer)) != 0)

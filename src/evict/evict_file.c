@@ -1,38 +1,38 @@
 /*-
  * Copyright (c) 2014-2015 MongoDB, Inc.
- * Copyright (c) 2008-2014 WiredTiger, Inc.
+ * Copyright (c) 2008-2014 ArchEngine, Inc.
  *	All rights reserved.
  *
  * See the file LICENSE for redistribution information.
  */
 
-#include "wt_internal.h"
+#include "ae_internal.h"
 
 /*
- * __wt_evict_file --
+ * __ae_evict_file --
  *	Discard pages for a specific file.
  */
 int
-__wt_evict_file(WT_SESSION_IMPL *session, WT_CACHE_OP syncop)
+__ae_evict_file(AE_SESSION_IMPL *session, AE_CACHE_OP syncop)
 {
-	WT_DECL_RET;
-	WT_PAGE *page;
-	WT_REF *next_ref, *ref;
+	AE_DECL_RET;
+	AE_PAGE *page;
+	AE_REF *next_ref, *ref;
 	bool evict_reset;
 
 	/*
 	 * We need exclusive access to the file -- disable ordinary eviction
 	 * and drain any blocks already queued.
 	 */
-	WT_RET(__wt_evict_file_exclusive_on(session, &evict_reset));
+	AE_RET(__ae_evict_file_exclusive_on(session, &evict_reset));
 
 	/* Make sure the oldest transaction ID is up-to-date. */
-	__wt_txn_update_oldest(session, true);
+	__ae_txn_update_oldest(session, true);
 
 	/* Walk the tree, discarding pages. */
 	next_ref = NULL;
-	WT_ERR(__wt_tree_walk(session, &next_ref, NULL,
-	    WT_READ_CACHE | WT_READ_NO_EVICT));
+	AE_ERR(__ae_tree_walk(session, &next_ref, NULL,
+	    AE_READ_CACHE | AE_READ_NO_EVICT));
 	while ((ref = next_ref) != NULL) {
 		page = ref->page;
 
@@ -56,8 +56,8 @@ __wt_evict_file(WT_SESSION_IMPL *session, WT_CACHE_OP syncop)
 		 * and the write will fail with EBUSY.  Our caller handles that
 		 * error, retrying later.
 		 */
-		if (syncop == WT_SYNC_CLOSE && __wt_page_is_modified(page))
-			WT_ERR(__wt_reconcile(session, ref, NULL, WT_EVICTING));
+		if (syncop == AE_SYNC_CLOSE && __ae_page_is_modified(page))
+			AE_ERR(__ae_reconcile(session, ref, NULL, AE_EVICTING));
 
 		/*
 		 * We can't evict the page just returned to us (it marks our
@@ -68,38 +68,38 @@ __wt_evict_file(WT_SESSION_IMPL *session, WT_CACHE_OP syncop)
 		 * the reconciliation, the next walk call could miss a page in
 		 * the tree.
 		 */
-		WT_ERR(__wt_tree_walk(session, &next_ref, NULL,
-		    WT_READ_CACHE | WT_READ_NO_EVICT));
+		AE_ERR(__ae_tree_walk(session, &next_ref, NULL,
+		    AE_READ_CACHE | AE_READ_NO_EVICT));
 
 		switch (syncop) {
-		case WT_SYNC_CLOSE:
+		case AE_SYNC_CLOSE:
 			/*
 			 * Evict the page.
 			 */
-			WT_ERR(__wt_evict(session, ref, true));
+			AE_ERR(__ae_evict(session, ref, true));
 			break;
-		case WT_SYNC_DISCARD:
+		case AE_SYNC_DISCARD:
 			/*
 			 * Discard the page regardless of whether it is dirty.
 			 */
-			WT_ASSERT(session,
-			    F_ISSET(session->dhandle, WT_DHANDLE_DEAD) ||
-			    __wt_page_can_evict(session, ref, NULL));
-			__wt_evict_page_clean_update(session, ref, true);
+			AE_ASSERT(session,
+			    F_ISSET(session->dhandle, AE_DHANDLE_DEAD) ||
+			    __ae_page_can_evict(session, ref, NULL));
+			__ae_evict_page_clean_update(session, ref, true);
 			break;
-		WT_ILLEGAL_VALUE_ERR(session);
+		AE_ILLEGAL_VALUE_ERR(session);
 		}
 	}
 
 	if (0) {
 err:		/* On error, clear any left-over tree walk. */
 		if (next_ref != NULL)
-			WT_TRET(__wt_page_release(
-			    session, next_ref, WT_READ_NO_EVICT));
+			AE_TRET(__ae_page_release(
+			    session, next_ref, AE_READ_NO_EVICT));
 	}
 
 	if (evict_reset)
-		__wt_evict_file_exclusive_off(session);
+		__ae_evict_file_exclusive_off(session);
 
 	return (ret);
 }

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Public Domain 2014-2015 MongoDB, Inc.
-# Public Domain 2008-2014 WiredTiger, Inc.
+# Public Domain 2008-2014 ArchEngine, Inc.
 #
 # This is free and unencumbered software released into the public domain.
 #
@@ -26,17 +26,17 @@
 # ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 # OTHER DEALINGS IN THE SOFTWARE.
 
-import wiredtiger, wttest
+import archengine, aetest
 
 # test_base04.py
 #    Test that tables are reconciled correctly when they are empty.
-class test_base04(wttest.WiredTigerTestCase):
+class test_base04(aetest.ArchEngineTestCase):
     '''Test various tree types becoming empty'''
 
     tablename = 'table:test_base04'
 
     def __init__(self, *args, **kwargs):
-        wttest.WiredTigerTestCase.__init__(self, *args, **kwargs)
+        aetest.ArchEngineTestCase.__init__(self, *args, **kwargs)
         self.reconcile = False
 
     def create_table(self):
@@ -80,7 +80,7 @@ class test_base04(wttest.WiredTigerTestCase):
     def test_empty(self):
         '''Create a table, look for a nonexistent key'''
         self.create_table()
-        self.check_exists('somekey', wiredtiger.WT_NOTFOUND)
+        self.check_exists('somekey', archengine.AE_NOTFOUND)
         self.drop_table()
 
     def test_insert(self):
@@ -98,8 +98,8 @@ class test_base04(wttest.WiredTigerTestCase):
             self.insert('key1', 'value1')
             self.check_exists('key1', 0)
             self.remove('key1')
-            self.check_exists('key1', wiredtiger.WT_NOTFOUND)
+            self.check_exists('key1', archengine.AE_NOTFOUND)
             self.drop_table()
 
 if __name__ == '__main__':
-    wttest.run()
+    aetest.run()

@@ -1,68 +1,68 @@
 /*-
  * Copyright (c) 2014-2015 MongoDB, Inc.
- * Copyright (c) 2008-2014 WiredTiger, Inc.
+ * Copyright (c) 2008-2014 ArchEngine, Inc.
  *	All rights reserved.
  *
  * See the file LICENSE for redistribution information.
  */
 
-#include "wt_internal.h"
+#include "ae_internal.h"
 
 /*
  * __curconfig_close --
- *	WT_CURSOR->close method for the config cursor type.
+ *	AE_CURSOR->close method for the config cursor type.
  */
 static int
-__curconfig_close(WT_CURSOR *cursor)
+__curconfig_close(AE_CURSOR *cursor)
 {
-	return (__wt_cursor_close(cursor));
+	return (__ae_cursor_close(cursor));
 }
 
 /*
- * __wt_curconfig_open --
- *	WT_SESSION->open_cursor method for config cursors.
+ * __ae_curconfig_open --
+ *	AE_SESSION->open_cursor method for config cursors.
  */
 int
-__wt_curconfig_open(WT_SESSION_IMPL *session,
-    const char *uri, const char *cfg[], WT_CURSOR **cursorp)
+__ae_curconfig_open(AE_SESSION_IMPL *session,
+    const char *uri, const char *cfg[], AE_CURSOR **cursorp)
 {
-	WT_CURSOR_STATIC_INIT(iface,
-	    __wt_cursor_get_key,	/* get-key */
-	    __wt_cursor_get_value,	/* get-value */
-	    __wt_cursor_set_key,	/* set-key */
-	    __wt_cursor_set_value,	/* set-value */
-	    __wt_cursor_notsup,		/* compare */
-	    __wt_cursor_notsup,		/* equals */
-	    __wt_cursor_notsup,		/* next */
-	    __wt_cursor_notsup,		/* prev */
-	    __wt_cursor_noop,		/* reset */
-	    __wt_cursor_notsup,		/* search */
-	    __wt_cursor_notsup,		/* search-near */
-	    __wt_cursor_notsup,		/* insert */
-	    __wt_cursor_notsup,		/* update */
-	    __wt_cursor_notsup,		/* remove */
-	    __wt_cursor_notsup,		/* reconfigure */
+	AE_CURSOR_STATIC_INIT(iface,
+	    __ae_cursor_get_key,	/* get-key */
+	    __ae_cursor_get_value,	/* get-value */
+	    __ae_cursor_set_key,	/* set-key */
+	    __ae_cursor_set_value,	/* set-value */
+	    __ae_cursor_notsup,		/* compare */
+	    __ae_cursor_notsup,		/* equals */
+	    __ae_cursor_notsup,		/* next */
+	    __ae_cursor_notsup,		/* prev */
+	    __ae_cursor_noop,		/* reset */
+	    __ae_cursor_notsup,		/* search */
+	    __ae_cursor_notsup,		/* search-near */
+	    __ae_cursor_notsup,		/* insert */
+	    __ae_cursor_notsup,		/* update */
+	    __ae_cursor_notsup,		/* remove */
+	    __ae_cursor_notsup,		/* reconfigure */
 	    __curconfig_close);
-	WT_CURSOR_CONFIG *cconfig;
-	WT_CURSOR *cursor;
-	WT_DECL_RET;
+	AE_CURSOR_CONFIG *cconfig;
+	AE_CURSOR *cursor;
+	AE_DECL_RET;
 
-	WT_STATIC_ASSERT(offsetof(WT_CURSOR_CONFIG, iface) == 0);
+	AE_STATIC_ASSERT(offsetof(AE_CURSOR_CONFIG, iface) == 0);
 
-	WT_UNUSED(uri);
+	AE_UNUSED(uri);
 
-	WT_RET(__wt_calloc_one(session, &cconfig));
+	AE_RET(__ae_calloc_one(session, &cconfig));
 
 	cursor = &cconfig->iface;
 	*cursor = iface;
 	cursor->session = &session->iface;
 	cursor->key_format = cursor->value_format = "S";
 
-	/* __wt_cursor_init is last so we don't have to clean up on error. */
-	WT_ERR(__wt_cursor_init(cursor, uri, NULL, cfg, cursorp));
+	/* __ae_cursor_init is last so we don't have to clean up on error. */
+	AE_ERR(__ae_cursor_init(cursor, uri, NULL, cfg, cursorp));
 
 	if (0) {
-err:		__wt_free(session, cconfig);
+err:		__ae_free(session, cconfig);
 	}
 	return (ret);
 }

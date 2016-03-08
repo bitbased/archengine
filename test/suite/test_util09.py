@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Public Domain 2014-2015 MongoDB, Inc.
-# Public Domain 2008-2014 WiredTiger, Inc.
+# Public Domain 2008-2014 ArchEngine, Inc.
 #
 # This is free and unencumbered software released into the public domain.
 #
@@ -28,11 +28,11 @@
 
 import os, struct
 from suite_subprocess import suite_subprocess
-import wiredtiger, wttest
+import archengine, aetest
 
 # test_util09.py
-#    Utilities: wt loadtext
-class test_util09(wttest.WiredTigerTestCase, suite_subprocess):
+#    Utilities: ae loadtext
+class test_util09(aetest.ArchEngineTestCase, suite_subprocess):
     tablename = 'test_util09.a'
     nentries = 1000
     session_params = 'key_format=S,value_format=S'
@@ -66,40 +66,40 @@ class test_util09(wttest.WiredTigerTestCase, suite_subprocess):
 
     def test_loadtext_empty(self):
         """
-        Test loadtext in a 'wt' process, using an empty table
+        Test loadtext in a 'ae' process, using an empty table
         """
         self.session.create('table:' + self.tablename, self.session_params)
         keys = self.populate_file("loadtext.in", 0, 0)
-        self.runWt(["loadtext", "-f", "loadtext.in", "table:" + self.tablename])
+        self.runAe(["loadtext", "-f", "loadtext.in", "table:" + self.tablename])
         self.check_keys(self.tablename, keys)
 
     def test_loadtext_empty_stdin(self):
         """
-        Test loadtext in a 'wt' process using stdin, using an empty table
+        Test loadtext in a 'ae' process using stdin, using an empty table
         """
         self.session.create('table:' + self.tablename, self.session_params)
         keys = self.populate_file("loadtext.in", 0, 0)
-        self.runWt(["loadtext", "table:" + self.tablename], infilename="loadtext.in")
+        self.runAe(["loadtext", "table:" + self.tablename], infilename="loadtext.in")
         self.check_keys(self.tablename, keys)
 
     def test_loadtext_populated(self):
         """
-        Test loadtext in a 'wt' process, creating entries in a table
+        Test loadtext in a 'ae' process, creating entries in a table
         """
         self.session.create('table:' + self.tablename, self.session_params)
         keys = self.populate_file("loadtext.in", 1010, 1220)
-        self.runWt(["loadtext", "-f", "loadtext.in", "table:" + self.tablename])
+        self.runAe(["loadtext", "-f", "loadtext.in", "table:" + self.tablename])
         self.check_keys(self.tablename, keys)
 
     def test_loadtext_populated_stdin(self):
         """
-        Test loadtext in a 'wt' process using stding, creating entries in a table
+        Test loadtext in a 'ae' process using stding, creating entries in a table
         """
         self.session.create('table:' + self.tablename, self.session_params)
         keys = self.populate_file("loadtext.in", 200, 300)
-        self.runWt(["loadtext", "table:" + self.tablename], infilename="loadtext.in")
+        self.runAe(["loadtext", "table:" + self.tablename], infilename="loadtext.in")
         self.check_keys(self.tablename, keys)
 
 
 if __name__ == '__main__':
-    wttest.run()
+    aetest.run()

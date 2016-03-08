@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Public Domain 2014-2015 MongoDB, Inc.
-# Public Domain 2008-2014 WiredTiger, Inc.
+# Public Domain 2008-2014 ArchEngine, Inc.
 #
 # This is free and unencumbered software released into the public domain.
 #
@@ -30,8 +30,8 @@
 #    Tests integer packing using public methods
 #
 
-import wiredtiger, wttest
-from wtscenario import check_scenarios, number_scenarios
+import archengine, aetest
+from aescenario import check_scenarios, number_scenarios
 
 class PackTester:
     def __init__(self, formatcode, validlow, validhigh, equals):
@@ -123,7 +123,7 @@ class PackTester:
             i += 1
 
 # Test integer packing with various formats
-class test_intpack(wttest.WiredTigerTestCase):
+class test_intpack(aetest.ArchEngineTestCase):
     name = 'test_intpack'
 
     scenarios = check_scenarios([
@@ -164,4 +164,4 @@ class test_intpack(wttest.WiredTigerTestCase):
                 i <<= 1
 
 if __name__ == '__main__':
-    wttest.run()
+    aetest.run()

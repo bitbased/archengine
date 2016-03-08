@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Public Domain 2014-2015 MongoDB, Inc.
-# Public Domain 2008-2014 WiredTiger, Inc.
+# Public Domain 2008-2014 ArchEngine, Inc.
 #
 # This is free and unencumbered software released into the public domain.
 #
@@ -27,12 +27,12 @@
 # OTHER DEALINGS IN THE SOFTWARE.
 
 import os
-import wiredtiger, wttest, run
-from wtscenario import check_scenarios, number_scenarios
+import archengine, aetest, run
+from aescenario import check_scenarios, number_scenarios
 
 # test_schema04.py
 #    Test indices with duplicates
-class test_schema04(wttest.WiredTigerTestCase):
+class test_schema04(aetest.ArchEngineTestCase):
     """
     Test indices with duplicates.
     Our set of rows looks like a multiplication table:
@@ -124,4 +124,4 @@ class test_schema04(wttest.WiredTigerTestCase):
 
 
 if __name__ == '__main__':
-    wttest.run()
+    aetest.run()

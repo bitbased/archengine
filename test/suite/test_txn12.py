@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Public Domain 2014-2015 MongoDB, Inc.
-# Public Domain 2008-2014 WiredTiger, Inc.
+# Public Domain 2008-2014 ArchEngine, Inc.
 #
 # This is free and unencumbered software released into the public domain.
 #
@@ -26,14 +26,14 @@
 # ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 # OTHER DEALINGS IN THE SOFTWARE.
 
-import wiredtiger, wttest
+import archengine, aetest
 from suite_subprocess import suite_subprocess
-from wiredtiger import stat
-from wtscenario import multiply_scenarios, number_scenarios
+from archengine import stat
+from aescenario import multiply_scenarios, number_scenarios
 
 # test_txn12.py
 #    test of commit following failed op in a read only transaction.
-class test_txn12(wttest.WiredTigerTestCase, suite_subprocess):
+class test_txn12(aetest.ArchEngineTestCase, suite_subprocess):
     name = 'test_txn12'
     uri = 'table:' + name
     create_params = 'key_format=i,value_format=i'
@@ -50,7 +50,7 @@ class test_txn12(wttest.WiredTigerTestCase, suite_subprocess):
         c = session.open_cursor(self.uri, None)
         c.next()
         msg = '/next_random.*boolean/'
-        self.assertRaisesWithMessage(wiredtiger.WiredTigerError,
+        self.assertRaisesWithMessage(archengine.ArchEngineError,
             lambda:session.open_cursor(self.uri, None, "next_random=bar"), msg)
         # This commit should succeed as we have done no writes.
         session.commit_transaction()
@@ -59,11 +59,11 @@ class test_txn12(wttest.WiredTigerTestCase, suite_subprocess):
         session.begin_transaction("isolation=snapshot")
         c = session.open_cursor(self.uri, None)
         c[123] = 123
-        self.assertRaisesWithMessage(wiredtiger.WiredTigerError,
+        self.assertRaisesWithMessage(archengine.ArchEngineError,
             lambda:session.open_cursor(self.uri, None, "next_random=bar"), msg)
         # This commit should fail as we have written something
-        self.assertRaisesWithMessage(wiredtiger.WiredTigerError,
+        self.assertRaisesWithMessage(archengine.ArchEngineError,
             lambda:session.commit_transaction(), '/requires rollback/')
 
 if __name__ == '__main__':
-    wttest.run()
+    aetest.run()

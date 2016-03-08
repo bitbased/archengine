@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Public Domain 2014-2015 MongoDB, Inc.
-# Public Domain 2008-2014 WiredTiger, Inc.
+# Public Domain 2008-2014 ArchEngine, Inc.
 #
 # This is free and unencumbered software released into the public domain.
 #
@@ -26,16 +26,16 @@
 # ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 # OTHER DEALINGS IN THE SOFTWARE.
 
-import wiredtiger, wttest
+import archengine, aetest
 
 # test_version.py
 #    connection level version operation.
-class test_version(wttest.WiredTigerTestCase):
+class test_version(aetest.ArchEngineTestCase):
 
     # Test version call.
     def test_version(self):
-        version = wiredtiger.wiredtiger_version()
+        version = archengine.archengine_version()
 
 
 if __name__ == '__main__':
-    wttest.run()
+    aetest.run()

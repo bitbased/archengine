@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Public Domain 2014-2015 MongoDB, Inc.
-# Public Domain 2008-2014 WiredTiger, Inc.
+# Public Domain 2008-2014 ArchEngine, Inc.
 #
 # This is free and unencumbered software released into the public domain.
 #
@@ -32,11 +32,11 @@
 
 import fnmatch, os, shutil, run, time
 from suite_subprocess import suite_subprocess
-from wiredtiger import wiredtiger_open, stat
-from wtscenario import multiply_scenarios, number_scenarios
-import wttest
+from archengine import archengine_open, stat
+from aescenario import multiply_scenarios, number_scenarios
+import aetest
 
-class test_txn07(wttest.WiredTigerTestCase, suite_subprocess):
+class test_txn07(aetest.ArchEngineTestCase, suite_subprocess):
     logmax = "100K"
     tablename = 'test_txn07'
     uri = 'table:' + tablename
@@ -73,14 +73,14 @@ class test_txn07(wttest.WiredTigerTestCase, suite_subprocess):
 
     scenarios = number_scenarios(multiply_scenarios('.', types, op1s, txn1s,
                                                     compress))
-    # Overrides WiredTigerTestCase
+    # Overrides ArchEngineTestCase
     def setUpConnectionOpen(self, dir):
         self.home = dir
         # Cycle through the different transaction_sync values in a
         # deterministic manner.
         self.txn_sync = self.sync_list[
             self.scenario_number % len(self.sync_list)]
-        self.backup_dir = os.path.join(self.home, "WT_BACKUP")
+        self.backup_dir = os.path.join(self.home, "AE_BACKUP")
         conn_params = \
                 'log=(archive=false,enabled,file_max=%s,' % self.logmax + \
                 'compressor=%s)' % self.compress + \
@@ -90,22 +90,22 @@ class test_txn07(wttest.WiredTigerTestCase, suite_subprocess):
                 'transaction_sync="%s",' % self.txn_sync
         # print "Creating conn at '%s' with config '%s'" % (dir, conn_params)
         try:
-            conn = wiredtiger_open(dir, conn_params)
-        except wiredtiger.WiredTigerError as e:
+            conn = archengine_open(dir, conn_params)
+        except archengine.ArchEngineError as e:
             print "Failed conn at '%s' with config '%s'" % (dir, conn_params)
         self.pr(`conn`)
         self.session2 = conn.open_session()
         return conn
 
-    # Return the wiredtiger_open extension argument for a shared library.
+    # Return the archengine_open extension argument for a shared library.
     def extensionArg(self, name):
         if name == None or name == '':
             return ''
 
         testdir = os.path.dirname(__file__)
-        extdir = os.path.join(run.wt_builddir, 'ext/compressors')
+        extdir = os.path.join(run.ae_builddir, 'ext/compressors')
         extfile = os.path.join(
-            extdir, name, '.libs', 'libwiredtiger_' + name + '.so')
+            extdir, name, '.libs', 'libarchengine_' + name + '.so')
         if not os.path.exists(extfile):
             self.skipTest('compression extension "' + extfile + '" not built')
         return ',extensions=["' + extfile + '"]'
@@ -142,7 +142,7 @@ class test_txn07(wttest.WiredTigerTestCase, suite_subprocess):
         backup_conn_params = 'log=(enabled,file_max=%s,' % self.logmax + \
                 'compressor=%s)' % self.compress + \
                 self.extensionArg(self.compress)
-        backup_conn = wiredtiger_open(self.backup_dir, backup_conn_params)
+        backup_conn = archengine_open(self.backup_dir, backup_conn_params)
         try:
             self.check(backup_conn.open_session(), None, committed)
         finally:
@@ -244,7 +244,7 @@ class test_txn07(wttest.WiredTigerTestCase, suite_subprocess):
         #
         # Run printlog and make sure it exits with zero status.
         #
-        self.runWt(['-h', self.backup_dir, 'printlog'], outfilename='printlog.out')
+        self.runAe(['-h', self.backup_dir, 'printlog'], outfilename='printlog.out')
 
 if __name__ == '__main__':
-    wttest.run()
+    aetest.run()

@@ -1,29 +1,29 @@
 /*-
  * Copyright (c) 2014-2015 MongoDB, Inc.
- * Copyright (c) 2008-2014 WiredTiger, Inc.
+ * Copyright (c) 2008-2014 ArchEngine, Inc.
  *	All rights reserved.
  *
  * See the file LICENSE for redistribution information.
  */
 
-#include "wt_internal.h"
+#include "ae_internal.h"
 
 /*
  * __page_refp --
  *      Return the page's index and slot for a reference.
  */
 static inline void
-__page_refp(WT_SESSION_IMPL *session,
-    WT_REF *ref, WT_PAGE_INDEX **pindexp, uint32_t *slotp)
+__page_refp(AE_SESSION_IMPL *session,
+    AE_REF *ref, AE_PAGE_INDEX **pindexp, uint32_t *slotp)
 {
-	WT_PAGE_INDEX *pindex;
+	AE_PAGE_INDEX *pindex;
 	uint32_t i;
 
 	/*
 	 * Copy the parent page's index value: the page can split at any time,
 	 * but the index's value is always valid, even if it's not up-to-date.
 	 */
-retry:	WT_INTL_INDEX_GET(session, ref->home, pindex);
+retry:	AE_INTL_INDEX_GET(session, ref->home, pindex);
 
 	/*
 	 * Use the page's reference hint: it should be correct unless the page
@@ -64,23 +64,23 @@ retry:	WT_INTL_INDEX_GET(session, ref->home, pindex);
 	 * deepen, their reference structure home value are updated; yield and
 	 * wait for that to happen.
 	 */
-	__wt_yield();
+	__ae_yield();
 	goto retry;
 }
 
 /*
- * __wt_tree_walk --
+ * __ae_tree_walk --
  *	Move to the next/previous page in the tree.
  */
 int
-__wt_tree_walk(WT_SESSION_IMPL *session,
-    WT_REF **refp, uint64_t *walkcntp, uint32_t flags)
+__ae_tree_walk(AE_SESSION_IMPL *session,
+    AE_REF **refp, uint64_t *walkcntp, uint32_t flags)
 {
-	WT_BTREE *btree;
-	WT_DECL_RET;
-	WT_PAGE *page;
-	WT_PAGE_INDEX *pindex;
-	WT_REF *couple, *couple_orig, *ref;
+	AE_BTREE *btree;
+	AE_DECL_RET;
+	AE_PAGE *page;
+	AE_PAGE_INDEX *pindex;
+	AE_REF *couple, *couple_orig, *ref;
 	bool empty_internal, prev, skip;
 	uint32_t slot;
 
@@ -92,19 +92,19 @@ __wt_tree_walk(WT_SESSION_IMPL *session,
 	 * may want to free.  Publish that the tree is active during this
 	 * window.
 	 */
-	WT_ENTER_PAGE_INDEX(session);
+	AE_ENTER_PAGE_INDEX(session);
 
 	/* Walk should never instantiate deleted pages. */
-	LF_SET(WT_READ_NO_EMPTY);
+	LF_SET(AE_READ_NO_EMPTY);
 
 	/*
 	 * !!!
 	 * Fast-truncate currently only works on row-store trees.
 	 */
 	if (btree->type != BTREE_ROW)
-		LF_CLR(WT_READ_TRUNCATE);
+		LF_CLR(AE_READ_TRUNCATE);
 
-	prev = LF_ISSET(WT_READ_PREV) ? 1 : 0;
+	prev = LF_ISSET(AE_READ_PREV) ? 1 : 0;
 
 	/*
 	 * There are multiple reasons and approaches to walking the in-memory
@@ -157,12 +157,12 @@ ascend:	/*
 	 * If the active page was the root, we've reached the walk's end.
 	 * Release any hazard-pointer we're holding.
 	 */
-	if (__wt_ref_is_root(ref)) {
-		WT_ERR(__wt_page_release(session, couple, flags));
+	if (__ae_ref_is_root(ref)) {
+		AE_ERR(__ae_page_release(session, couple, flags));
 		goto done;
 	}
 
-	/* Figure out the current slot in the WT_REF array. */
+	/* Figure out the current slot in the AE_REF array. */
 	__page_refp(session, ref, &pindex, &slot);
 
 	for (;;) {
@@ -181,12 +181,12 @@ ascend:	/*
 			 * eviction.
 			 */
 			if (empty_internal && pindex->entries > 1) {
-				__wt_page_evict_soon(ref->page);
+				__ae_page_evict_soon(ref->page);
 				empty_internal = false;
 			}
 
 			/* Optionally skip internal pages. */
-			if (LF_ISSET(WT_READ_SKIP_INTL))
+			if (LF_ISSET(AE_READ_SKIP_INTL))
 				goto ascend;
 
 			/*
@@ -195,8 +195,8 @@ ascend:	/*
 			 * otherwise, swap our hazard pointer for the page we'll
 			 * return.
 			 */
-			if (__wt_ref_is_root(ref))
-				WT_ERR(__wt_page_release(
+			if (__ae_ref_is_root(ref))
+				AE_ERR(__ae_page_release(
 				    session, couple, flags));
 			else {
 				/*
@@ -209,11 +209,11 @@ ascend:	/*
 				 * reference can't have split or been evicted.
 				 */
 				__page_refp(session, ref, &pindex, &slot);
-				if ((ret = __wt_page_swap(
+				if ((ret = __ae_page_swap(
 				    session, couple, ref, flags)) != 0) {
-					WT_TRET(__wt_page_release(
+					AE_TRET(__ae_page_release(
 					    session, couple, flags));
-					WT_ERR(ret);
+					AE_ERR(ret);
 				}
 			}
 
@@ -244,40 +244,40 @@ ascend:	/*
 			 * If we see any child states other than deleted, the
 			 * page isn't empty.
 			 */
-			if (ref->state != WT_REF_DELETED &&
-			    !LF_ISSET(WT_READ_TRUNCATE))
+			if (ref->state != AE_REF_DELETED &&
+			    !LF_ISSET(AE_READ_TRUNCATE))
 				empty_internal = false;
 
-			if (LF_ISSET(WT_READ_CACHE)) {
+			if (LF_ISSET(AE_READ_CACHE)) {
 				/*
 				 * Only look at unlocked pages in memory:
 				 * fast-path some common cases.
 				 */
-				if (LF_ISSET(WT_READ_NO_WAIT) &&
-				    ref->state != WT_REF_MEM)
+				if (LF_ISSET(AE_READ_NO_WAIT) &&
+				    ref->state != AE_REF_MEM)
 					break;
-			} else if (LF_ISSET(WT_READ_TRUNCATE)) {
+			} else if (LF_ISSET(AE_READ_TRUNCATE)) {
 				/*
 				 * Avoid pulling a deleted page back in to try
 				 * to delete it again.
 				 */
-				if (ref->state == WT_REF_DELETED &&
-				    __wt_delete_page_skip(session, ref, false))
+				if (ref->state == AE_REF_DELETED &&
+				    __ae_delete_page_skip(session, ref, false))
 					break;
 				/*
 				 * If deleting a range, try to delete the page
 				 * without instantiating it.
 				 */
-				WT_ERR(__wt_delete_page(session, ref, &skip));
+				AE_ERR(__ae_delete_page(session, ref, &skip));
 				if (skip)
 					break;
 				empty_internal = false;
-			} else if (LF_ISSET(WT_READ_COMPACT)) {
+			} else if (LF_ISSET(AE_READ_COMPACT)) {
 				/*
 				 * Skip deleted pages, rewriting them doesn't
 				 * seem useful.
 				 */
-				if (ref->state == WT_REF_DELETED)
+				if (ref->state == AE_REF_DELETED)
 					break;
 
 				/*
@@ -289,8 +289,8 @@ ascend:	/*
 				 * if the page will help with compaction, don't
 				 * read it if we don't have to.
 				 */
-				if (ref->state == WT_REF_DISK) {
-					WT_ERR(__wt_compact_page_skip(
+				if (ref->state == AE_REF_DISK) {
+					AE_ERR(__ae_compact_page_skip(
 					    session, ref, &skip));
 					if (skip)
 						break;
@@ -299,18 +299,18 @@ ascend:	/*
 				/*
 				 * Try to skip deleted pages visible to us.
 				 */
-				if (ref->state == WT_REF_DELETED &&
-				    __wt_delete_page_skip(session, ref, false))
+				if (ref->state == AE_REF_DELETED &&
+				    __ae_delete_page_skip(session, ref, false))
 					break;
 			}
 
-			ret = __wt_page_swap(session, couple, ref, flags);
+			ret = __ae_page_swap(session, couple, ref, flags);
 
 			/*
 			 * Not-found is an expected return when only walking
 			 * in-cache pages, or if we see a deleted page.
 			 */
-			if (ret == WT_NOTFOUND) {
+			if (ret == AE_NOTFOUND) {
 				ret = 0;
 				break;
 			}
@@ -319,7 +319,7 @@ ascend:	/*
 			 * The page we're moving to might have split, in which
 			 * case move to the last position we held.
 			 */
-			if (ret == WT_RESTART) {
+			if (ret == AE_RESTART) {
 				ret = 0;
 
 				/*
@@ -345,15 +345,15 @@ ascend:	/*
 				 * going to return to our caller, this will quit
 				 * working if that ever changes.
 				 */
-				WT_ASSERT(session,
+				AE_ASSERT(session,
 				    couple == couple_orig ||
-				    WT_PAGE_IS_INTERNAL(couple->page));
+				    AE_PAGE_IS_INTERNAL(couple->page));
 				ref = couple;
 				__page_refp(session, ref, &pindex, &slot);
 				if (couple == couple_orig)
 					break;
 			}
-			WT_ERR(ret);
+			AE_ERR(ret);
 
 			/*
 			 * A new page: configure for traversal of any internal
@@ -361,8 +361,8 @@ ascend:	/*
 			 */
 descend:		couple = ref;
 			page = ref->page;
-			if (WT_PAGE_IS_INTERNAL(page)) {
-				WT_INTL_INDEX_GET(session, page, pindex);
+			if (AE_PAGE_IS_INTERNAL(page)) {
+				AE_INTL_INDEX_GET(session, page, pindex);
 				slot = prev ? pindex->entries - 1 : 0;
 				empty_internal = true;
 			} else {
@@ -373,6 +373,6 @@ descend:		couple = ref;
 	}
 
 done:
-err:	WT_LEAVE_PAGE_INDEX(session);
+err:	AE_LEAVE_PAGE_INDEX(session);
 	return (ret);
 }

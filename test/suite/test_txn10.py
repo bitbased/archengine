@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Public Domain 2014-2015 MongoDB, Inc.
-# Public Domain 2008-2014 WiredTiger, Inc.
+# Public Domain 2008-2014 ArchEngine, Inc.
 #
 # This is free and unencumbered software released into the public domain.
 #
@@ -32,21 +32,21 @@
 
 import fnmatch, os, shutil, time
 from suite_subprocess import suite_subprocess
-from wiredtiger import wiredtiger_open
-from wtscenario import multiply_scenarios, number_scenarios, prune_scenarios
-import wttest
+from archengine import archengine_open
+from aescenario import multiply_scenarios, number_scenarios, prune_scenarios
+import aetest
 
-class test_txn10(wttest.WiredTigerTestCase, suite_subprocess):
+class test_txn10(aetest.ArchEngineTestCase, suite_subprocess):
     t1 = 'table:test_txn10_1'
     t2 = 'table:test_txn10_2'
     create_params = 'key_format=i,value_format=i'
 
-    # Overrides WiredTigerTestCase, add extra config params
+    # Overrides ArchEngineTestCase, add extra config params
     def setUpConnectionOpen(self, dir):
         self.conn_config = \
                 'log=(archive=false,enabled,file_max=100K),' + \
                 'transaction_sync=(method=dsync,enabled)'
-        return wttest.WiredTigerTestCase.setUpConnectionOpen(self, dir)
+        return aetest.ArchEngineTestCase.setUpConnectionOpen(self, dir)
 
     def simulate_crash_restart(self, olddir, newdir):
         ''' Simulate a crash from olddir and restart in newdir. '''
@@ -57,7 +57,7 @@ class test_txn10(wttest.WiredTigerTestCase, suite_subprocess):
             fullname = os.path.join(olddir, fname)
             # Skip lock file on Windows since it is locked
             if os.path.isfile(fullname) and \
-                "WiredTiger.lock" not in fullname and \
+                "ArchEngine.lock" not in fullname and \
                 "Tmplog" not in fullname and \
                 "Preplog" not in fullname:
                 shutil.copy(fullname, newdir)
@@ -102,4 +102,4 @@ class test_txn10(wttest.WiredTigerTestCase, suite_subprocess):
         c.close()
 
 if __name__ == '__main__':
-    wttest.run()
+    aetest.run()

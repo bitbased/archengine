@@ -1,66 +1,66 @@
 /*-
  * Copyright (c) 2014-2015 MongoDB, Inc.
- * Copyright (c) 2008-2014 WiredTiger, Inc.
+ * Copyright (c) 2008-2014 ArchEngine, Inc.
  *	All rights reserved.
  *
  * See the file LICENSE for redistribution information.
  */
 
-#include "wt_internal.h"
+#include "ae_internal.h"
 
 /*
- * __wt_ext_transaction_id --
+ * __ae_ext_transaction_id --
  *	Return the session's transaction ID.
  */
 uint64_t
-__wt_ext_transaction_id(WT_EXTENSION_API *wt_api, WT_SESSION *wt_session)
+__ae_ext_transaction_id(AE_EXTENSION_API *ae_api, AE_SESSION *ae_session)
 {
-	WT_SESSION_IMPL *session;
+	AE_SESSION_IMPL *session;
 
-	(void)wt_api;					/* Unused parameters */
-	session = (WT_SESSION_IMPL *)wt_session;
+	(void)ae_api;					/* Unused parameters */
+	session = (AE_SESSION_IMPL *)ae_session;
 	/* Ignore failures: the only case is running out of transaction IDs. */
-	(void)__wt_txn_id_check(session);
+	(void)__ae_txn_id_check(session);
 	return (session->txn.id);
 }
 
 /*
- * __wt_ext_transaction_isolation_level --
+ * __ae_ext_transaction_isolation_level --
  *	Return if the current transaction's isolation level.
  */
 int
-__wt_ext_transaction_isolation_level(
-    WT_EXTENSION_API *wt_api, WT_SESSION *wt_session)
+__ae_ext_transaction_isolation_level(
+    AE_EXTENSION_API *ae_api, AE_SESSION *ae_session)
 {
-	WT_SESSION_IMPL *session;
-	WT_TXN *txn;
+	AE_SESSION_IMPL *session;
+	AE_TXN *txn;
 
-	(void)wt_api;					/* Unused parameters */
+	(void)ae_api;					/* Unused parameters */
 
-	session = (WT_SESSION_IMPL *)wt_session;
+	session = (AE_SESSION_IMPL *)ae_session;
 	txn = &session->txn;
 
-	if (txn->isolation == WT_ISO_READ_COMMITTED)
-	    return (WT_TXN_ISO_READ_COMMITTED);
-	if (txn->isolation == WT_ISO_READ_UNCOMMITTED)
-	    return (WT_TXN_ISO_READ_UNCOMMITTED);
-	return (WT_TXN_ISO_SNAPSHOT);
+	if (txn->isolation == AE_ISO_READ_COMMITTED)
+	    return (AE_TXN_ISO_READ_COMMITTED);
+	if (txn->isolation == AE_ISO_READ_UNCOMMITTED)
+	    return (AE_TXN_ISO_READ_UNCOMMITTED);
+	return (AE_TXN_ISO_SNAPSHOT);
 }
 
 /*
- * __wt_ext_transaction_notify --
+ * __ae_ext_transaction_notify --
  *	Request notification of transaction resolution.
  */
 int
-__wt_ext_transaction_notify(
-    WT_EXTENSION_API *wt_api, WT_SESSION *wt_session, WT_TXN_NOTIFY *notify)
+__ae_ext_transaction_notify(
+    AE_EXTENSION_API *ae_api, AE_SESSION *ae_session, AE_TXN_NOTIFY *notify)
 {
-	WT_SESSION_IMPL *session;
-	WT_TXN *txn;
+	AE_SESSION_IMPL *session;
+	AE_TXN *txn;
 
-	(void)wt_api;					/* Unused parameters */
+	(void)ae_api;					/* Unused parameters */
 
-	session = (WT_SESSION_IMPL *)wt_session;
+	session = (AE_SESSION_IMPL *)ae_session;
 	txn = &session->txn;
 
 	/*
@@ -80,26 +80,26 @@ __wt_ext_transaction_notify(
 }
 
 /*
- * __wt_ext_transaction_oldest --
+ * __ae_ext_transaction_oldest --
  *	Return the oldest transaction ID not yet visible to a running
  * transaction.
  */
 uint64_t
-__wt_ext_transaction_oldest(WT_EXTENSION_API *wt_api)
+__ae_ext_transaction_oldest(AE_EXTENSION_API *ae_api)
 {
-	return (((WT_CONNECTION_IMPL *)wt_api->conn)->txn_global.oldest_id);
+	return (((AE_CONNECTION_IMPL *)ae_api->conn)->txn_global.oldest_id);
 }
 
 /*
- * __wt_ext_transaction_visible --
+ * __ae_ext_transaction_visible --
  *	Return if the current transaction can see the given transaction ID.
  */
 int
-__wt_ext_transaction_visible(
-    WT_EXTENSION_API *wt_api, WT_SESSION *wt_session, uint64_t transaction_id)
+__ae_ext_transaction_visible(
+    AE_EXTENSION_API *ae_api, AE_SESSION *ae_session, uint64_t transaction_id)
 {
-	(void)wt_api;					/* Unused parameters */
+	(void)ae_api;					/* Unused parameters */
 
-	return (__wt_txn_visible(
-	    (WT_SESSION_IMPL *)wt_session, transaction_id));
+	return (__ae_txn_visible(
+	    (AE_SESSION_IMPL *)ae_session, transaction_id));
 }

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Public Domain 2014-2015 MongoDB, Inc.
-# Public Domain 2008-2014 WiredTiger, Inc.
+# Public Domain 2008-2014 ArchEngine, Inc.
 #
 # This is free and unencumbered software released into the public domain.
 #
@@ -26,14 +26,14 @@
 # ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 # OTHER DEALINGS IN THE SOFTWARE.
 
-import wiredtiger, wttest
+import archengine, aetest
 from helper import key_populate, value_populate, simple_populate
 from helper import complex_populate, complex_value_populate
-from wtscenario import check_scenarios
+from aescenario import check_scenarios
 
 # test_cursor09.py
-#    JIRA WT-2217: insert resets key/value "set".
-class test_cursor09(wttest.WiredTigerTestCase):
+#    JIRA AE-2217: insert resets key/value "set".
+class test_cursor09(aetest.ArchEngineTestCase):
     scenarios = check_scenarios([
         ('file-r', dict(type='file:', config='key_format=r', complex=0)),
         ('file-S', dict(type='file:', config='key_format=S', complex=0)),
@@ -50,7 +50,7 @@ class test_cursor09(wttest.WiredTigerTestCase):
             dict(type='table:', config='key_format=S,type=lsm', complex=1)),
     ])
 
-    # WT_CURSOR.insert doesn't leave the cursor positioned, verify any
+    # AE_CURSOR.insert doesn't leave the cursor positioned, verify any
     # subsequent cursor operation fails with a "key not set" message.
     def test_cursor09(self):
         uri = self.type + 'cursor09'
@@ -66,7 +66,7 @@ class test_cursor09(wttest.WiredTigerTestCase):
             else value_populate(cursor, 10)
         msg = '/requires key be set/'
         self.assertRaisesWithMessage(
-            wiredtiger.WiredTigerError, cursor.search, msg)
+            archengine.ArchEngineError, cursor.search, msg)
 
 if __name__ == '__main__':
-    wttest.run()
+    aetest.run()

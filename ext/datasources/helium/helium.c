@@ -1,6 +1,6 @@
 /*-
  * Public Domain 2014-2015 MongoDB, Inc.
- * Public Domain 2008-2014 WiredTiger, Inc.
+ * Public Domain 2008-2014 ArchEngine, Inc.
  *
  * This is free and unencumbered software released into the public domain.
  *
@@ -37,8 +37,8 @@
 
 #include <he.h>
 
-#include <wiredtiger.h>
-#include <wiredtiger_ext.h>
+#include <archengine.h>
+#include <archengine_ext.h>
 
 typedef struct he_env	HE_ENV;
 typedef struct he_item	HE_ITEM;
@@ -67,35 +67,35 @@ static int verbose = 0;					/* Verbose messages */
 		 * return value is not strictly an error, override it	\
 		 * with the error.					\
 		 */							\
-		if (__v == WT_PANIC ||					\
+		if (__v == AE_PANIC ||					\
 		    ret == 0 ||						\
-		    ret == WT_DUPLICATE_KEY || ret == WT_NOTFOUND)	\
+		    ret == AE_DUPLICATE_KEY || ret == AE_NOTFOUND)	\
 			ret = __v;					\
 		/*							\
 		 * If we're set to a Helium error at the end of the day,\
-		 * switch to a generic WiredTiger error.		\
+		 * switch to a generic ArchEngine error.		\
 		 */							\
 		if (ret < 0 && ret > -31,800)				\
-			ret = WT_ERROR;					\
+			ret = AE_ERROR;					\
 	}								\
 } while (0)
 #undef	ERET
-#define	ERET(wtext, session, v, ...) do {				\
+#define	ERET(aeext, session, v, ...) do {				\
 	(void)								\
-	    wtext->err_printf(wtext, session, "helium: " __VA_ARGS__);	\
+	    aeext->err_printf(aeext, session, "helium: " __VA_ARGS__);	\
 	ESET(v);							\
 	return (ret);							\
 } while (0)
 #undef	EMSG
-#define	EMSG(wtext, session, v, ...) do {				\
+#define	EMSG(aeext, session, v, ...) do {				\
 	(void)								\
-	    wtext->err_printf(wtext, session, "helium: " __VA_ARGS__);	\
+	    aeext->err_printf(aeext, session, "helium: " __VA_ARGS__);	\
 	ESET(v);							\
 } while (0)
 #undef	EMSG_ERR
-#define	EMSG_ERR(wtext, session, v, ...) do {				\
+#define	EMSG_ERR(aeext, session, v, ...) do {				\
 	(void)								\
-	    wtext->err_printf(wtext, session, "helium: " __VA_ARGS__);	\
+	    aeext->err_printf(aeext, session, "helium: " __VA_ARGS__);	\
 	ESET(v);							\
 	goto err;							\
 } while (0)
@@ -104,10 +104,10 @@ static int verbose = 0;					/* Verbose messages */
 #undef	VERBOSE_L2
 #define	VERBOSE_L2	2
 #undef	VMSG
-#define	VMSG(wtext, session, v, ...) do {				\
+#define	VMSG(aeext, session, v, ...) do {				\
 	if (verbose >= v)						\
-		(void)wtext->						\
-		    msg_printf(wtext, session, "helium: " __VA_ARGS__);	\
+		(void)aeext->						\
+		    msg_printf(aeext, session, "helium: " __VA_ARGS__);	\
 } while (0)
 
 /*
@@ -123,28 +123,28 @@ static int verbose = 0;					/* Verbose messages */
 /*
  * Version each object, out of sheer raging paranoia.
  */
-#define	WIREDTIGER_HELIUM_MAJOR	1		/* Major, minor version */
-#define	WIREDTIGER_HELIUM_MINOR	0
+#define	ARCHENGINE_HELIUM_MAJOR	1		/* Major, minor version */
+#define	ARCHENGINE_HELIUM_MINOR	0
 
 /*
- * WiredTiger name space on the Helium store: all objects are named with the
- * WiredTiger prefix (we don't require the Helium store be exclusive to our
- * files).  Primary objects are named "WiredTiger.[name]", associated cache
- * objects are "WiredTiger.[name].cache".  The per-connection transaction
- * object is "WiredTiger.WiredTigerTxn".  When we first open a Helium volume,
+ * ArchEngine name space on the Helium store: all objects are named with the
+ * ArchEngine prefix (we don't require the Helium store be exclusive to our
+ * files).  Primary objects are named "ArchEngine.[name]", associated cache
+ * objects are "ArchEngine.[name].cache".  The per-connection transaction
+ * object is "ArchEngine.ArchEngineTxn".  When we first open a Helium volume,
  * we open/close a file in order to apply flags for the first open of the
- * volume, that's "WiredTiger.WiredTigerInit".
+ * volume, that's "ArchEngine.ArchEngineInit".
  */
-#define	WT_NAME_PREFIX	"WiredTiger."
-#define	WT_NAME_INIT	"WiredTiger.WiredTigerInit"
-#define	WT_NAME_TXN	"WiredTiger.WiredTigerTxn"
-#define	WT_NAME_CACHE	".cache"
+#define	AE_NAME_PREFIX	"ArchEngine."
+#define	AE_NAME_INIT	"ArchEngine.ArchEngineInit"
+#define	AE_NAME_TXN	"ArchEngine.ArchEngineTxn"
+#define	AE_NAME_CACHE	".cache"
 
 /*
- * WT_SOURCE --
- *	A WiredTiger source, supporting one or more cursors.
+ * AE_SOURCE --
+ *	A ArchEngine source, supporting one or more cursors.
  */
-typedef struct __wt_source {
+typedef struct __ae_source {
 	char *uri;				/* Unique name */
 
 	pthread_rwlock_t lock;			/* Lock */
@@ -160,7 +160,7 @@ typedef struct __wt_source {
 	int	 config_recno;			/* config "key_format=r" */
 
 	/*
-	 * Each WiredTiger object has a "primary" namespace in a Helium store
+	 * Each ArchEngine object has a "primary" namespace in a Helium store
 	 * plus a "cache" namespace, which has not-yet-resolved updates.  There
 	 * is a dirty flag so read-only data sets can ignore the cache.
 	 */
@@ -169,23 +169,23 @@ typedef struct __wt_source {
 	int	he_cache_inuse;
 
 	struct __he_source *hs;			/* Underlying Helium source */
-	struct __wt_source *next;		/* List of WiredTiger objects */
-} WT_SOURCE;
+	struct __ae_source *next;		/* List of ArchEngine objects */
+} AE_SOURCE;
 
 /*
  * HELIUM_SOURCE --
- *	A Helium volume, supporting one or more WT_SOURCE objects.
+ *	A Helium volume, supporting one or more AE_SOURCE objects.
  */
 typedef struct __he_source {
 	/*
 	 * XXX
 	 * The transaction commit handler must appear first in the structure.
 	 */
-	WT_TXN_NOTIFY txn_notify;		/* Transaction commit handler */
+	AE_TXN_NOTIFY txn_notify;		/* Transaction commit handler */
 
-	WT_EXTENSION_API *wtext;		/* Extension functions */
+	AE_EXTENSION_API *aeext;		/* Extension functions */
 
-	char *name;				/* Unique WiredTiger name */
+	char *name;				/* Unique ArchEngine name */
 	char *device;				/* Unique Helium volume name */
 
 	/*
@@ -195,10 +195,10 @@ typedef struct __he_source {
 	 */
 	he_t he_volume;
 
-	struct __wt_source *ws_head;		/* List of WiredTiger sources */
+	struct __ae_source *ws_head;		/* List of ArchEngine sources */
 
 	/*
-	 * Each Helium source has a cleaner thread to migrate WiredTiger source
+	 * Each Helium source has a cleaner thread to migrate ArchEngine source
 	 * updates from the cache namespace to the primary namespace, based on
 	 * the number of bytes or the number of operations.  (There's a cleaner
 	 * thread per Helium store so migration operations can overlap.)  We
@@ -209,7 +209,7 @@ typedef struct __he_source {
 	volatile int cleaner_stop;		/* Cleaner thread quit flag */
 
 	/*
-	 * Each WiredTiger connection has a transaction namespace which lists
+	 * Each ArchEngine connection has a transaction namespace which lists
 	 * resolved transactions with their committed or aborted state as a
 	 * value.  That namespace appears in a single Helium store (the first
 	 * one created, if it doesn't already exist), and then it's referenced
@@ -226,12 +226,12 @@ typedef struct __he_source {
 
 /*
  * DATA_SOURCE --
- *	A WiredTiger data source, supporting one or more HELIUM_SOURCE objects.
+ *	A ArchEngine data source, supporting one or more HELIUM_SOURCE objects.
  */
 typedef struct __data_source {
-	WT_DATA_SOURCE wtds;			/* Must come first */
+	AE_DATA_SOURCE aeds;			/* Must come first */
 
-	WT_EXTENSION_API *wtext;		/* Extension functions */
+	AE_EXTENSION_API *aeext;		/* Extension functions */
 
 	pthread_rwlock_t global_lock;		/* Global lock */
 	int		 lockinit;		/* Lock created */
@@ -264,14 +264,14 @@ typedef struct __cache_record {
 
 /*
  * CURSOR --
- *	A cursor, supporting a single WiredTiger cursor.
+ *	A cursor, supporting a single ArchEngine cursor.
  */
 typedef struct __cursor {
-	WT_CURSOR wtcursor;			/* Must come first */
+	AE_CURSOR aecursor;			/* Must come first */
 
-	WT_EXTENSION_API *wtext;		/* Extension functions */
+	AE_EXTENSION_API *aeext;		/* Extension functions */
 
-	WT_SOURCE *ws;				/* Underlying source */
+	AE_SOURCE *ws;				/* Underlying source */
 
 	HE_ITEM record;				/* Record */
 	uint8_t  __key[HE_MAX_KEY_LEN];		/* Record.key, Record.value */
@@ -345,12 +345,12 @@ os_errno(void)
  *	Initialize a lock.
  */
 static int
-lock_init(WT_EXTENSION_API *wtext, WT_SESSION *session, pthread_rwlock_t *lockp)
+lock_init(AE_EXTENSION_API *aeext, AE_SESSION *session, pthread_rwlock_t *lockp)
 {
 	int ret = 0;
 
 	if ((ret = pthread_rwlock_init(lockp, NULL)) != 0)
-		ERET(wtext, session, WT_PANIC,
+		ERET(aeext, session, AE_PANIC,
 		    "pthread_rwlock_init: %s", strerror(ret));
 	return (0);
 }
@@ -361,12 +361,12 @@ lock_init(WT_EXTENSION_API *wtext, WT_SESSION *session, pthread_rwlock_t *lockp)
  */
 static int
 lock_destroy(
-    WT_EXTENSION_API *wtext, WT_SESSION *session, pthread_rwlock_t *lockp)
+    AE_EXTENSION_API *aeext, AE_SESSION *session, pthread_rwlock_t *lockp)
 {
 	int ret = 0;
 
 	if ((ret = pthread_rwlock_destroy(lockp)) != 0)
-		ERET(wtext, session, WT_PANIC,
+		ERET(aeext, session, AE_PANIC,
 		    "pthread_rwlock_destroy: %s", strerror(ret));
 	return (0);
 }
@@ -376,12 +376,12 @@ lock_destroy(
  *	Acquire a write lock.
  */
 static inline int
-writelock(WT_EXTENSION_API *wtext, WT_SESSION *session, pthread_rwlock_t *lockp)
+writelock(AE_EXTENSION_API *aeext, AE_SESSION *session, pthread_rwlock_t *lockp)
 {
 	int ret = 0;
 
 	if ((ret = pthread_rwlock_wrlock(lockp)) != 0)
-		ERET(wtext, session, WT_PANIC,
+		ERET(aeext, session, AE_PANIC,
 		    "pthread_rwlock_wrlock: %s", strerror(ret));
 	return (0);
 }
@@ -391,12 +391,12 @@ writelock(WT_EXTENSION_API *wtext, WT_SESSION *session, pthread_rwlock_t *lockp)
  *	Release a lock.
  */
 static inline int
-unlock(WT_EXTENSION_API *wtext, WT_SESSION *session, pthread_rwlock_t *lockp)
+unlock(AE_EXTENSION_API *aeext, AE_SESSION *session, pthread_rwlock_t *lockp)
 {
 	int ret = 0;
 
 	if ((ret = pthread_rwlock_unlock(lockp)) != 0)
-		ERET(wtext, session, WT_PANIC,
+		ERET(aeext, session, AE_PANIC,
 		    "pthread_rwlock_unlock: %s", strerror(ret));
 	return (0);
 }
@@ -425,7 +425,7 @@ helium_dump_kv(const char *pfx, uint8_t *p, size_t len, FILE *fp)
  *	Dump the records in a Helium store.
  */
 static int
-helium_dump(WT_EXTENSION_API *wtext, he_t he, const char *tag)
+helium_dump(AE_EXTENSION_API *aeext, he_t he, const char *tag)
 {
 	HE_ITEM *r, _r;
 	uint8_t k[4 * 1024], v[4 * 1024];
@@ -440,7 +440,7 @@ helium_dump(WT_EXTENSION_API *wtext, he_t he, const char *tag)
 	while ((ret = he_next(he, r, (size_t)0, sizeof(v))) == 0) {
 #if 0
 		uint64_t recno;
-		if ((ret = wtext->struct_unpack(wtext,
+		if ((ret = aeext->struct_unpack(aeext,
 		    NULL, r->key, r->key_len, "r", &recno)) != 0)
 			return (ret);
 		fprintf(stderr, "K: %" PRIu64, recno);
@@ -451,7 +451,7 @@ helium_dump(WT_EXTENSION_API *wtext, he_t he, const char *tag)
 	}
 	if (ret != HE_ERR_ITEM_NOT_FOUND) {
 		fprintf(stderr, "he_next: %s\n", he_strerror(ret));
-		ret = WT_ERROR;
+		ret = AE_ERROR;
 	}
 	return (ret);
 }
@@ -462,13 +462,13 @@ helium_dump(WT_EXTENSION_API *wtext, he_t he, const char *tag)
  */
 static int
 helium_stats(
-    WT_EXTENSION_API *wtext, WT_SESSION *session, he_t he, const char *tag)
+    AE_EXTENSION_API *aeext, AE_SESSION *session, he_t he, const char *tag)
 {
 	HE_STATS stats;
 	int ret = 0;
 
 	if ((ret = he_stats(he, &stats)) != 0)
-		ERET(wtext, session, ret, "he_stats: %s", he_strerror(ret));
+		ERET(aeext, session, ret, "he_stats: %s", he_strerror(ret));
 	fprintf(stderr, "== %s\n", tag);
 	fprintf(stderr, "name=%s\n", stats.name);
 	fprintf(stderr, "deleted_items=%" PRIu64 "\n", stats.deleted_items);
@@ -485,19 +485,19 @@ helium_stats(
  *	Call a Helium key retrieval function, handling overflow.
  */
 static inline int
-helium_call(WT_CURSOR *wtcursor, const char *fname,
+helium_call(AE_CURSOR *aecursor, const char *fname,
     he_t he, int (*f)(he_t, HE_ITEM *, size_t, size_t))
 {
 	CURSOR *cursor;
 	HE_ITEM *r;
-	WT_EXTENSION_API *wtext;
-	WT_SESSION *session;
+	AE_EXTENSION_API *aeext;
+	AE_SESSION *session;
 	int ret = 0;
 	char *p;
 
-	session = wtcursor->session;
-	cursor = (CURSOR *)wtcursor;
-	wtext = cursor->wtext;
+	session = aecursor->session;
+	cursor = (CURSOR *)aecursor;
+	aeext = cursor->aeext;
 
 	r = &cursor->record;
 	r->val = cursor->v;
@@ -505,8 +505,8 @@ helium_call(WT_CURSOR *wtcursor, const char *fname,
 restart:
 	if ((ret = f(he, r, (size_t)0, cursor->mem_len)) != 0) {
 		if (ret == HE_ERR_ITEM_NOT_FOUND)
-			return (WT_NOTFOUND);
-		ERET(wtext, session, ret, "%s: %s", fname, he_strerror(ret));
+			return (AE_NOTFOUND);
+		ERET(aeext, session, ret, "%s: %s", fname, he_strerror(ret));
 	}
 
 	/*
@@ -537,7 +537,7 @@ restart:
 		if ((ret = he_lookup(he, r, (size_t)0, cursor->mem_len)) != 0) {
 			if (ret == HE_ERR_ITEM_NOT_FOUND)
 				goto restart;
-			ERET(wtext,
+			ERET(aeext,
 			    session, ret, "he_lookup: %s", he_strerror(ret));
 		}
 	}
@@ -549,8 +549,8 @@ restart:
  *	Resolve a transaction.
  */
 static int
-txn_state_set(WT_EXTENSION_API *wtext,
-    WT_SESSION *session, HELIUM_SOURCE *hs, uint64_t txnid, int commit)
+txn_state_set(AE_EXTENSION_API *aeext,
+    AE_SESSION *session, HELIUM_SOURCE *hs, uint64_t txnid, int commit)
 {
 	HE_ITEM txn;
 	uint8_t val;
@@ -571,25 +571,25 @@ txn_state_set(WT_EXTENSION_API *wtext,
 	txn.val_len = sizeof(val);
 
 	if ((ret = he_update(hs->he_txn, &txn)) != 0)
-		ERET(wtext, session, ret, "he_update: %s", he_strerror(ret));
+		ERET(aeext, session, ret, "he_update: %s", he_strerror(ret));
 
 	if (commit && (ret = he_commit(hs->he_txn)) != 0)
-		ERET(wtext, session, ret, "he_commit: %s", he_strerror(ret));
+		ERET(aeext, session, ret, "he_commit: %s", he_strerror(ret));
 	return (0);
 }
 
 /*
  * txn_notify --
- *	Resolve a transaction; called from WiredTiger during commit/abort.
+ *	Resolve a transaction; called from ArchEngine during commit/abort.
  */
 static int
-txn_notify(WT_TXN_NOTIFY *handler,
-    WT_SESSION *session, uint64_t txnid, int committed)
+txn_notify(AE_TXN_NOTIFY *handler,
+    AE_SESSION *session, uint64_t txnid, int committed)
 {
 	HELIUM_SOURCE *hs;
 
 	hs = (HELIUM_SOURCE *)handler;
-	return (txn_state_set(hs->wtext, session, hs, txnid, committed));
+	return (txn_state_set(hs->aeext, session, hs, txnid, committed));
 }
 
 /*
@@ -597,14 +597,14 @@ txn_notify(WT_TXN_NOTIFY *handler,
  *	Return a transaction's state.
  */
 static int
-txn_state(WT_CURSOR *wtcursor, uint64_t txnid)
+txn_state(AE_CURSOR *aecursor, uint64_t txnid)
 {
 	CURSOR *cursor;
 	HE_ITEM txn;
 	HELIUM_SOURCE *hs;
 	uint8_t val_buf[16];
 
-	cursor = (CURSOR *)wtcursor;
+	cursor = (CURSOR *)aecursor;
 	hs = cursor->ws->hs;
 
 	memset(&txn, 0, sizeof(txn));
@@ -620,23 +620,23 @@ txn_state(WT_CURSOR *wtcursor, uint64_t txnid)
 
 /*
  * cache_value_append --
- *	Append the current WiredTiger cursor's value to a cache record.
+ *	Append the current ArchEngine cursor's value to a cache record.
  */
 static int
-cache_value_append(WT_CURSOR *wtcursor, int remove_op)
+cache_value_append(AE_CURSOR *aecursor, int remove_op)
 {
 	CURSOR *cursor;
 	HE_ITEM *r;
-	WT_EXTENSION_API *wtext;
-	WT_SESSION *session;
+	AE_EXTENSION_API *aeext;
+	AE_SESSION *session;
 	uint64_t txnid;
 	size_t len;
 	uint32_t entries;
 	uint8_t *p;
 
-	session = wtcursor->session;
-	cursor = (CURSOR *)wtcursor;
-	wtext = cursor->wtext;
+	session = aecursor->session;
+	cursor = (CURSOR *)aecursor;
+	aeext = cursor->aeext;
 
 	r = &cursor->record;
 
@@ -651,7 +651,7 @@ cache_value_append(WT_CURSOR *wtcursor, int remove_op)
 	    sizeof(uint64_t) +				/* txn ID */
 	    1 +						/* remove byte */
 	    (remove_op ? 0 :				/* optional data */
-	    sizeof(uint32_t) + wtcursor->value.size) +
+	    sizeof(uint32_t) + aecursor->value.size) +
 	    32;						/* slop */
 
 	if (len > cursor->mem_len) {
@@ -662,7 +662,7 @@ cache_value_append(WT_CURSOR *wtcursor, int remove_op)
 	}
 
 	/* Get the transaction ID. */
-	txnid = wtext->transaction_id(wtext, session);
+	txnid = aeext->transaction_id(aeext, session);
 
 	/* Update the number of records in this value. */
 	if (cursor->len == 0) {
@@ -675,7 +675,7 @@ cache_value_append(WT_CURSOR *wtcursor, int remove_op)
 	memcpy(cursor->v, &entries, sizeof(uint32_t));
 
 	/*
-	 * Copy the WiredTiger cursor's data into place: txn ID, remove
+	 * Copy the ArchEngine cursor's data into place: txn ID, remove
 	 * tombstone, data length, data.
 	 *
 	 * XXX
@@ -689,10 +689,10 @@ cache_value_append(WT_CURSOR *wtcursor, int remove_op)
 		*p++ = REMOVE_TOMBSTONE;
 	else {
 		*p++ = ' ';
-		memcpy(p, &wtcursor->value.size, sizeof(uint32_t));
+		memcpy(p, &aecursor->value.size, sizeof(uint32_t));
 		p += sizeof(uint32_t);
-		memcpy(p, wtcursor->value.data, wtcursor->value.size);
-		p += wtcursor->value.size;
+		memcpy(p, aecursor->value.data, aecursor->value.size);
+		p += aecursor->value.size;
 	}
 	cursor->len = (size_t)(p - cursor->v);
 
@@ -708,7 +708,7 @@ cache_value_append(WT_CURSOR *wtcursor, int remove_op)
  *	Unmarshall a cache value into a set of records.
  */
 static int
-cache_value_unmarshall(WT_CURSOR *wtcursor)
+cache_value_unmarshall(AE_CURSOR *aecursor)
 {
 	CACHE_RECORD *cp;
 	CURSOR *cursor;
@@ -716,7 +716,7 @@ cache_value_unmarshall(WT_CURSOR *wtcursor)
 	uint8_t *p;
 	int ret = 0;
 
-	cursor = (CURSOR *)wtcursor;
+	cursor = (CURSOR *)aecursor;
 
 	/* If we don't have enough record slots, allocate some more. */
 	memcpy(&entries, cursor->v, sizeof(uint32_t));
@@ -752,19 +752,19 @@ cache_value_unmarshall(WT_CURSOR *wtcursor)
  *	Return if a transaction has been aborted.
  */
 static inline int
-cache_value_aborted(WT_CURSOR *wtcursor, CACHE_RECORD *cp)
+cache_value_aborted(AE_CURSOR *aecursor, CACHE_RECORD *cp)
 {
 	/*
 	 * This function exists as a place to hang this comment.
 	 *
-	 * WiredTiger resets updated entry transaction IDs to an aborted state
+	 * ArchEngine resets updated entry transaction IDs to an aborted state
 	 * on rollback; to do that here would require tracking updated entries
 	 * for a transaction or scanning the cache for updates made on behalf
 	 * of the transaction during rollback, expensive stuff.  Instead, check
 	 * if the transaction has been aborted before calling the underlying
-	 * WiredTiger visibility function.
+	 * ArchEngine visibility function.
 	 */
-	return (txn_state(wtcursor, cp->txnid) == TXN_ABORTED ? 1 : 0);
+	return (txn_state(aecursor, cp->txnid) == TXN_ABORTED ? 1 : 0);
 }
 
 /*
@@ -772,9 +772,9 @@ cache_value_aborted(WT_CURSOR *wtcursor, CACHE_RECORD *cp)
  *	Return if a transaction has been committed.
  */
 static inline int
-cache_value_committed(WT_CURSOR *wtcursor, CACHE_RECORD *cp)
+cache_value_committed(AE_CURSOR *aecursor, CACHE_RECORD *cp)
 {
-	return (txn_state(wtcursor, cp->txnid) == TXN_COMMITTED ? 1 : 0);
+	return (txn_state(aecursor, cp->txnid) == TXN_COMMITTED ? 1 : 0);
 }
 
 /*
@@ -783,21 +783,21 @@ cache_value_committed(WT_CURSOR *wtcursor, CACHE_RECORD *cp)
  * the cache entry.
  */
 static int
-cache_value_update_check(WT_CURSOR *wtcursor)
+cache_value_update_check(AE_CURSOR *aecursor)
 {
 	CACHE_RECORD *cp;
 	CURSOR *cursor;
-	WT_EXTENSION_API *wtext;
-	WT_SESSION *session;
+	AE_EXTENSION_API *aeext;
+	AE_SESSION *session;
 	u_int i;
 
-	session = wtcursor->session;
-	cursor = (CURSOR *)wtcursor;
-	wtext = cursor->wtext;
+	session = aecursor->session;
+	cursor = (CURSOR *)aecursor;
+	aeext = cursor->aeext;
 
 	/* Only interesting for snapshot isolation. */
-	if (wtext->
-	    transaction_isolation_level(wtext, session) != WT_TXN_ISO_SNAPSHOT)
+	if (aeext->
+	    transaction_isolation_level(aeext, session) != AE_TXN_ISO_SNAPSHOT)
 		return (0);
 
 	/*
@@ -805,9 +805,9 @@ cache_value_update_check(WT_CURSOR *wtcursor)
 	 * return a deadlock.
 	 */
 	for (i = 0, cp = cursor->cache; i < cursor->cache_entries; ++i, ++cp)
-		if (!cache_value_aborted(wtcursor, cp) &&
-		    !wtext->transaction_visible(wtext, session, cp->txnid))
-			return (WT_ROLLBACK);
+		if (!cache_value_aborted(aecursor, cp) &&
+		    !aeext->transaction_visible(aeext, session, cp->txnid))
+			return (AE_ROLLBACK);
 	return (0);
 }
 
@@ -817,19 +817,19 @@ cache_value_update_check(WT_CURSOR *wtcursor)
  * transaction.
  */
 static int
-cache_value_visible(WT_CURSOR *wtcursor, CACHE_RECORD **cpp)
+cache_value_visible(AE_CURSOR *aecursor, CACHE_RECORD **cpp)
 {
 	CACHE_RECORD *cp;
 	CURSOR *cursor;
-	WT_EXTENSION_API *wtext;
-	WT_SESSION *session;
+	AE_EXTENSION_API *aeext;
+	AE_SESSION *session;
 	u_int i;
 
 	*cpp = NULL;
 
-	session = wtcursor->session;
-	cursor = (CURSOR *)wtcursor;
-	wtext = cursor->wtext;
+	session = aecursor->session;
+	cursor = (CURSOR *)aecursor;
+	aeext = cursor->aeext;
 
 	/*
 	 * We want the most recent cache entry update; the cache entries are
@@ -838,8 +838,8 @@ cache_value_visible(WT_CURSOR *wtcursor, CACHE_RECORD **cpp)
 	cp = cursor->cache + cursor->cache_entries;
 	for (i = 0; i < cursor->cache_entries; ++i) {
 		--cp;
-		if (!cache_value_aborted(wtcursor, cp) &&
-		    wtext->transaction_visible(wtext, session, cp->txnid)) {
+		if (!cache_value_aborted(aecursor, cp) &&
+		    aeext->transaction_visible(aeext, session, cp->txnid)) {
 			*cpp = cp;
 			return (1);
 		}
@@ -852,13 +852,13 @@ cache_value_visible(WT_CURSOR *wtcursor, CACHE_RECORD **cpp)
  *	Return if a cache entry has no updates that aren't globally visible.
  */
 static int
-cache_value_visible_all(WT_CURSOR *wtcursor, uint64_t oldest)
+cache_value_visible_all(AE_CURSOR *aecursor, uint64_t oldest)
 {
 	CACHE_RECORD *cp;
 	CURSOR *cursor;
 	u_int i;
 
-	cursor = (CURSOR *)wtcursor;
+	cursor = (CURSOR *)aecursor;
 
 	/*
 	 * Compare the update's transaction ID and the oldest transaction ID
@@ -879,7 +879,7 @@ cache_value_visible_all(WT_CURSOR *wtcursor, uint64_t oldest)
  *	Find the most recent update in a cache entry, recovery processing.
  */
 static void
-cache_value_last_committed(WT_CURSOR *wtcursor, CACHE_RECORD **cpp)
+cache_value_last_committed(AE_CURSOR *aecursor, CACHE_RECORD **cpp)
 {
 	CACHE_RECORD *cp;
 	CURSOR *cursor;
@@ -887,7 +887,7 @@ cache_value_last_committed(WT_CURSOR *wtcursor, CACHE_RECORD **cpp)
 
 	*cpp = NULL;
 
-	cursor = (CURSOR *)wtcursor;
+	cursor = (CURSOR *)aecursor;
 
 	/*
 	 * Find the most recent update in the cache record, we're going to try
@@ -901,7 +901,7 @@ cache_value_last_committed(WT_CURSOR *wtcursor, CACHE_RECORD **cpp)
 	cp = cursor->cache + cursor->cache_entries;
 	for (i = 0; i < cursor->cache_entries; ++i) {
 		--cp;
-		if (cache_value_committed(wtcursor, cp)) {
+		if (cache_value_committed(aecursor, cp)) {
 			*cpp = cp;
 			return;
 		}
@@ -913,7 +913,7 @@ cache_value_last_committed(WT_CURSOR *wtcursor, CACHE_RECORD **cpp)
  *	Find the most recent update in a cache entry, normal processing.
  */
 static void
-cache_value_last_not_aborted(WT_CURSOR *wtcursor, CACHE_RECORD **cpp)
+cache_value_last_not_aborted(AE_CURSOR *aecursor, CACHE_RECORD **cpp)
 {
 	CACHE_RECORD *cp;
 	CURSOR *cursor;
@@ -921,7 +921,7 @@ cache_value_last_not_aborted(WT_CURSOR *wtcursor, CACHE_RECORD **cpp)
 
 	*cpp = NULL;
 
-	cursor = (CURSOR *)wtcursor;
+	cursor = (CURSOR *)aecursor;
 
 	/*
 	 * Find the most recent update in the cache record, we're going to try
@@ -936,7 +936,7 @@ cache_value_last_not_aborted(WT_CURSOR *wtcursor, CACHE_RECORD **cpp)
 	cp = cursor->cache + cursor->cache_entries;
 	for (i = 0; i < cursor->cache_entries; ++i) {
 		--cp;
-		if (!cache_value_aborted(wtcursor, cp)) {
+		if (!cache_value_aborted(aecursor, cp)) {
 			*cpp = cp;
 			return;
 		}
@@ -948,14 +948,14 @@ cache_value_last_not_aborted(WT_CURSOR *wtcursor, CACHE_RECORD **cpp)
  *	Return the oldest transaction ID involved in a cache update.
  */
 static void
-cache_value_txnmin(WT_CURSOR *wtcursor, uint64_t *txnminp)
+cache_value_txnmin(AE_CURSOR *aecursor, uint64_t *txnminp)
 {
 	CACHE_RECORD *cp;
 	CURSOR *cursor;
 	uint64_t txnmin;
 	u_int i;
 
-	cursor = (CURSOR *)wtcursor;
+	cursor = (CURSOR *)aecursor;
 
 	/* Return the oldest transaction ID for in the cache entry. */
 	txnmin = UINT64_MAX;
@@ -967,14 +967,14 @@ cache_value_txnmin(WT_CURSOR *wtcursor, uint64_t *txnminp)
 
 /*
  * key_max_err --
- *	Common error when a WiredTiger key is too large.
+ *	Common error when a ArchEngine key is too large.
  */
 static int
-key_max_err(WT_EXTENSION_API *wtext, WT_SESSION *session, size_t len)
+key_max_err(AE_EXTENSION_API *aeext, AE_SESSION *session, size_t len)
 {
 	int ret = 0;
 
-	ERET(wtext, session, EINVAL,
+	ERET(aeext, session, EINVAL,
 	    "key length (%zu bytes) larger than the maximum Helium "
 	    "key length of %d bytes",
 	    len, HE_MAX_KEY_LEN);
@@ -982,23 +982,23 @@ key_max_err(WT_EXTENSION_API *wtext, WT_SESSION *session, size_t len)
 
 /*
  * copyin_key --
- *	Copy a WT_CURSOR key to a HE_ITEM key.
+ *	Copy a AE_CURSOR key to a HE_ITEM key.
  */
 static inline int
-copyin_key(WT_CURSOR *wtcursor, int allocate_key)
+copyin_key(AE_CURSOR *aecursor, int allocate_key)
 {
 	CURSOR *cursor;
 	HE_ITEM *r;
-	WT_EXTENSION_API *wtext;
-	WT_SESSION *session;
-	WT_SOURCE *ws;
+	AE_EXTENSION_API *aeext;
+	AE_SESSION *session;
+	AE_SOURCE *ws;
 	size_t size;
 	int ret = 0;
 
-	session = wtcursor->session;
-	cursor = (CURSOR *)wtcursor;
+	session = aecursor->session;
+	cursor = (CURSOR *)aecursor;
 	ws = cursor->ws;
-	wtext = cursor->wtext;
+	aeext = cursor->aeext;
 
 	r = &cursor->record;
 	if (ws->config_recno) {
@@ -1019,94 +1019,94 @@ copyin_key(WT_CURSOR *wtcursor, int allocate_key)
 		 * not quite right.
 		 */
 		if (allocate_key && cursor->config_append) {
-			if ((ret = writelock(wtext, session, &ws->lock)) != 0)
+			if ((ret = writelock(aeext, session, &ws->lock)) != 0)
 				return (ret);
-			wtcursor->recno = ++ws->append_recno;
-			if ((ret = unlock(wtext, session, &ws->lock)) != 0)
+			aecursor->recno = ++ws->append_recno;
+			if ((ret = unlock(aeext, session, &ws->lock)) != 0)
 				return (ret);
-		} else if (wtcursor->recno > ws->append_recno) {
-			if ((ret = writelock(wtext, session, &ws->lock)) != 0)
+		} else if (aecursor->recno > ws->append_recno) {
+			if ((ret = writelock(aeext, session, &ws->lock)) != 0)
 				return (ret);
-			if (wtcursor->recno > ws->append_recno)
-				ws->append_recno = wtcursor->recno;
-			if ((ret = unlock(wtext, session, &ws->lock)) != 0)
+			if (aecursor->recno > ws->append_recno)
+				ws->append_recno = aecursor->recno;
+			if ((ret = unlock(aeext, session, &ws->lock)) != 0)
 				return (ret);
 		}
 
-		if ((ret = wtext->struct_size(wtext, session,
-		    &size, "r", wtcursor->recno)) != 0 ||
-		    (ret = wtext->struct_pack(wtext, session,
-		    r->key, HE_MAX_KEY_LEN, "r", wtcursor->recno)) != 0)
+		if ((ret = aeext->struct_size(aeext, session,
+		    &size, "r", aecursor->recno)) != 0 ||
+		    (ret = aeext->struct_pack(aeext, session,
+		    r->key, HE_MAX_KEY_LEN, "r", aecursor->recno)) != 0)
 			return (ret);
 		r->key_len = size;
 	} else {
 		/* I'm not sure this test is necessary, but it's cheap. */
-		if (wtcursor->key.size > HE_MAX_KEY_LEN)
+		if (aecursor->key.size > HE_MAX_KEY_LEN)
 			return (
-			    key_max_err(wtext, session, wtcursor->key.size));
+			    key_max_err(aeext, session, aecursor->key.size));
 
 		/*
 		 * A set cursor key might reference application memory, which
 		 * is only OK until the cursor operation has been called (in
 		 * other words, we can only reference application memory from
-		 * the WT_CURSOR.set_key call until the WT_CURSOR.op call).
+		 * the AE_CURSOR.set_key call until the AE_CURSOR.op call).
 		 * For this reason, do a full copy, don't just reference the
-		 * WT_CURSOR key's data.
+		 * AE_CURSOR key's data.
 		 */
-		memcpy(r->key, wtcursor->key.data, wtcursor->key.size);
-		r->key_len = wtcursor->key.size;
+		memcpy(r->key, aecursor->key.data, aecursor->key.size);
+		r->key_len = aecursor->key.size;
 	}
 	return (0);
 }
 
 /*
  * copyout_key --
- *	Copy a HE_ITEM key to a WT_CURSOR key.
+ *	Copy a HE_ITEM key to a AE_CURSOR key.
  */
 static inline int
-copyout_key(WT_CURSOR *wtcursor)
+copyout_key(AE_CURSOR *aecursor)
 {
 	CURSOR *cursor;
 	HE_ITEM *r;
-	WT_EXTENSION_API *wtext;
-	WT_SESSION *session;
-	WT_SOURCE *ws;
+	AE_EXTENSION_API *aeext;
+	AE_SESSION *session;
+	AE_SOURCE *ws;
 	int ret = 0;
 
-	session = wtcursor->session;
-	cursor = (CURSOR *)wtcursor;
-	wtext = cursor->wtext;
+	session = aecursor->session;
+	cursor = (CURSOR *)aecursor;
+	aeext = cursor->aeext;
 	ws = cursor->ws;
 
 	r = &cursor->record;
 	if (ws->config_recno) {
-		if ((ret = wtext->struct_unpack(wtext,
-		    session, r->key, r->key_len, "r", &wtcursor->recno)) != 0)
+		if ((ret = aeext->struct_unpack(aeext,
+		    session, r->key, r->key_len, "r", &aecursor->recno)) != 0)
 			return (ret);
 	} else {
-		wtcursor->key.data = r->key;
-		wtcursor->key.size = (size_t)r->key_len;
+		aecursor->key.data = r->key;
+		aecursor->key.size = (size_t)r->key_len;
 	}
 	return (0);
 }
 
 /*
  * copyout_val --
- *	Copy a Helium store's HE_ITEM value to a WT_CURSOR value.
+ *	Copy a Helium store's HE_ITEM value to a AE_CURSOR value.
  */
 static inline int
-copyout_val(WT_CURSOR *wtcursor, CACHE_RECORD *cp)
+copyout_val(AE_CURSOR *aecursor, CACHE_RECORD *cp)
 {
 	CURSOR *cursor;
 
-	cursor = (CURSOR *)wtcursor;
+	cursor = (CURSOR *)aecursor;
 
 	if (cp == NULL) {
-		wtcursor->value.data = cursor->v;
-		wtcursor->value.size = cursor->len;
+		aecursor->value.data = cursor->v;
+		aecursor->value.size = cursor->len;
 	} else {
-		wtcursor->value.data = cp->v;
-		wtcursor->value.size = cp->len;
+		aecursor->value.data = cp->v;
+		aecursor->value.size = cp->len;
 	}
 	return (0);
 }
@@ -1116,23 +1116,23 @@ copyout_val(WT_CURSOR *wtcursor, CACHE_RECORD *cp)
  *	Cursor next/prev.
  */
 static int
-nextprev(WT_CURSOR *wtcursor, const char *fname,
+nextprev(AE_CURSOR *aecursor, const char *fname,
     int (*f)(he_t, HE_ITEM *, size_t, size_t))
 {
 	CACHE_RECORD *cp;
 	CURSOR *cursor;
 	HE_ITEM *r;
-	WT_EXTENSION_API *wtext;
-	WT_ITEM a, b;
-	WT_SESSION *session;
-	WT_SOURCE *ws;
+	AE_EXTENSION_API *aeext;
+	AE_ITEM a, b;
+	AE_SESSION *session;
+	AE_SOURCE *ws;
 	int cache_ret, cache_rm, cmp, ret = 0;
 	void *p;
 
-	session = wtcursor->session;
-	cursor = (CURSOR *)wtcursor;
+	session = aecursor->session;
+	cursor = (CURSOR *)aecursor;
 	ws = cursor->ws;
-	wtext = cursor->wtext;
+	aeext = cursor->aeext;
 	r = &cursor->record;
 
 	cache_rm = 0;
@@ -1143,7 +1143,7 @@ nextprev(WT_CURSOR *wtcursor, const char *fname,
 	 * special behavior with respect to phantoms.
 	 */
 	if (ws->he_cache_inuse == 0) {
-		cache_ret = WT_NOTFOUND;
+		cache_ret = AE_NOTFOUND;
 		goto cache_clean;
 	}
 
@@ -1171,13 +1171,13 @@ skip_deleted:
 	 * entry, or we reach the end/beginning.
 	 */
 	for (cache_rm = 0;;) {
-		if ((ret = helium_call(wtcursor, fname, ws->he_cache, f)) != 0)
+		if ((ret = helium_call(aecursor, fname, ws->he_cache, f)) != 0)
 			break;
-		if ((ret = cache_value_unmarshall(wtcursor)) != 0)
+		if ((ret = cache_value_unmarshall(aecursor)) != 0)
 			return (ret);
 
 		/* If there's no visible entry, move to the next one. */
-		if (!cache_value_visible(wtcursor, &cp))
+		if (!cache_value_visible(aecursor, &cp))
 			continue;
 
 		/*
@@ -1216,7 +1216,7 @@ skip_deleted:
 
 		break;
 	}
-	if (ret != 0 && ret != WT_NOTFOUND)
+	if (ret != 0 && ret != AE_NOTFOUND)
 		return (ret);
 	cache_ret = ret;
 
@@ -1226,13 +1226,13 @@ skip_deleted:
 
 cache_clean:
 	/* Get the next/prev entry from the store. */
-	ret = helium_call(wtcursor, fname, ws->he, f);
-	if (ret != 0 && ret != WT_NOTFOUND)
+	ret = helium_call(aecursor, fname, ws->he, f);
+	if (ret != 0 && ret != AE_NOTFOUND)
 		return (ret);
 
 	/* If no entries in either the cache or the primary, we're done. */
-	if (cache_ret == WT_NOTFOUND && ret == WT_NOTFOUND)
-		return (WT_NOTFOUND);
+	if (cache_ret == AE_NOTFOUND && ret == AE_NOTFOUND)
+		return (AE_NOTFOUND);
 
 	/*
 	 * If both the cache and the primary had entries, decide which is a
@@ -1243,20 +1243,20 @@ cache_clean:
 		a.size = (uint32_t)r->key_len;
 		b.data = cursor->t2.v;		/* b is the cache */
 		b.size = (uint32_t)cursor->t2.len;
-		if ((ret = wtext->collate(
-		    wtext, session, NULL, &a, &b, &cmp)) != 0)
+		if ((ret = aeext->collate(
+		    aeext, session, NULL, &a, &b, &cmp)) != 0)
 			return (ret);
 
 		if (f == he_next) {
 			if (cmp >= 0)
-				ret = WT_NOTFOUND;
+				ret = AE_NOTFOUND;
 			else
-				cache_ret = WT_NOTFOUND;
+				cache_ret = AE_NOTFOUND;
 		} else {
 			if (cmp <= 0)
-				ret = WT_NOTFOUND;
+				ret = AE_NOTFOUND;
 			else
-				cache_ret = WT_NOTFOUND;
+				cache_ret = AE_NOTFOUND;
 		}
 	}
 
@@ -1281,44 +1281,44 @@ cache_clean:
 	}
 
 	/* Copy out the chosen key/value pair. */
-	if ((ret = copyout_key(wtcursor)) != 0)
+	if ((ret = copyout_key(aecursor)) != 0)
 		return (ret);
-	if ((ret = copyout_val(wtcursor, NULL)) != 0)
+	if ((ret = copyout_val(aecursor, NULL)) != 0)
 		return (ret);
 	return (0);
 }
 
 /*
  * helium_cursor_next --
- *	WT_CURSOR.next method.
+ *	AE_CURSOR.next method.
  */
 static int
-helium_cursor_next(WT_CURSOR *wtcursor)
+helium_cursor_next(AE_CURSOR *aecursor)
 {
-	return (nextprev(wtcursor, "he_next", he_next));
+	return (nextprev(aecursor, "he_next", he_next));
 }
 
 /*
  * helium_cursor_prev --
- *	WT_CURSOR.prev method.
+ *	AE_CURSOR.prev method.
  */
 static int
-helium_cursor_prev(WT_CURSOR *wtcursor)
+helium_cursor_prev(AE_CURSOR *aecursor)
 {
-	return (nextprev(wtcursor, "he_prev", he_prev));
+	return (nextprev(aecursor, "he_prev", he_prev));
 }
 
 /*
  * helium_cursor_reset --
- *	WT_CURSOR.reset method.
+ *	AE_CURSOR.reset method.
  */
 static int
-helium_cursor_reset(WT_CURSOR *wtcursor)
+helium_cursor_reset(AE_CURSOR *aecursor)
 {
 	CURSOR *cursor;
 	HE_ITEM *r;
 
-	cursor = (CURSOR *)wtcursor;
+	cursor = (CURSOR *)aecursor;
 	r = &cursor->record;
 
 	/*
@@ -1331,21 +1331,21 @@ helium_cursor_reset(WT_CURSOR *wtcursor)
 
 /*
  * helium_cursor_search --
- *	WT_CURSOR.search method.
+ *	AE_CURSOR.search method.
  */
 static int
-helium_cursor_search(WT_CURSOR *wtcursor)
+helium_cursor_search(AE_CURSOR *aecursor)
 {
 	CACHE_RECORD *cp;
 	CURSOR *cursor;
-	WT_SOURCE *ws;
+	AE_SOURCE *ws;
 	int ret = 0;
 
-	cursor = (CURSOR *)wtcursor;
+	cursor = (CURSOR *)aecursor;
 	ws = cursor->ws;
 
-	/* Copy in the WiredTiger cursor's key. */
-	if ((ret = copyin_key(wtcursor, 0)) != 0)
+	/* Copy in the ArchEngine cursor's key. */
+	if ((ret = copyin_key(aecursor, 0)) != 0)
 		return (ret);
 
 	/*
@@ -1353,28 +1353,28 @@ helium_cursor_search(WT_CURSOR *wtcursor)
 	 * and check for a visible entry we can return.
 	 */
 	if ((ret =
-	    helium_call(wtcursor, "he_lookup", ws->he_cache, he_lookup)) == 0) {
-		if ((ret = cache_value_unmarshall(wtcursor)) != 0)
+	    helium_call(aecursor, "he_lookup", ws->he_cache, he_lookup)) == 0) {
+		if ((ret = cache_value_unmarshall(aecursor)) != 0)
 			return (ret);
-		if (cache_value_visible(wtcursor, &cp))
+		if (cache_value_visible(aecursor, &cp))
 			return (cp->remove ?
-			    WT_NOTFOUND : copyout_val(wtcursor, cp));
-	} else if (ret != WT_NOTFOUND)
+			    AE_NOTFOUND : copyout_val(aecursor, cp));
+	} else if (ret != AE_NOTFOUND)
 		return (ret);
 
 	/* Check for an entry in the primary store. */
-	if ((ret = helium_call(wtcursor, "he_lookup", ws->he, he_lookup)) != 0)
+	if ((ret = helium_call(aecursor, "he_lookup", ws->he, he_lookup)) != 0)
 		return (ret);
 
-	return (copyout_val(wtcursor, NULL));
+	return (copyout_val(aecursor, NULL));
 }
 
 /*
  * helium_cursor_search_near --
- *	WT_CURSOR.search_near method.
+ *	AE_CURSOR.search_near method.
  */
 static int
-helium_cursor_search_near(WT_CURSOR *wtcursor, int *exact)
+helium_cursor_search_near(AE_CURSOR *aecursor, int *exact)
 {
 	int ret = 0;
 
@@ -1388,23 +1388,23 @@ helium_cursor_search_near(WT_CURSOR *wtcursor, int *exact)
 	 */
 
 	/* Search for an exact match. */
-	if ((ret = helium_cursor_search(wtcursor)) == 0) {
+	if ((ret = helium_cursor_search(aecursor)) == 0) {
 		*exact = 0;
 		return (0);
 	}
-	if (ret != WT_NOTFOUND)
+	if (ret != AE_NOTFOUND)
 		return (ret);
 
 	/* Search for a key that's larger. */
-	if ((ret = helium_cursor_next(wtcursor)) == 0) {
+	if ((ret = helium_cursor_next(aecursor)) == 0) {
 		*exact = 1;
 		return (0);
 	}
-	if (ret != WT_NOTFOUND)
+	if (ret != AE_NOTFOUND)
 		return (ret);
 
 	/* Search for a key that's smaller. */
-	if ((ret = helium_cursor_prev(wtcursor)) == 0) {
+	if ((ret = helium_cursor_prev(aecursor)) == 0) {
 		*exact = -1;
 		return (0);
 	}
@@ -1414,51 +1414,51 @@ helium_cursor_search_near(WT_CURSOR *wtcursor, int *exact)
 
 /*
  * helium_cursor_insert --
- *	WT_CURSOR.insert method.
+ *	AE_CURSOR.insert method.
  */
 static int
-helium_cursor_insert(WT_CURSOR *wtcursor)
+helium_cursor_insert(AE_CURSOR *aecursor)
 {
 	CACHE_RECORD *cp;
 	CURSOR *cursor;
 	HE_ITEM *r;
 	HELIUM_SOURCE *hs;
-	WT_EXTENSION_API *wtext;
-	WT_SESSION *session;
-	WT_SOURCE *ws;
+	AE_EXTENSION_API *aeext;
+	AE_SESSION *session;
+	AE_SOURCE *ws;
 	int ret = 0;
 
-	session = wtcursor->session;
-	cursor = (CURSOR *)wtcursor;
-	wtext = cursor->wtext;
+	session = aecursor->session;
+	cursor = (CURSOR *)aecursor;
+	aeext = cursor->aeext;
 	ws = cursor->ws;
 	hs = ws->hs;
 	r = &cursor->record;
 
-	/* Get the WiredTiger cursor's key. */
-	if ((ret = copyin_key(wtcursor, 1)) != 0)
+	/* Get the ArchEngine cursor's key. */
+	if ((ret = copyin_key(aecursor, 1)) != 0)
 		return (ret);
 
-	VMSG(wtext, session, VERBOSE_L2,
+	VMSG(aeext, session, VERBOSE_L2,
 	    "I %.*s.%.*s", (int)r->key_len, r->key, (int)r->val_len, r->val);
 
 	/* Clear the value, assume we're adding the first cache entry. */
 	cursor->len = 0;
 
 	/* Updates are read-modify-writes, lock the underlying cache. */
-	if ((ret = writelock(wtext, session, &ws->lock)) != 0)
+	if ((ret = writelock(aeext, session, &ws->lock)) != 0)
 		return (ret);
 
 	/* Read the record from the cache store. */
 	switch (ret = helium_call(
-	    wtcursor, "he_lookup", ws->he_cache, he_lookup)) {
+	    aecursor, "he_lookup", ws->he_cache, he_lookup)) {
 	case 0:
 		/* Crack the record. */
-		if ((ret = cache_value_unmarshall(wtcursor)) != 0)
+		if ((ret = cache_value_unmarshall(aecursor)) != 0)
 			goto err;
 
 		/* Check if the update can proceed. */
-		if ((ret = cache_value_update_check(wtcursor)) != 0)
+		if ((ret = cache_value_update_check(aecursor)) != 0)
 			goto err;
 
 		if (cursor->config_overwrite)
@@ -1470,23 +1470,23 @@ helium_cursor_insert(WT_CURSOR *wtcursor)
 		 * visible entry in the cache, otherwise repeat the check on the
 		 * primary store.
 		 */
-		if (cache_value_visible(wtcursor, &cp)) {
+		if (cache_value_visible(aecursor, &cp)) {
 			if (cp->remove)
 				break;
 
-			ret = WT_DUPLICATE_KEY;
+			ret = AE_DUPLICATE_KEY;
 			goto err;
 		}
 		/* FALLTHROUGH */
-	case WT_NOTFOUND:
+	case AE_NOTFOUND:
 		if (cursor->config_overwrite)
 			break;
 
 		/* If overwrite is false, an entry is an error. */
 		if ((ret = helium_call(
-		    wtcursor, "he_lookup", ws->he, he_lookup)) != WT_NOTFOUND) {
+		    aecursor, "he_lookup", ws->he, he_lookup)) != AE_NOTFOUND) {
 			if (ret == 0)
-				ret = WT_DUPLICATE_KEY;
+				ret = AE_DUPLICATE_KEY;
 			goto err;
 		}
 		ret = 0;
@@ -1496,25 +1496,25 @@ helium_cursor_insert(WT_CURSOR *wtcursor)
 	}
 
 	/*
-	 * Create a new value using the current cache record plus the WiredTiger
+	 * Create a new value using the current cache record plus the ArchEngine
 	 * cursor's value, and update the cache.
 	 */
-	if ((ret = cache_value_append(wtcursor, 0)) != 0)
+	if ((ret = cache_value_append(aecursor, 0)) != 0)
 		goto err;
 	if ((ret = he_update(ws->he_cache, r)) != 0)
-		EMSG(wtext, session, ret, "he_update: %s", he_strerror(ret));
+		EMSG(aeext, session, ret, "he_update: %s", he_strerror(ret));
 
 	/* Update the state while still holding the lock. */
 	if (ws->he_cache_inuse == 0)
 		ws->he_cache_inuse = 1;
 
 	/* Discard the lock. */
-err:	ESET(unlock(wtext, session, &ws->lock));
+err:	ESET(unlock(aeext, session, &ws->lock));
 
 	/* If successful, request notification at transaction resolution. */
 	if (ret == 0)
 		ESET(
-		    wtext->transaction_notify(wtext, session, &hs->txn_notify));
+		    aeext->transaction_notify(aeext, session, &hs->txn_notify));
 
 	return (ret);
 }
@@ -1524,29 +1524,29 @@ err:	ESET(unlock(wtext, session, &ws->lock));
  *	Update or remove an entry.
  */
 static int
-update(WT_CURSOR *wtcursor, int remove_op)
+update(AE_CURSOR *aecursor, int remove_op)
 {
 	CACHE_RECORD *cp;
 	CURSOR *cursor;
 	HE_ITEM *r;
 	HELIUM_SOURCE *hs;
-	WT_EXTENSION_API *wtext;
-	WT_SESSION *session;
-	WT_SOURCE *ws;
+	AE_EXTENSION_API *aeext;
+	AE_SESSION *session;
+	AE_SOURCE *ws;
 	int ret = 0;
 
-	session = wtcursor->session;
-	cursor = (CURSOR *)wtcursor;
-	wtext = cursor->wtext;
+	session = aecursor->session;
+	cursor = (CURSOR *)aecursor;
+	aeext = cursor->aeext;
 	ws = cursor->ws;
 	hs = ws->hs;
 	r = &cursor->record;
 
-	/* Get the WiredTiger cursor's key. */
-	if ((ret = copyin_key(wtcursor, 0)) != 0)
+	/* Get the ArchEngine cursor's key. */
+	if ((ret = copyin_key(aecursor, 0)) != 0)
 		return (ret);
 
-	VMSG(wtext, session, VERBOSE_L2,
+	VMSG(aeext, session, VERBOSE_L2,
 	    "%c %.*s.%.*s",
 	    remove_op ? 'R' : 'U',
 	    (int)r->key_len, r->key, (int)r->val_len, r->val);
@@ -1555,19 +1555,19 @@ update(WT_CURSOR *wtcursor, int remove_op)
 	cursor->len = 0;
 
 	/* Updates are read-modify-writes, lock the underlying cache. */
-	if ((ret = writelock(wtext, session, &ws->lock)) != 0)
+	if ((ret = writelock(aeext, session, &ws->lock)) != 0)
 		return (ret);
 
 	/* Read the record from the cache store. */
 	switch (ret = helium_call(
-	    wtcursor, "he_lookup", ws->he_cache, he_lookup)) {
+	    aecursor, "he_lookup", ws->he_cache, he_lookup)) {
 	case 0:
 		/* Crack the record. */
-		if ((ret = cache_value_unmarshall(wtcursor)) != 0)
+		if ((ret = cache_value_unmarshall(aecursor)) != 0)
 			goto err;
 
 		/* Check if the update can proceed. */
-		if ((ret = cache_value_update_check(wtcursor)) != 0)
+		if ((ret = cache_value_update_check(aecursor)) != 0)
 			goto err;
 
 		if (cursor->config_overwrite)
@@ -1578,21 +1578,21 @@ update(WT_CURSOR *wtcursor, int remove_op)
 		 * error. We're done checking if there is a visible entry in
 		 * the cache, otherwise repeat the check on the primary store.
 		 */
-		if (cache_value_visible(wtcursor, &cp)) {
+		if (cache_value_visible(aecursor, &cp)) {
 			if (!cp->remove)
 				break;
 
-			ret = WT_NOTFOUND;
+			ret = AE_NOTFOUND;
 			goto err;
 		}
 		/* FALLTHROUGH */
-	case WT_NOTFOUND:
+	case AE_NOTFOUND:
 		if (cursor->config_overwrite)
 			break;
 
 		/* If overwrite is false, no entry is an error. */
 		if ((ret =
-		    helium_call(wtcursor, "he_lookup", ws->he, he_lookup)) != 0)
+		    helium_call(aecursor, "he_lookup", ws->he, he_lookup)) != 0)
 			goto err;
 
 		/*
@@ -1607,86 +1607,86 @@ update(WT_CURSOR *wtcursor, int remove_op)
 
 	/*
 	 * Create a new cache value based on the current cache record plus the
-	 * WiredTiger cursor's value.
+	 * ArchEngine cursor's value.
 	 */
-	if ((ret = cache_value_append(wtcursor, remove_op)) != 0)
+	if ((ret = cache_value_append(aecursor, remove_op)) != 0)
 		goto err;
 
 	/* Push the record into the cache. */
 	if ((ret = he_update(ws->he_cache, r)) != 0)
-		EMSG(wtext, session, ret, "he_update: %s", he_strerror(ret));
+		EMSG(aeext, session, ret, "he_update: %s", he_strerror(ret));
 
 	/* Update the state while still holding the lock. */
 	if (ws->he_cache_inuse == 0)
 		ws->he_cache_inuse = 1;
 
 	/* Discard the lock. */
-err:	ESET(unlock(wtext, session, &ws->lock));
+err:	ESET(unlock(aeext, session, &ws->lock));
 
 	/* If successful, request notification at transaction resolution. */
 	if (ret == 0)
 		ESET(
-		    wtext->transaction_notify(wtext, session, &hs->txn_notify));
+		    aeext->transaction_notify(aeext, session, &hs->txn_notify));
 
 	return (ret);
 }
 
 /*
  * helium_cursor_update --
- *	WT_CURSOR.update method.
+ *	AE_CURSOR.update method.
  */
 static int
-helium_cursor_update(WT_CURSOR *wtcursor)
+helium_cursor_update(AE_CURSOR *aecursor)
 {
-	return (update(wtcursor, 0));
+	return (update(aecursor, 0));
 }
 
 /*
  * helium_cursor_remove --
- *	WT_CURSOR.remove method.
+ *	AE_CURSOR.remove method.
  */
 static int
-helium_cursor_remove(WT_CURSOR *wtcursor)
+helium_cursor_remove(AE_CURSOR *aecursor)
 {
 	CURSOR *cursor;
-	WT_SOURCE *ws;
+	AE_SOURCE *ws;
 
-	cursor = (CURSOR *)wtcursor;
+	cursor = (CURSOR *)aecursor;
 	ws = cursor->ws;
 
 	/*
-	 * WiredTiger's "remove" of a bitfield is really an update with a value
+	 * ArchEngine's "remove" of a bitfield is really an update with a value
 	 * of zero.
 	 */
 	if (ws->config_bitfield) {
-		wtcursor->value.size = 1;
-		wtcursor->value.data = "";
-		return (update(wtcursor, 0));
+		aecursor->value.size = 1;
+		aecursor->value.data = "";
+		return (update(aecursor, 0));
 	}
-	return (update(wtcursor, 1));
+	return (update(aecursor, 1));
 }
 
 /*
  * helium_cursor_close --
- *	WT_CURSOR.close method.
+ *	AE_CURSOR.close method.
  */
 static int
-helium_cursor_close(WT_CURSOR *wtcursor)
+helium_cursor_close(AE_CURSOR *aecursor)
 {
 	CURSOR *cursor;
-	WT_EXTENSION_API *wtext;
-	WT_SESSION *session;
-	WT_SOURCE *ws;
+	AE_EXTENSION_API *aeext;
+	AE_SESSION *session;
+	AE_SOURCE *ws;
 	int ret = 0;
 
-	session = wtcursor->session;
-	cursor = (CURSOR *)wtcursor;
-	wtext = cursor->wtext;
+	session = aecursor->session;
+	cursor = (CURSOR *)aecursor;
+	aeext = cursor->aeext;
 	ws = cursor->ws;
 
-	if ((ret = writelock(wtext, session, &ws->lock)) == 0) {
+	if ((ret = writelock(aeext, session, &ws->lock)) == 0) {
 		--ws->ref;
-		ret = unlock(wtext, session, &ws->lock);
+		ret = unlock(aeext, session, &ws->lock);
 	}
 	cursor_destroy(cursor);
 
@@ -1698,74 +1698,74 @@ helium_cursor_close(WT_CURSOR *wtcursor)
  *	Build a namespace name.
  */
 static int
-ws_source_name(WT_DATA_SOURCE *wtds,
-    WT_SESSION *session, const char *uri, const char *suffix, char **pp)
+ws_source_name(AE_DATA_SOURCE *aeds,
+    AE_SESSION *session, const char *uri, const char *suffix, char **pp)
 {
 	DATA_SOURCE *ds;
-	WT_EXTENSION_API *wtext;
+	AE_EXTENSION_API *aeext;
 	size_t len;
 	int ret = 0;
 	const char *p;
 
-	ds = (DATA_SOURCE *)wtds;
-	wtext = ds->wtext;
+	ds = (DATA_SOURCE *)aeds;
+	aeext = ds->aeext;
 
 	/*
 	 * Create the store's name.  Application URIs are "helium:device/name";
-	 * we want the names on the Helium device to be obviously WiredTiger's,
-	 * and the device name isn't interesting.  Convert to "WiredTiger:name",
+	 * we want the names on the Helium device to be obviously ArchEngine's,
+	 * and the device name isn't interesting.  Convert to "ArchEngine:name",
 	 * and add an optional suffix.
 	 */
 	if (!prefix_match(uri, "helium:") || (p = strchr(uri, '/')) == NULL)
-		ERET(wtext, session, EINVAL, "%s: illegal Helium URI", uri);
+		ERET(aeext, session, EINVAL, "%s: illegal Helium URI", uri);
 	++p;
 
-	len = strlen(WT_NAME_PREFIX) +
+	len = strlen(AE_NAME_PREFIX) +
 	    strlen(p) + (suffix == NULL ? 0 : strlen(suffix)) + 5;
 	if ((*pp = malloc(len)) == NULL)
 		return (os_errno());
 	(void)snprintf(*pp, len, "%s%s%s",
-	    WT_NAME_PREFIX, p, suffix == NULL ? "" : suffix);
+	    AE_NAME_PREFIX, p, suffix == NULL ? "" : suffix);
 	return (0);
 }
 
 /*
  * ws_source_close --
- *	Close a WT_SOURCE reference.
+ *	Close a AE_SOURCE reference.
  */
 static int
-ws_source_close(WT_EXTENSION_API *wtext, WT_SESSION *session, WT_SOURCE *ws)
+ws_source_close(AE_EXTENSION_API *aeext, AE_SESSION *session, AE_SOURCE *ws)
 {
 	int ret = 0, tret;
 
 	/*
 	 * Warn if open cursors: it shouldn't happen because the upper layers of
-	 * WiredTiger prevent it, so we don't do anything more than warn.
+	 * ArchEngine prevent it, so we don't do anything more than warn.
 	 */
 	if (ws->ref != 0)
-		EMSG(wtext, session, WT_ERROR,
+		EMSG(aeext, session, AE_ERROR,
 		    "%s: open object with %u open cursors being closed",
 		    ws->uri, ws->ref);
 
 	if (ws->he != NULL) {
 		if ((tret = he_commit(ws->he)) != 0)
-			EMSG(wtext, session, tret,
+			EMSG(aeext, session, tret,
 			    "he_commit: %s: %s", ws->uri, he_strerror(tret));
 		if ((tret = he_close(ws->he)) != 0)
-			EMSG(wtext, session, tret,
+			EMSG(aeext, session, tret,
 			    "he_close: %s: %s", ws->uri, he_strerror(tret));
 		ws->he = NULL;
 	}
 	if (ws->he_cache != NULL) {
 		if ((tret = he_close(ws->he_cache)) != 0)
-			EMSG(wtext, session, tret,
+			EMSG(aeext, session, tret,
 			    "he_close: %s(cache): %s",
 			    ws->uri, he_strerror(tret));
 		ws->he_cache = NULL;
 	}
 
 	if (ws->lockinit)
-		ESET(lock_destroy(wtext, session, &ws->lock));
+		ESET(lock_destroy(aeext, session, &ws->lock));
 
 	free(ws->uri);
 	OVERWRITE_AND_FREE(ws);
@@ -1778,29 +1778,29 @@ ws_source_close(WT_EXTENSION_API *wtext, WT_SESSION *session, WT_SOURCE *ws)
  *	Open an object in the Helium store.
  */
 static int
-ws_source_open_object(WT_DATA_SOURCE *wtds, WT_SESSION *session,
+ws_source_open_object(AE_DATA_SOURCE *aeds, AE_SESSION *session,
     HELIUM_SOURCE *hs,
     const char *uri, const char *suffix, int flags, he_t *hep)
 {
 	DATA_SOURCE *ds;
-	WT_EXTENSION_API *wtext;
+	AE_EXTENSION_API *aeext;
 	he_t he;
 	char *p;
 	int ret = 0;
 
 	*hep = NULL;
 
-	ds = (DATA_SOURCE *)wtds;
-	wtext = ds->wtext;
+	ds = (DATA_SOURCE *)aeds;
+	aeext = ds->aeext;
 	p = NULL;
 
 	/* Open the underlying Helium object. */
-	if ((ret = ws_source_name(wtds, session, uri, suffix, &p)) != 0)
+	if ((ret = ws_source_name(aeds, session, uri, suffix, &p)) != 0)
 		return (ret);
-	VMSG(wtext, session, VERBOSE_L1, "open %s/%s", hs->name, p);
+	VMSG(aeext, session, VERBOSE_L1, "open %s/%s", hs->name, p);
 	if ((he = he_open(hs->device, p, flags, NULL)) == NULL) {
 		ret = os_errno();
-		EMSG(wtext, session, ret,
+		EMSG(aeext, session, ret,
 		    "he_open: %s/%s: %s", hs->name, p, he_strerror(ret));
 	}
 	*hep = he;
@@ -1814,26 +1814,26 @@ ws_source_open_object(WT_DATA_SOURCE *wtds, WT_SESSION *session,
 
 /*
  * ws_source_open --
- *	Return a locked WiredTiger source, allocating and opening if it doesn't
+ *	Return a locked ArchEngine source, allocating and opening if it doesn't
  * already exist.
  */
 static int
-ws_source_open(WT_DATA_SOURCE *wtds, WT_SESSION *session,
-    const char *uri, WT_CONFIG_ARG *config, u_int flags, WT_SOURCE **refp)
+ws_source_open(AE_DATA_SOURCE *aeds, AE_SESSION *session,
+    const char *uri, AE_CONFIG_ARG *config, u_int flags, AE_SOURCE **refp)
 {
 	DATA_SOURCE *ds;
 	HELIUM_SOURCE *hs;
-	WT_CONFIG_ITEM a;
-	WT_EXTENSION_API *wtext;
-	WT_SOURCE *ws;
+	AE_CONFIG_ITEM a;
+	AE_EXTENSION_API *aeext;
+	AE_SOURCE *ws;
 	size_t len;
 	int oflags, ret = 0;
 	const char *p, *t;
 
 	*refp = NULL;
 
-	ds = (DATA_SOURCE *)wtds;
-	wtext = ds->wtext;
+	ds = (DATA_SOURCE *)aeds;
+	aeext = ds->aeext;
 	ws = NULL;
 
 	/*
@@ -1844,7 +1844,7 @@ ws_source_open(WT_DATA_SOURCE *wtds, WT_SESSION *session,
 		goto bad_name;
 	p = uri + strlen("helium:");
 	if (p[0] == '/' || (t = strchr(p, '/')) == NULL || t[1] == '\0')
-bad_name:	ERET(wtext, session, EINVAL, "%s: illegal name format", uri);
+bad_name:	ERET(aeext, session, EINVAL, "%s: illegal name format", uri);
 	len = (size_t)(t - p);
 
 	/* Find a matching Helium device. */
@@ -1852,14 +1852,14 @@ bad_name:	ERET(wtext, session, EINVAL, "%s: illegal name format", uri);
 		if (string_match(hs->name, p, len))
 			break;
 	if (hs == NULL)
-		ERET(wtext, NULL,
+		ERET(aeext, NULL,
 		    EINVAL, "%s: no matching Helium store found", uri);
 
 	/*
 	 * We're about to walk the Helium device's list of files, acquire the
 	 * global lock.
 	 */
-	if ((ret = writelock(wtext, session, &ds->global_lock)) != 0)
+	if ((ret = writelock(aeext, session, &ds->global_lock)) != 0)
 		return (ret);
 
 	/*
@@ -1872,13 +1872,13 @@ bad_name:	ERET(wtext, session, EINVAL, "%s: illegal name format", uri);
 			/* Check to see if the object is busy. */
 			if (ws->ref != 0 && (flags & WS_SOURCE_OPEN_BUSY)) {
 				ret = EBUSY;
-				ESET(unlock(wtext, session, &ds->global_lock));
+				ESET(unlock(aeext, session, &ds->global_lock));
 				return (ret);
 			}
 			/* Swap the global lock for an object lock. */
 			if (!(flags & WS_SOURCE_OPEN_GLOBAL)) {
-				ret = writelock(wtext, session, &ws->lock);
-				ESET(unlock(wtext, session, &ds->global_lock));
+				ret = writelock(aeext, session, &ws->lock);
+				ESET(unlock(aeext, session, &ds->global_lock));
 				if (ret != 0)
 					return (ret);
 			}
@@ -1886,13 +1886,13 @@ bad_name:	ERET(wtext, session, EINVAL, "%s: illegal name format", uri);
 			return (0);
 		}
 
-	/* Allocate and initialize a new underlying WiredTiger source object. */
+	/* Allocate and initialize a new underlying ArchEngine source object. */
 	if ((ws = calloc(1, sizeof(*ws))) == NULL ||
 	    (ws->uri = strdup(uri)) == NULL) {
 		ret = os_errno();
 		goto err;
 	}
-	if ((ret = lock_init(wtext, session, &ws->lock)) != 0)
+	if ((ret = lock_init(aeext, session, &ws->lock)) != 0)
 		goto err;
 	ws->lockinit = 1;
 	ws->hs = hs;
@@ -1907,27 +1907,27 @@ bad_name:	ERET(wtext, session, EINVAL, "%s: illegal name format", uri);
 	 * handles attempts to create existing objects.
 	 */
 	oflags = HE_O_CREATE;
-	if ((ret = wtext->config_get(wtext,
+	if ((ret = aeext->config_get(aeext,
 	    session, config, "helium_o_truncate", &a)) == 0 && a.val != 0)
 		oflags |= HE_O_TRUNCATE;
-	if (ret != 0 && ret != WT_NOTFOUND)
-		EMSG_ERR(wtext, session, ret,
+	if (ret != 0 && ret != AE_NOTFOUND)
+		EMSG_ERR(aeext, session, ret,
 		    "helium_o_truncate configuration: %s",
-		    wtext->strerror(wtext, session, ret));
+		    aeext->strerror(aeext, session, ret));
 
 	if ((ret = ws_source_open_object(
-	    wtds, session, hs, uri, NULL, oflags, &ws->he)) != 0)
+	    aeds, session, hs, uri, NULL, oflags, &ws->he)) != 0)
 		goto err;
 	if ((ret = ws_source_open_object(
-	    wtds, session, hs, uri, WT_NAME_CACHE, oflags, &ws->he_cache)) != 0)
+	    aeds, session, hs, uri, AE_NAME_CACHE, oflags, &ws->he_cache)) != 0)
 		goto err;
 	if ((ret = he_commit(ws->he)) != 0)
-		EMSG_ERR(wtext, session, ret,
+		EMSG_ERR(aeext, session, ret,
 		    "he_commit: %s", he_strerror(ret));
 
 	/* Optionally trade the global lock for the object lock. */
 	if (!(flags & WS_SOURCE_OPEN_GLOBAL) &&
-	    (ret = writelock(wtext, session, &ws->lock)) != 0)
+	    (ret = writelock(aeext, session, &ws->lock)) != 0)
 		goto err;
 
 	/* Insert the new entry at the head of the list. */
@@ -1939,15 +1939,15 @@ bad_name:	ERET(wtext, session, EINVAL, "%s: illegal name format", uri);
 
 	if (0) {
 err:		if (ws != NULL)
-			ESET(ws_source_close(wtext, session, ws));
+			ESET(ws_source_close(aeext, session, ws));
 	}
 
-	/*      
+	/*
 	 * If there was an error or our caller doesn't need the global lock,
 	 * release the global lock.
 	 */
 	if (!(flags & WS_SOURCE_OPEN_GLOBAL) || ret != 0)
-		ESET(unlock(wtext, session, &ds->global_lock));
+		ESET(unlock(aeext, session, &ds->global_lock));
 
 	return (ret);
 }
@@ -1957,16 +1957,16 @@ err:		if (ws != NULL)
  *	Get the Helium master record for a URI.
  */
 static int
-master_uri_get(WT_DATA_SOURCE *wtds,
-    WT_SESSION *session, const char *uri, char **valuep)
+master_uri_get(AE_DATA_SOURCE *aeds,
+    AE_SESSION *session, const char *uri, char **valuep)
 {
 	DATA_SOURCE *ds;
-	WT_EXTENSION_API *wtext;
+	AE_EXTENSION_API *aeext;
 
-	ds = (DATA_SOURCE *)wtds;
-	wtext = ds->wtext;
+	ds = (DATA_SOURCE *)aeds;
+	aeext = ds->aeext;
 
-	return (wtext->metadata_search(wtext, session, uri, valuep));
+	return (aeext->metadata_search(aeext, session, uri, valuep));
 }
 
 /*
@@ -1974,15 +1974,15 @@ master_uri_get(WT_DATA_SOURCE *wtds,
  *	Drop the Helium master record for a URI.
  */
 static int
-master_uri_drop(WT_DATA_SOURCE *wtds, WT_SESSION *session, const char *uri)
+master_uri_drop(AE_DATA_SOURCE *aeds, AE_SESSION *session, const char *uri)
 {
 	DATA_SOURCE *ds;
-	WT_EXTENSION_API *wtext;
+	AE_EXTENSION_API *aeext;
 
-	ds = (DATA_SOURCE *)wtds;
-	wtext = ds->wtext;
+	ds = (DATA_SOURCE *)aeds;
+	aeext = ds->aeext;
 
-	return (wtext->metadata_remove(wtext, session, uri));
+	return (aeext->metadata_remove(aeext, session, uri));
 }
 
 /*
@@ -1990,29 +1990,29 @@ master_uri_drop(WT_DATA_SOURCE *wtds, WT_SESSION *session, const char *uri)
  *	Rename the Helium master record for a URI.
  */
 static int
-master_uri_rename(WT_DATA_SOURCE *wtds,
-    WT_SESSION *session, const char *uri, const char *newuri)
+master_uri_rename(AE_DATA_SOURCE *aeds,
+    AE_SESSION *session, const char *uri, const char *newuri)
 {
 	DATA_SOURCE *ds;
-	WT_EXTENSION_API *wtext;
+	AE_EXTENSION_API *aeext;
 	int ret = 0;
 	char *value;
 
-	ds = (DATA_SOURCE *)wtds;
-	wtext = ds->wtext;
+	ds = (DATA_SOURCE *)aeds;
+	aeext = ds->aeext;
 	value = NULL;
 
 	/* Insert the record under a new name. */
-	if ((ret = master_uri_get(wtds, session, uri, &value)) != 0 ||
-	    (ret = wtext->metadata_insert(wtext, session, newuri, value)) != 0)
+	if ((ret = master_uri_get(aeds, session, uri, &value)) != 0 ||
+	    (ret = aeext->metadata_insert(aeext, session, newuri, value)) != 0)
 		goto err;
 
 	/*
 	 * Remove the original record, and if that fails, attempt to remove
 	 * the new record.
 	 */
-	if ((ret = wtext->metadata_remove(wtext, session, uri)) != 0)
-		(void)wtext->metadata_remove(wtext, session, newuri);
+	if ((ret = aeext->metadata_remove(aeext, session, uri)) != 0)
+		(void)aeext->metadata_remove(aeext, session, newuri);
 
 err:	free((void *)value);
 	return (ret);
@@ -2023,58 +2023,58 @@ err:	free((void *)value);
  *	Set the Helium master record for a URI.
  */
 static int
-master_uri_set(WT_DATA_SOURCE *wtds,
-    WT_SESSION *session, const char *uri, WT_CONFIG_ARG *config)
+master_uri_set(AE_DATA_SOURCE *aeds,
+    AE_SESSION *session, const char *uri, AE_CONFIG_ARG *config)
 {
 	DATA_SOURCE *ds;
-	WT_CONFIG_ITEM a, b, c;
-	WT_EXTENSION_API *wtext;
+	AE_CONFIG_ITEM a, b, c;
+	AE_EXTENSION_API *aeext;
 	int exclusive, ret = 0;
 	char value[1024];
 
-	ds = (DATA_SOURCE *)wtds;
-	wtext = ds->wtext;
+	ds = (DATA_SOURCE *)aeds;
+	aeext = ds->aeext;
 
 	exclusive = 0;
 	if ((ret =
-	    wtext->config_get(wtext, session, config, "exclusive", &a)) == 0)
+	    aeext->config_get(aeext, session, config, "exclusive", &a)) == 0)
 		exclusive = a.val != 0;
-	else if (ret != WT_NOTFOUND)
-		ERET(wtext, session, ret,
+	else if (ret != AE_NOTFOUND)
+		ERET(aeext, session, ret,
 		    "exclusive configuration: %s",
-		    wtext->strerror(wtext, session, ret));
+		    aeext->strerror(aeext, session, ret));
 
 	/* Get the key/value format strings. */
-	if ((ret = wtext->config_get(
-	    wtext, session, config, "key_format", &a)) != 0) {
-		if (ret == WT_NOTFOUND) {
+	if ((ret = aeext->config_get(
+	    aeext, session, config, "key_format", &a)) != 0) {
+		if (ret == AE_NOTFOUND) {
 			a.str = "u";
 			a.len = 1;
 		} else
-			ERET(wtext, session, ret,
+			ERET(aeext, session, ret,
 			    "key_format configuration: %s",
-			    wtext->strerror(wtext, session, ret));
+			    aeext->strerror(aeext, session, ret));
 	}
-	if ((ret = wtext->config_get(
-	    wtext, session, config, "value_format", &b)) != 0) {
-		if (ret == WT_NOTFOUND) {
+	if ((ret = aeext->config_get(
+	    aeext, session, config, "value_format", &b)) != 0) {
+		if (ret == AE_NOTFOUND) {
 			b.str = "u";
 			b.len = 1;
 		} else
-			ERET(wtext, session, ret,
+			ERET(aeext, session, ret,
 			    "value_format configuration: %s",
-			    wtext->strerror(wtext, session, ret));
+			    aeext->strerror(aeext, session, ret));
 	}
 
 	/* Get the compression configuration. */
-	if ((ret = wtext->config_get(
-	    wtext, session, config, "helium_o_compress", &c)) != 0) {
-		if (ret == WT_NOTFOUND)
+	if ((ret = aeext->config_get(
+	    aeext, session, config, "helium_o_compress", &c)) != 0) {
+		if (ret == AE_NOTFOUND)
 			c.val = 0;
 		else
-			ERET(wtext, session, ret,
+			ERET(aeext, session, ret,
 			    "helium_o_compress configuration: %s",
-			    wtext->strerror(wtext, session, ret));
+			    aeext->strerror(aeext, session, ret));
 	}
 
 	/*
@@ -2082,34 +2082,34 @@ master_uri_set(WT_DATA_SOURCE *wtds,
 	 * already exists).
 	 */
 	(void)snprintf(value, sizeof(value),
-	    "wiredtiger_helium_version=(major=%d,minor=%d),"
+	    "archengine_helium_version=(major=%d,minor=%d),"
 	    "key_format=%.*s,value_format=%.*s,"
 	    "helium_o_compress=%d",
-	    WIREDTIGER_HELIUM_MAJOR, WIREDTIGER_HELIUM_MINOR,
+	    ARCHENGINE_HELIUM_MAJOR, ARCHENGINE_HELIUM_MINOR,
 	    (int)a.len, a.str, (int)b.len, b.str, c.val ? 1 : 0);
-	if ((ret = wtext->metadata_insert(wtext, session, uri, value)) == 0)
+	if ((ret = aeext->metadata_insert(aeext, session, uri, value)) == 0)
 		return (0);
-	if (ret == WT_DUPLICATE_KEY)
+	if (ret == AE_DUPLICATE_KEY)
 		return (exclusive ? EEXIST : 0);
-	ERET(wtext,
-	    session, ret, "%s: %s", uri, wtext->strerror(wtext, session, ret));
+	ERET(aeext,
+	    session, ret, "%s: %s", uri, aeext->strerror(aeext, session, ret));
 }
 
 /*
  * helium_session_open_cursor --
- *	WT_SESSION.open_cursor method.
+ *	AE_SESSION.open_cursor method.
  */
 static int
-helium_session_open_cursor(WT_DATA_SOURCE *wtds, WT_SESSION *session,
-    const char *uri, WT_CONFIG_ARG *config, WT_CURSOR **new_cursor)
+helium_session_open_cursor(AE_DATA_SOURCE *aeds, AE_SESSION *session,
+    const char *uri, AE_CONFIG_ARG *config, AE_CURSOR **new_cursor)
 {
 	CURSOR *cursor;
 	DATA_SOURCE *ds;
-	WT_CONFIG_ITEM v;
-	WT_CONFIG_PARSER *config_parser;
-	WT_CURSOR *wtcursor;
-	WT_EXTENSION_API *wtext;
-	WT_SOURCE *ws;
+	AE_CONFIG_ITEM v;
+	AE_CONFIG_PARSER *config_parser;
+	AE_CURSOR *aecursor;
+	AE_EXTENSION_API *aeext;
+	AE_SOURCE *ws;
 	int locked, own, ret, tret;
 	char *value;
 
@@ -2117,8 +2117,8 @@ helium_session_open_cursor(WT_DATA_SOURCE *wtds, WT_SESSION *session,
 
 	config_parser = NULL;
 	cursor = NULL;
-	ds = (DATA_SOURCE *)wtds;
-	wtext = ds->wtext;
+	ds = (DATA_SOURCE *)aeds;
+	aeext = ds->aeext;
 	ws = NULL;
 	locked = 0;
 	ret = tret = 0;
@@ -2128,45 +2128,45 @@ helium_session_open_cursor(WT_DATA_SOURCE *wtds, WT_SESSION *session,
 	if ((cursor = calloc(1, sizeof(CURSOR))) == NULL)
 		return (os_errno());
 
-	if ((ret = wtext->config_get(		/* Parse configuration */
-	    wtext, session, config, "append", &v)) != 0)
-		EMSG_ERR(wtext, session, ret,
+	if ((ret = aeext->config_get(		/* Parse configuration */
+	    aeext, session, config, "append", &v)) != 0)
+		EMSG_ERR(aeext, session, ret,
 		    "append configuration: %s",
-		    wtext->strerror(wtext, session, ret));
+		    aeext->strerror(aeext, session, ret));
 	cursor->config_append = v.val != 0;
 
-	if ((ret = wtext->config_get(
-	    wtext, session, config, "overwrite", &v)) != 0)
-		EMSG_ERR(wtext, session, ret,
+	if ((ret = aeext->config_get(
+	    aeext, session, config, "overwrite", &v)) != 0)
+		EMSG_ERR(aeext, session, ret,
 		    "overwrite configuration: %s",
-		    wtext->strerror(wtext, session, ret));
+		    aeext->strerror(aeext, session, ret));
 	cursor->config_overwrite = v.val != 0;
 
-	if ((ret = wtext->collator_config(
-	    wtext, session, uri, config, NULL, &own)) != 0)
-		EMSG_ERR(wtext, session, ret,
+	if ((ret = aeext->collator_config(
+	    aeext, session, uri, config, NULL, &own)) != 0)
+		EMSG_ERR(aeext, session, ret,
 		    "collator configuration: %s",
-		    wtext->strerror(wtext, session, ret));
+		    aeext->strerror(aeext, session, ret));
 
 	/* Finish initializing the cursor. */
-	cursor->wtcursor.close = helium_cursor_close;
-	cursor->wtcursor.insert = helium_cursor_insert;
-	cursor->wtcursor.next = helium_cursor_next;
-	cursor->wtcursor.prev = helium_cursor_prev;
-	cursor->wtcursor.remove = helium_cursor_remove;
-	cursor->wtcursor.reset = helium_cursor_reset;
-	cursor->wtcursor.search = helium_cursor_search;
-	cursor->wtcursor.search_near = helium_cursor_search_near;
-	cursor->wtcursor.update = helium_cursor_update;
+	cursor->aecursor.close = helium_cursor_close;
+	cursor->aecursor.insert = helium_cursor_insert;
+	cursor->aecursor.next = helium_cursor_next;
+	cursor->aecursor.prev = helium_cursor_prev;
+	cursor->aecursor.remove = helium_cursor_remove;
+	cursor->aecursor.reset = helium_cursor_reset;
+	cursor->aecursor.search = helium_cursor_search;
+	cursor->aecursor.search_near = helium_cursor_search_near;
+	cursor->aecursor.update = helium_cursor_update;
 
-	cursor->wtext = wtext;
+	cursor->aeext = aeext;
 	cursor->record.key = cursor->__key;
 	if ((cursor->v = malloc(128)) == NULL)
 		goto err;
 	cursor->mem_len = 128;
 
-	/* Get a locked reference to the WiredTiger source. */
-	if ((ret = ws_source_open(wtds, session, uri, config, 0, &ws)) != 0)
+	/* Get a locked reference to the ArchEngine source. */
+	if ((ret = ws_source_open(aeds, session, uri, config, 0, &ws)) != 0)
 		goto err;
 	locked = 1;
 	cursor->ws = ws;
@@ -2176,34 +2176,34 @@ helium_session_open_cursor(WT_DATA_SOURCE *wtds, WT_SESSION *session,
 	 * using information stored in the master record.
 	 */
 	if (!ws->configured) {
-		if ((ret = master_uri_get(wtds, session, uri, &value)) != 0)
+		if ((ret = master_uri_get(aeds, session, uri, &value)) != 0)
 			goto err;
 
-		if ((ret = wtext->config_parser_open(wtext,
+		if ((ret = aeext->config_parser_open(aeext,
 		    session, value, strlen(value), &config_parser)) != 0)
-			EMSG_ERR(wtext, session, ret,
+			EMSG_ERR(aeext, session, ret,
 			    "Configuration string parser: %s",
-			    wtext->strerror(wtext, session, ret));
+			    aeext->strerror(aeext, session, ret));
 		if ((ret = config_parser->get(
 		    config_parser, "key_format", &v)) != 0)
-			EMSG_ERR(wtext, session, ret,
+			EMSG_ERR(aeext, session, ret,
 			    "key_format configuration: %s",
-			    wtext->strerror(wtext, session, ret));
+			    aeext->strerror(aeext, session, ret));
 		ws->config_recno = v.len == 1 && v.str[0] == 'r';
 
 		if ((ret = config_parser->get(
 		    config_parser, "value_format", &v)) != 0)
-			EMSG_ERR(wtext, session, ret,
+			EMSG_ERR(aeext, session, ret,
 			    "value_format configuration: %s",
-			    wtext->strerror(wtext, session, ret));
+			    aeext->strerror(aeext, session, ret));
 		ws->config_bitfield =
 		    v.len == 2 && isdigit(v.str[0]) && v.str[1] == 't';
 
 		if ((ret = config_parser->get(
 		    config_parser, "helium_o_compress", &v)) != 0)
-			EMSG_ERR(wtext, session, ret,
+			EMSG_ERR(aeext, session, ret,
 			    "helium_o_compress configuration: %s",
-			    wtext->strerror(wtext, session, ret));
+			    aeext->strerror(aeext, session, ret));
 		ws->config_compress = v.val ? 1 : 0;
 
 		/*
@@ -2211,16 +2211,16 @@ helium_session_open_cursor(WT_DATA_SOURCE *wtds, WT_SESSION *session,
 		 * object and set the allocation record value.
 		 */
 		if (ws->config_recno) {
-			wtcursor = (WT_CURSOR *)cursor;
-			if ((ret = helium_cursor_reset(wtcursor)) != 0)
+			aecursor = (AE_CURSOR *)cursor;
+			if ((ret = helium_cursor_reset(aecursor)) != 0)
 				goto err;
 
-			if ((ret = helium_cursor_prev(wtcursor)) == 0)
-				ws->append_recno = wtcursor->recno;
-			else if (ret != WT_NOTFOUND)
+			if ((ret = helium_cursor_prev(aecursor)) == 0)
+				ws->append_recno = aecursor->recno;
+			else if (ret != AE_NOTFOUND)
 				goto err;
 
-			if ((ret = helium_cursor_reset(wtcursor)) != 0)
+			if ((ret = helium_cursor_reset(aecursor)) != 0)
 				goto err;
 		}
 
@@ -2229,21 +2229,21 @@ helium_session_open_cursor(WT_DATA_SOURCE *wtds, WT_SESSION *session,
 
 	/* Increment the open reference count to pin the URI and unlock it. */
 	++ws->ref;
-	if ((ret = unlock(wtext, session, &ws->lock)) != 0)
+	if ((ret = unlock(aeext, session, &ws->lock)) != 0)
 		goto err;
 
-	*new_cursor = (WT_CURSOR *)cursor;
+	*new_cursor = (AE_CURSOR *)cursor;
 
 	if (0) {
 err:		if (ws != NULL && locked)
-			ESET(unlock(wtext, session, &ws->lock));
+			ESET(unlock(aeext, session, &ws->lock));
 		cursor_destroy(cursor);
 	}
 	if (config_parser != NULL &&
 	    (tret = config_parser->close(config_parser)) != 0)
-		EMSG(wtext, session, tret,
-		    "WT_CONFIG_PARSER.close: %s",
-		    wtext->strerror(wtext, session, tret));
+		EMSG(aeext, session, tret,
+		    "AE_CONFIG_PARSER.close: %s",
+		    aeext->strerror(aeext, session, tret));
 
 	free((void *)value);
 	return (ret);
@@ -2251,67 +2251,67 @@ err:		if (ws != NULL && locked)
 
 /*
  * helium_session_create --
- *	WT_SESSION.create method.
+ *	AE_SESSION.create method.
  */
 static int
-helium_session_create(WT_DATA_SOURCE *wtds,
-    WT_SESSION *session, const char *uri, WT_CONFIG_ARG *config)
+helium_session_create(AE_DATA_SOURCE *aeds,
+    AE_SESSION *session, const char *uri, AE_CONFIG_ARG *config)
 {
 	DATA_SOURCE *ds;
-	WT_EXTENSION_API *wtext;
-	WT_SOURCE *ws;
+	AE_EXTENSION_API *aeext;
+	AE_SOURCE *ws;
 	int ret = 0;
 
-	ds = (DATA_SOURCE *)wtds;
-	wtext = ds->wtext;
+	ds = (DATA_SOURCE *)aeds;
+	aeext = ds->aeext;
 
 	/*
-	 * Get a locked reference to the WiredTiger source, then immediately
+	 * Get a locked reference to the ArchEngine source, then immediately
 	 * unlock it, we aren't doing anything else.
 	 */
-	if ((ret = ws_source_open(wtds, session, uri, config, 0, &ws)) != 0)
+	if ((ret = ws_source_open(aeds, session, uri, config, 0, &ws)) != 0)
 		return (ret);
-	if ((ret = unlock(wtext, session, &ws->lock)) != 0)
+	if ((ret = unlock(aeext, session, &ws->lock)) != 0)
 		return (ret);
 
 	/*
 	 * Create the URI master record if it doesn't already exist.
 	 *
 	 * We've discarded the lock, but that's OK, creates are single-threaded
-	 * at the WiredTiger level, it's not our problem to solve.
+	 * at the ArchEngine level, it's not our problem to solve.
 	 *
-	 * If unable to enter a WiredTiger record, leave the Helium store alone.
+	 * If unable to enter a ArchEngine record, leave the Helium store alone.
 	 * A subsequent create should do the right thing, we aren't leaving
 	 * anything in an inconsistent state.
 	 */
-	return (master_uri_set(wtds, session, uri, config));
+	return (master_uri_set(aeds, session, uri, config));
 }
 
 /*
  * helium_session_drop --
- *	WT_SESSION.drop method.
+ *	AE_SESSION.drop method.
  */
 static int
-helium_session_drop(WT_DATA_SOURCE *wtds,
-    WT_SESSION *session, const char *uri, WT_CONFIG_ARG *config)
+helium_session_drop(AE_DATA_SOURCE *aeds,
+    AE_SESSION *session, const char *uri, AE_CONFIG_ARG *config)
 {
 	DATA_SOURCE *ds;
 	HELIUM_SOURCE *hs;
-	WT_EXTENSION_API *wtext;
-	WT_SOURCE **p, *ws;
+	AE_EXTENSION_API *aeext;
+	AE_SOURCE **p, *ws;
 	int ret = 0;
 
-	ds = (DATA_SOURCE *)wtds;
-	wtext = ds->wtext;
+	ds = (DATA_SOURCE *)aeds;
+	aeext = ds->aeext;
 
 	/*
 	 * Get a locked reference to the data source: hold the global lock,
-	 * we're changing the HELIUM_SOURCE's list of WT_SOURCE objects.
+	 * we're changing the HELIUM_SOURCE's list of AE_SOURCE objects.
 	 *
-	 * Remove the entry from the WT_SOURCE list -- it's a singly-linked
+	 * Remove the entry from the AE_SOURCE list -- it's a singly-linked
 	 * list, find the reference to it.
 	 */
-	if ((ret = ws_source_open(wtds, session, uri, config,
+	if ((ret = ws_source_open(aeds, session, uri, config,
 	    WS_SOURCE_OPEN_BUSY | WS_SOURCE_OPEN_GLOBAL, &ws)) != 0)
 		return (ret);
 	hs = ws->hs;
@@ -2328,50 +2328,50 @@ helium_session_drop(WT_DATA_SOURCE *wtds,
 	ws->he_cache = NULL;			/* The handle is dead. */
 
 	/* Close the source, discarding the structure. */
-	ESET(ws_source_close(wtext, session, ws));
+	ESET(ws_source_close(aeext, session, ws));
 	ws = NULL;
 
 	/* Discard the metadata entry. */
-	ESET(master_uri_drop(wtds, session, uri));
+	ESET(master_uri_drop(aeds, session, uri));
 
 	/*
 	 * If we have an error at this point, panic -- there's an inconsistency
-	 * in what WiredTiger knows about and the underlying store.
+	 * in what ArchEngine knows about and the underlying store.
 	 */
 	if (ret != 0)
-		ret = WT_PANIC;
+		ret = AE_PANIC;
 
-	ESET(unlock(wtext, session, &ds->global_lock));
+	ESET(unlock(aeext, session, &ds->global_lock));
 	return (ret);
 }
 
 /*
  * helium_session_rename --
- *	WT_SESSION.rename method.
+ *	AE_SESSION.rename method.
  */
 static int
-helium_session_rename(WT_DATA_SOURCE *wtds, WT_SESSION *session,
-    const char *uri, const char *newuri, WT_CONFIG_ARG *config)
+helium_session_rename(AE_DATA_SOURCE *aeds, AE_SESSION *session,
+    const char *uri, const char *newuri, AE_CONFIG_ARG *config)
 {
 	DATA_SOURCE *ds;
-	WT_EXTENSION_API *wtext;
-	WT_SOURCE *ws;
+	AE_EXTENSION_API *aeext;
+	AE_SOURCE *ws;
 	int ret = 0;
 	char *p;
 
-	ds = (DATA_SOURCE *)wtds;
-	wtext = ds->wtext;
+	ds = (DATA_SOURCE *)aeds;
+	aeext = ds->aeext;
 
 	/*
 	 * Get a locked reference to the data source; hold the global lock,
 	 * we are going to change the object's name, and we can't allow
 	 * other threads walking the list and comparing against the name.
 	 */
-	if ((ret = ws_source_open(wtds, session, uri, config,
+	if ((ret = ws_source_open(aeds, session, uri, config,
 	    WS_SOURCE_OPEN_BUSY | WS_SOURCE_OPEN_GLOBAL, &ws)) != 0)
 		return (ret);
 
-	/* Get a copy of the new name for the WT_SOURCE structure. */
+	/* Get a copy of the new name for the AE_SOURCE structure. */
 	if ((p = strdup(newuri)) == NULL) {
 		ret = os_errno();
 		goto err;
@@ -2380,74 +2380,74 @@ helium_session_rename(WT_DATA_SOURCE *wtds, WT_SESSION *session,
 	ws->uri = p;
 
 	/* Rename the underlying Helium objects. */
-	ESET(ws_source_name(wtds, session, newuri, NULL, &p));
+	ESET(ws_source_name(aeds, session, newuri, NULL, &p));
 	if (ret == 0) {
 		ESET(he_rename(ws->he, p));
 		free(p);
 	}
-	ESET(ws_source_name(wtds, session, newuri, WT_NAME_CACHE, &p));
+	ESET(ws_source_name(aeds, session, newuri, AE_NAME_CACHE, &p));
 	if (ret == 0) {
 		ESET(he_rename(ws->he_cache, p));
 		free(p);
 	}
 
 	/* Update the metadata record. */
-	ESET(master_uri_rename(wtds, session, uri, newuri));
+	ESET(master_uri_rename(aeds, session, uri, newuri));
 
 	/*
 	 * If we have an error at this point, panic -- there's an inconsistency
-	 * in what WiredTiger knows about and the underlying store.
+	 * in what ArchEngine knows about and the underlying store.
 	 */
 	if (ret != 0)
-		ret = WT_PANIC;
+		ret = AE_PANIC;
 
-err:	ESET(unlock(wtext, session, &ds->global_lock));
+err:	ESET(unlock(aeext, session, &ds->global_lock));
 
 	return (ret);
 }
 
 /*
  * helium_session_truncate --
- *	WT_SESSION.truncate method.
+ *	AE_SESSION.truncate method.
  */
 static int
-helium_session_truncate(WT_DATA_SOURCE *wtds,
-    WT_SESSION *session, const char *uri, WT_CONFIG_ARG *config)
+helium_session_truncate(AE_DATA_SOURCE *aeds,
+    AE_SESSION *session, const char *uri, AE_CONFIG_ARG *config)
 {
 	DATA_SOURCE *ds;
-	WT_EXTENSION_API *wtext;
-	WT_SOURCE *ws;
+	AE_EXTENSION_API *aeext;
+	AE_SOURCE *ws;
 	int ret = 0, tret;
 
-	ds = (DATA_SOURCE *)wtds;
-	wtext = ds->wtext;
+	ds = (DATA_SOURCE *)aeds;
+	aeext = ds->aeext;
 
-	/* Get a locked reference to the WiredTiger source. */
-	if ((ret = ws_source_open(wtds, session,
+	/* Get a locked reference to the ArchEngine source. */
+	if ((ret = ws_source_open(aeds, session,
 	    uri, config, WS_SOURCE_OPEN_BUSY, &ws)) != 0)
 		return (ret);
 
 	/* Truncate the underlying namespaces. */
 	if ((tret = he_truncate(ws->he)) != 0)
-		EMSG(wtext, session, tret,
+		EMSG(aeext, session, tret,
 		    "he_truncate: %s: %s", ws->uri, he_strerror(tret));
 	if ((tret = he_truncate(ws->he_cache)) != 0)
-		EMSG(wtext, session, tret,
+		EMSG(aeext, session, tret,
 		    "he_truncate: %s: %s", ws->uri, he_strerror(tret));
 
-	ESET(unlock(wtext, session, &ws->lock));
+	ESET(unlock(aeext, session, &ws->lock));
 	return (ret);
 }
 
 /*
  * helium_session_verify --
- *	WT_SESSION.verify method.
+ *	AE_SESSION.verify method.
  */
 static int
-helium_session_verify(WT_DATA_SOURCE *wtds,
-    WT_SESSION *session, const char *uri, WT_CONFIG_ARG *config)
+helium_session_verify(AE_DATA_SOURCE *aeds,
+    AE_SESSION *session, const char *uri, AE_CONFIG_ARG *config)
 {
-	(void)wtds;
+	(void)aeds;
 	(void)session;
 	(void)uri;
 	(void)config;
@@ -2456,26 +2456,26 @@ helium_session_verify(WT_DATA_SOURCE *wtds,
 
 /*
  * helium_session_checkpoint --
- *	WT_SESSION.checkpoint method.
+ *	AE_SESSION.checkpoint method.
  */
 static int
 helium_session_checkpoint(
-    WT_DATA_SOURCE *wtds, WT_SESSION *session, WT_CONFIG_ARG *config)
+    AE_DATA_SOURCE *aeds, AE_SESSION *session, AE_CONFIG_ARG *config)
 {
 	DATA_SOURCE *ds;
 	HELIUM_SOURCE *hs;
-	WT_EXTENSION_API *wtext;
+	AE_EXTENSION_API *aeext;
 	int ret = 0;
 
 	(void)config;
 
-	ds = (DATA_SOURCE *)wtds;
-	wtext = ds->wtext;
+	ds = (DATA_SOURCE *)aeds;
+	aeext = ds->aeext;
 
 	/* Flush all volumes. */
 	if ((hs = ds->hs_head) != NULL &&
 	    (ret = he_commit(hs->he_volume)) != 0)
-		ERET(wtext, session, ret,
+		ERET(aeext, session, ret,
 		    "he_commit: %s: %s", hs->device, he_strerror(ret));
 
 	return (0);
@@ -2487,9 +2487,9 @@ helium_session_checkpoint(
  */
 static int
 helium_source_close(
-    WT_EXTENSION_API *wtext, WT_SESSION *session, HELIUM_SOURCE *hs)
+    AE_EXTENSION_API *aeext, AE_SESSION *session, HELIUM_SOURCE *hs)
 {
-	WT_SOURCE *ws;
+	AE_SOURCE *ws;
 	int ret = 0, tret;
 
 	/* Resolve the cache into the primary one last time and quit. */
@@ -2497,37 +2497,37 @@ helium_source_close(
 		hs->cleaner_stop = 1;
 
 		if ((tret = pthread_join(hs->cleaner_id, NULL)) != 0)
-			EMSG(wtext, session, tret,
+			EMSG(aeext, session, tret,
 			    "pthread_join: %s", strerror(tret));
 		hs->cleaner_id = 0;
 	}
 
-	/* Close the underlying WiredTiger sources. */
+	/* Close the underlying ArchEngine sources. */
 	while ((ws = hs->ws_head) != NULL) {
 		hs->ws_head = ws->next;
-		ESET(ws_source_close(wtext, session, ws));
+		ESET(ws_source_close(aeext, session, ws));
 	}
 
 	/* If the owner, close the database transaction store. */
 	if (hs->he_txn != NULL && hs->he_owner) {
 		if ((tret = he_close(hs->he_txn)) != 0)
-			EMSG(wtext, session, tret,
+			EMSG(aeext, session, tret,
 			    "he_close: %s: %s: %s",
-			    hs->name, WT_NAME_TXN, he_strerror(tret));
+			    hs->name, AE_NAME_TXN, he_strerror(tret));
 		hs->he_txn = NULL;
 	}
 
 	/* Flush and close the Helium source. */
 	if (hs->he_volume != NULL) {
 		if ((tret = he_commit(hs->he_volume)) != 0)
-			EMSG(wtext, session, tret,
+			EMSG(aeext, session, tret,
 			    "he_commit: %s: %s",
 			    hs->device, he_strerror(tret));
 
 		if ((tret = he_close(hs->he_volume)) != 0)
-			EMSG(wtext, session, tret,
+			EMSG(aeext, session, tret,
 			    "he_close: %s: %s: %s",
-			    hs->name, WT_NAME_INIT, he_strerror(tret));
+			    hs->name, AE_NAME_INIT, he_strerror(tret));
 		hs->he_volume = NULL;
 	}
 
@@ -2543,13 +2543,13 @@ helium_source_close(
  *	Migrate information from the cache to the primary store.
  */
 static int
-cache_cleaner(WT_EXTENSION_API *wtext,
-    WT_CURSOR *wtcursor, uint64_t oldest, uint64_t *txnminp)
+cache_cleaner(AE_EXTENSION_API *aeext,
+    AE_CURSOR *aecursor, uint64_t oldest, uint64_t *txnminp)
 {
 	CACHE_RECORD *cp;
 	CURSOR *cursor;
 	HE_ITEM *r;
-	WT_SOURCE *ws;
+	AE_SOURCE *ws;
 	uint64_t txnid;
 	int locked, pushed, recovery, ret = 0;
 
@@ -2567,7 +2567,7 @@ cache_cleaner(WT_EXTENSION_API *wtext,
 		*txnminp = UINT64_MAX;
 	}
 
-	cursor = (CURSOR *)wtcursor;
+	cursor = (CURSOR *)aecursor;
 	ws = cursor->ws;
 	r = &cursor->record;
 	locked = pushed = 0;
@@ -2577,7 +2577,7 @@ cache_cleaner(WT_EXTENSION_API *wtext,
 	 *	Migrate the most recent update value to the primary store.
 	 */
 	for (r->key_len = 0; (ret =
-	    helium_call(wtcursor, "he_next", ws->he_cache, he_next)) == 0;) {
+	    helium_call(aecursor, "he_next", ws->he_cache, he_next)) == 0;) {
 		/*
 		 * Unmarshall the value, and if all of the updates are globally
 		 * visible, update the primary with the last committed update.
@@ -2587,14 +2587,14 @@ cache_cleaner(WT_EXTENSION_API *wtext,
 		 * an explicitly committed update.  See the underlying functions
 		 * for more information.
 		 */
-		if ((ret = cache_value_unmarshall(wtcursor)) != 0)
+		if ((ret = cache_value_unmarshall(aecursor)) != 0)
 			goto err;
-		if (!recovery && !cache_value_visible_all(wtcursor, oldest))
+		if (!recovery && !cache_value_visible_all(aecursor, oldest))
 			continue;
 		if (recovery)
-			cache_value_last_committed(wtcursor, &cp);
+			cache_value_last_committed(aecursor, &cp);
 		else
-			cache_value_last_not_aborted(wtcursor, &cp);
+			cache_value_last_not_aborted(aecursor, &cp);
 		if (cp == NULL)
 			continue;
 
@@ -2612,7 +2612,7 @@ cache_cleaner(WT_EXTENSION_API *wtext,
 				ret = 0;
 				continue;
 			}
-			ERET(wtext, NULL, ret,
+			ERET(aeext, NULL, ret,
 			    "he_delete: %s", he_strerror(ret));
 		} else {
 			r->val = cp->v;
@@ -2628,15 +2628,15 @@ cache_cleaner(WT_EXTENSION_API *wtext,
 			if (ret == 0)
 				continue;
 
-			ERET(wtext, NULL, ret,
+			ERET(aeext, NULL, ret,
 			    "he_update: %s", he_strerror(ret));
 		}
 	}
 
-	if (ret == WT_NOTFOUND)
+	if (ret == AE_NOTFOUND)
 		ret = 0;
 	if (ret != 0)
-		ERET(wtext, NULL, ret, "he_next: %s", he_strerror(ret));
+		ERET(aeext, NULL, ret, "he_next: %s", he_strerror(ret));
 
 	/*
 	 * If we didn't move any keys from the cache to the primary, quit.  It's
@@ -2651,7 +2651,7 @@ cache_cleaner(WT_EXTENSION_API *wtext,
 	 * what Helium handle we commit, so we just commit one of them.)
 	 */
 	if ((ret = he_commit(ws->he)) != 0)
-		ERET(wtext, NULL, ret, "he_commit: %s", he_strerror(ret));
+		ERET(aeext, NULL, ret, "he_commit: %s", he_strerror(ret));
 
 	/*
 	 * If we're performing recovery, that's all we need to do, we're going
@@ -2668,21 +2668,21 @@ cache_cleaner(WT_EXTENSION_API *wtext,
 	 * We're updating the cache, which requires a lock during normal
 	 * cleaning.
 	 */
-	if ((ret = writelock(wtext, NULL, &ws->lock)) != 0)
+	if ((ret = writelock(aeext, NULL, &ws->lock)) != 0)
 		goto err;
 	locked = 1;
 
 	for (r->key_len = 0; (ret =
-	    helium_call(wtcursor, "he_next", ws->he_cache, he_next)) == 0;) {
+	    helium_call(aecursor, "he_next", ws->he_cache, he_next)) == 0;) {
 		/*
 		 * Unmarshall the value, and if all of the updates are globally
 		 * visible, remove the cache entry.
 		 */
-		if ((ret = cache_value_unmarshall(wtcursor)) != 0)
+		if ((ret = cache_value_unmarshall(aecursor)) != 0)
 			goto err;
-		if (cache_value_visible_all(wtcursor, oldest)) {
+		if (cache_value_visible_all(aecursor, oldest)) {
 			if ((ret = he_delete(ws->he_cache, r)) != 0)
-				EMSG_ERR(wtext, NULL, ret,
+				EMSG_ERR(aeext, NULL, ret,
 				    "he_delete: %s", he_strerror(ret));
 			continue;
 		}
@@ -2695,21 +2695,21 @@ cache_cleaner(WT_EXTENSION_API *wtext,
 		 * cache, it limits the records we can discard from the
 		 * transaction store.
 		 */
-		cache_value_txnmin(wtcursor, &txnid);
+		cache_value_txnmin(aecursor, &txnid);
 		if (txnid < *txnminp)
 			*txnminp = txnid;
 	}
 
 	locked = 0;
-	if ((ret = unlock(wtext, NULL, &ws->lock)) != 0)
+	if ((ret = unlock(aeext, NULL, &ws->lock)) != 0)
 		goto err;
-	if (ret == WT_NOTFOUND)
+	if (ret == AE_NOTFOUND)
 		ret = 0;
 	if (ret != 0)
-		EMSG_ERR(wtext, NULL, ret, "he_next: %s", he_strerror(ret));
+		EMSG_ERR(aeext, NULL, ret, "he_next: %s", he_strerror(ret));
 
 err:	if (locked)
-		ESET(unlock(wtext, NULL, &ws->lock));
+		ESET(unlock(aeext, NULL, &ws->lock));
 
 	return (ret);
 }
@@ -2719,16 +2719,16 @@ err:	if (locked)
  *	Discard no longer needed entries from the transaction store.
  */
 static int
-txn_cleaner(WT_CURSOR *wtcursor, he_t he_txn, uint64_t txnmin)
+txn_cleaner(AE_CURSOR *aecursor, he_t he_txn, uint64_t txnmin)
 {
 	CURSOR *cursor;
 	HE_ITEM *r;
-	WT_EXTENSION_API *wtext;
+	AE_EXTENSION_API *aeext;
 	uint64_t txnid;
 	int ret = 0;
 
-	cursor = (CURSOR *)wtcursor;
-	wtext = cursor->wtext;
+	cursor = (CURSOR *)aecursor;
+	aeext = cursor->aeext;
 	r = &cursor->record;
 
 	/*
@@ -2736,16 +2736,16 @@ txn_cleaner(WT_CURSOR *wtcursor, he_t he_txn, uint64_t txnmin)
 	 * oldest transaction ID that appears anywhere in any cache.
 	 */
 	for (r->key_len = 0;
-	    (ret = helium_call(wtcursor, "he_next", he_txn, he_next)) == 0;) {
+	    (ret = helium_call(aecursor, "he_next", he_txn, he_next)) == 0;) {
 		memcpy(&txnid, r->key, sizeof(txnid));
 		if (txnid < txnmin && (ret = he_delete(he_txn, r)) != 0)
-			ERET(wtext, NULL, ret,
+			ERET(aeext, NULL, ret,
 			    "he_delete: %s", he_strerror(ret));
 	}
-	if (ret == WT_NOTFOUND)
+	if (ret == AE_NOTFOUND)
 		ret = 0;
 	if (ret != 0)
-		ERET(wtext, NULL, ret, "he_next: %s", he_strerror(ret));
+		ERET(aeext, NULL, ret, "he_next: %s", he_strerror(ret));
 
 	return (0);
 }
@@ -2755,17 +2755,17 @@ txn_cleaner(WT_CURSOR *wtcursor, he_t he_txn, uint64_t txnmin)
  *	Fake up enough of a cursor to do Helium operations.
  */
 static int
-fake_cursor(WT_EXTENSION_API *wtext, WT_CURSOR **wtcursorp)
+fake_cursor(AE_EXTENSION_API *aeext, AE_CURSOR **aecursorp)
 {
 	CURSOR *cursor;
-	WT_CURSOR *wtcursor;
+	AE_CURSOR *aecursor;
 
 	/*
 	 * Fake a cursor.
 	 */
 	if ((cursor = calloc(1, sizeof(CURSOR))) == NULL)
 		return (os_errno());
-	cursor->wtext = wtext;
+	cursor->aeext = aeext;
 	cursor->record.key = cursor->__key;
 	if ((cursor->v = malloc(128)) == NULL) {
 		free(cursor);
@@ -2775,12 +2775,12 @@ fake_cursor(WT_EXTENSION_API *wtext, WT_CURSOR **wtcursorp)
 
 	/*
 	 * !!!
-	 * Fake cursors don't have WT_SESSION handles.
+	 * Fake cursors don't have AE_SESSION handles.
 	 */
-	wtcursor = (WT_CURSOR *)cursor;
-	wtcursor->session = NULL;
+	aecursor = (AE_CURSOR *)cursor;
+	aecursor->session = NULL;
 
-	*wtcursorp = wtcursor;
+	*aecursorp = aecursor;
 	return (0);
 }
 
@@ -2795,20 +2795,20 @@ cache_cleaner_worker(void *arg)
 	CURSOR *cursor;
 	HELIUM_SOURCE *hs;
 	HE_STATS stats;
-	WT_CURSOR *wtcursor;
-	WT_EXTENSION_API *wtext;
-	WT_SOURCE *ws;
+	AE_CURSOR *aecursor;
+	AE_EXTENSION_API *aeext;
+	AE_SOURCE *ws;
 	uint64_t oldest, txnmin, txntmp;
 	int cleaner_stop, delay, ret = 0;
 
 	hs = (HELIUM_SOURCE *)arg;
 
 	cursor = NULL;
-	wtext = hs->wtext;
+	aeext = hs->aeext;
 
-	if ((ret = fake_cursor(wtext, &wtcursor)) != 0)
-		EMSG_ERR(wtext, NULL, ret, "cleaner: %s", strerror(ret));
-	cursor = (CURSOR *)wtcursor;
+	if ((ret = fake_cursor(aeext, &aecursor)) != 0)
+		EMSG_ERR(aeext, NULL, ret, "cleaner: %s", strerror(ret));
+	cursor = (CURSOR *)aecursor;
 
 	for (cleaner_stop = delay = 0; !cleaner_stop;) {
 		/*
@@ -2846,7 +2846,7 @@ cache_cleaner_worker(void *arg)
 #define	CACHE_SIZE_TRIGGER	(50 * 1048576)
 		for (ws = hs->ws_head; ws != NULL; ws = ws->next) {
 			if ((ret = he_stats(ws->he_cache, &stats)) != 0)
-				EMSG_ERR(wtext, NULL,
+				EMSG_ERR(aeext, NULL,
 				    ret, "he_stats: %s", he_strerror(ret));
 			if (stats.size > CACHE_SIZE_TRIGGER)
 				break;
@@ -2860,9 +2860,9 @@ cache_cleaner_worker(void *arg)
 		/*
 		 * Get the oldest transaction ID not yet visible to a running
 		 * transaction.  Do this before doing anything else, avoiding
-		 * any race with creating new WT_SOURCE handles.
+		 * any race with creating new AE_SOURCE handles.
 		 */
-		oldest = wtext->transaction_oldest(wtext);
+		oldest = aeext->transaction_oldest(aeext);
 
 		/*
 		 * If any cache needs cleaning, clean them all, because we have
@@ -2875,7 +2875,7 @@ cache_cleaner_worker(void *arg)
 		for (ws = hs->ws_head; ws != NULL; ws = ws->next) {
 			cursor->ws = ws;
 			if ((ret = cache_cleaner(
-			    wtext, wtcursor, oldest, &txntmp)) != 0)
+			    aeext, aecursor, oldest, &txntmp)) != 0)
 				goto err;
 			if (txntmp < txnmin)
 				txnmin = txntmp;
@@ -2887,11 +2887,11 @@ cache_cleaner_worker(void *arg)
 		 *
 		 * !!!
 		 * I'm playing fast-and-loose with whether or not the cursor
-		 * references an underlying WT_SOURCE, there's a structural
+		 * references an underlying AE_SOURCE, there's a structural
 		 * problem here.
 		 */
 		cursor->ws = NULL;
-		if ((ret = txn_cleaner(wtcursor, hs->he_txn, txnmin)) != 0)
+		if ((ret = txn_cleaner(aecursor, hs->he_txn, txnmin)) != 0)
 			goto err;
 	}
 
@@ -2904,22 +2904,22 @@ err:	cursor_destroy(cursor);
  *	Parse the Helium configuration.
  */
 static int
-helium_config_read(WT_EXTENSION_API *wtext, WT_CONFIG_ITEM *config,
+helium_config_read(AE_EXTENSION_API *aeext, AE_CONFIG_ITEM *config,
     char **devicep, HE_ENV *envp, int *env_setp, int *flagsp)
 {
-	WT_CONFIG_ITEM k, v;
-	WT_CONFIG_PARSER *config_parser;
+	AE_CONFIG_ITEM k, v;
+	AE_CONFIG_PARSER *config_parser;
 	int ret = 0, tret;
 
 	*env_setp = 0;
 	*flagsp = 0;
 
 	/* Traverse the configuration arguments list. */
-	if ((ret = wtext->config_parser_open(
-	    wtext, NULL, config->str, config->len, &config_parser)) != 0)
-		ERET(wtext, NULL, ret,
-		    "WT_EXTENSION_API.config_parser_open: %s",
-		    wtext->strerror(wtext, NULL, ret));
+	if ((ret = aeext->config_parser_open(
+	    aeext, NULL, config->str, config->len, &config_parser)) != 0)
+		ERET(aeext, NULL, ret,
+		    "AE_EXTENSION_API.config_parser_open: %s",
+		    aeext->strerror(aeext, NULL, ret));
 	while ((ret = config_parser->next(config_parser, &k, &v)) == 0) {
 		if (string_match("helium_devices", k.str, k.len)) {
 			if ((*devicep = calloc(1, v.len + 1)) == NULL)
@@ -2942,21 +2942,21 @@ helium_config_read(WT_EXTENSION_API *wtext, WT_CONFIG_ITEM *config,
 				*flagsp |= HE_O_VOLUME_TRUNCATE;
 			continue;
 		}
-		EMSG_ERR(wtext, NULL, EINVAL,
+		EMSG_ERR(aeext, NULL, EINVAL,
 		    "unknown configuration key value pair %.*s=%.*s",
 		    (int)k.len, k.str, (int)v.len, v.str);
 	}
-	if (ret == WT_NOTFOUND)
+	if (ret == AE_NOTFOUND)
 		ret = 0;
 	if (ret != 0)
-		EMSG_ERR(wtext, NULL, ret,
-		    "WT_CONFIG_PARSER.next: %s",
-		    wtext->strerror(wtext, NULL, ret));
+		EMSG_ERR(aeext, NULL, ret,
+		    "AE_CONFIG_PARSER.next: %s",
+		    aeext->strerror(aeext, NULL, ret));
 
 err:	if ((tret = config_parser->close(config_parser)) != 0)
-		EMSG(wtext, NULL, tret,
-		    "WT_CONFIG_PARSER.close: %s",
-		    wtext->strerror(wtext, NULL, tret));
+		EMSG(aeext, NULL, tret,
+		    "AE_CONFIG_PARSER.close: %s",
+		    aeext->strerror(aeext, NULL, tret));
 
 	return (ret);
 }
@@ -2966,28 +2966,28 @@ err:	if ((tret = config_parser->close(config_parser)) != 0)
  *	Allocate and open a Helium source.
  */
 static int
-helium_source_open(DATA_SOURCE *ds, WT_CONFIG_ITEM *k, WT_CONFIG_ITEM *v)
+helium_source_open(DATA_SOURCE *ds, AE_CONFIG_ITEM *k, AE_CONFIG_ITEM *v)
 {
 	struct he_env env;
 	HELIUM_SOURCE *hs;
-	WT_EXTENSION_API *wtext;
+	AE_EXTENSION_API *aeext;
 	int env_set, flags, ret = 0;
 
-	wtext = ds->wtext;
+	aeext = ds->aeext;
 	hs = NULL;
 
-	VMSG(wtext, NULL, VERBOSE_L1, "volume %.*s=%.*s",
+	VMSG(aeext, NULL, VERBOSE_L1, "volume %.*s=%.*s",
 	    (int)k->len, k->str, (int)v->len, v->str);
 
 	/*
 	 * Check for a Helium source we've already opened: we don't check the
 	 * value (which implies you can open the same underlying stores using
 	 * more than one name, but I don't know of any problems that causes),
-	 * we only check the key, that is, the top-level WiredTiger name.
+	 * we only check the key, that is, the top-level ArchEngine name.
 	 */
 	for (hs = ds->hs_head; hs != NULL; hs = hs->next)
 		if (string_match(hs->name, k->str, k->len))
-			ERET(wtext, NULL,
+			ERET(aeext, NULL,
 			    EINVAL, "%s: device already open", hs->name);
 
 	/* Allocate and initialize a new underlying Helium source object. */
@@ -2998,15 +2998,15 @@ helium_source_open(DATA_SOURCE *ds, WT_CONFIG_ITEM *k, WT_CONFIG_ITEM *v)
 	}
 	memcpy(hs->name, k->str, k->len);
 	hs->txn_notify.notify = txn_notify;
-	hs->wtext = wtext;
+	hs->aeext = aeext;
 
 	/* Read the configuration, require a device naming the Helium store. */
 	memset(&env, 0, sizeof(env));
 	if ((ret = helium_config_read(
-	    wtext, v, &hs->device, &env, &env_set, &flags)) != 0)
+	    aeext, v, &hs->device, &env, &env_set, &flags)) != 0)
 		goto err;
 	if (hs->device == NULL)
-		EMSG_ERR(wtext, NULL,
+		EMSG_ERR(aeext, NULL,
 		    EINVAL, "%s: no Helium volumes specified", hs->name);
 
 	/*
@@ -3017,11 +3017,11 @@ helium_source_open(DATA_SOURCE *ds, WT_CONFIG_ITEM *k, WT_CONFIG_ITEM *v)
 	flags |= HE_O_CREATE |
 	    HE_O_TRUNCATE | HE_O_VOLUME_CLEAN | HE_O_VOLUME_CREATE;
 	if ((hs->he_volume = he_open(
-	    hs->device, WT_NAME_INIT, flags, env_set ? &env : NULL)) == NULL) {
+	    hs->device, AE_NAME_INIT, flags, env_set ? &env : NULL)) == NULL) {
 		ret = os_errno();
-		EMSG_ERR(wtext, NULL, ret,
+		EMSG_ERR(aeext, NULL, ret,
 		    "he_open: %s: %s: %s",
-		    hs->name, WT_NAME_INIT, he_strerror(ret));
+		    hs->name, AE_NAME_INIT, he_strerror(ret));
 	}
 
 	/* Insert the new entry at the head of the list. */
@@ -3030,7 +3030,7 @@ helium_source_open(DATA_SOURCE *ds, WT_CONFIG_ITEM *k, WT_CONFIG_ITEM *v)
 
 	if (0) {
 err:		if (hs != NULL)
-			ESET(helium_source_close(wtext, NULL, hs));
+			ESET(helium_source_close(aeext, NULL, hs));
 	}
 	return (ret);
 }
@@ -3043,11 +3043,11 @@ static int
 helium_source_open_txn(DATA_SOURCE *ds)
 {
 	HELIUM_SOURCE *hs, *hs_txn;
-	WT_EXTENSION_API *wtext;
+	AE_EXTENSION_API *aeext;
 	he_t he_txn, t;
 	int ret = 0;
 
-	wtext = ds->wtext;
+	aeext = ds->aeext;
 
 	/*
 	 * The global txn namespace is per connection, it spans multiple Helium
@@ -3059,11 +3059,11 @@ helium_source_open_txn(DATA_SOURCE *ds)
 	hs_txn = NULL;
 	he_txn = NULL;
 	for (hs = ds->hs_head; hs != NULL; hs = hs->next)
-		if ((t = he_open(hs->device, WT_NAME_TXN, 0, NULL)) != NULL) {
+		if ((t = he_open(hs->device, AE_NAME_TXN, 0, NULL)) != NULL) {
 			if (hs_txn != NULL) {
 				(void)he_close(t);
 				(void)he_close(hs_txn);
-				ERET(wtext, NULL, WT_PANIC,
+				ERET(aeext, NULL, AE_PANIC,
 				    "found multiple transaction stores, "
 				    "unable to proceed");
 			}
@@ -3081,19 +3081,19 @@ helium_source_open_txn(DATA_SOURCE *ds)
 		for (hs = ds->hs_head; hs->next != NULL; hs = hs->next)
 			;
 		if ((he_txn = he_open(
-		    hs->device, WT_NAME_TXN, HE_O_CREATE, NULL)) == NULL) {
+		    hs->device, AE_NAME_TXN, HE_O_CREATE, NULL)) == NULL) {
 			ret = os_errno();
-			ERET(wtext, NULL, ret,
+			ERET(aeext, NULL, ret,
 			    "he_open: %s: %s: %s",
-			    hs->name, WT_NAME_TXN, he_strerror(ret));
+			    hs->name, AE_NAME_TXN, he_strerror(ret));
 		}
 
 		/* Push the change. */
 		if ((ret = he_commit(he_txn)) != 0)
-			ERET(wtext, NULL, ret,
+			ERET(aeext, NULL, ret,
 			    "he_commit: %s", he_strerror(ret));
 	}
-	VMSG(wtext, NULL, VERBOSE_L1, "%s" "transactional store on %s",
+	VMSG(aeext, NULL, VERBOSE_L1, "%s" "transactional store on %s",
 	    hs_txn == NULL ? "creating " : "", hs->name);
 
 	/* Set the owner field, this Helium source has to be closed last. */
@@ -3111,31 +3111,31 @@ helium_source_open_txn(DATA_SOURCE *ds)
  *	Recover a single cache/primary pair in a Helium namespace.
  */
 static int
-helium_source_recover_namespace(WT_DATA_SOURCE *wtds,
-    HELIUM_SOURCE *hs, const char *name, WT_CONFIG_ARG *config)
+helium_source_recover_namespace(AE_DATA_SOURCE *aeds,
+    HELIUM_SOURCE *hs, const char *name, AE_CONFIG_ARG *config)
 {
 	CURSOR *cursor;
 	DATA_SOURCE *ds;
-	WT_CURSOR *wtcursor;
-	WT_EXTENSION_API *wtext;
-	WT_SOURCE *ws;
+	AE_CURSOR *aecursor;
+	AE_EXTENSION_API *aeext;
+	AE_SOURCE *ws;
 	size_t len;
 	int ret = 0;
 	const char *p;
 	char *uri;
 
-	ds = (DATA_SOURCE *)wtds;
-	wtext = ds->wtext;
+	ds = (DATA_SOURCE *)aeds;
+	aeext = ds->aeext;
 	cursor = NULL;
 	ws = NULL;
 	uri = NULL;
 
 	/*
 	 * The name we store on the Helium device is a translation of the
-	 * WiredTiger name: do the reverse process here so we can use the
+	 * ArchEngine name: do the reverse process here so we can use the
 	 * standard source-open function.
 	 */
-	p = name + strlen(WT_NAME_PREFIX);
+	p = name + strlen(AE_NAME_PREFIX);
 	len = strlen("helium:") + strlen(hs->name) + strlen(p) + 10;
 	if ((uri = malloc(len)) == NULL) {
 		ret = os_errno();
@@ -3145,30 +3145,30 @@ helium_source_recover_namespace(WT_DATA_SOURCE *wtds,
 
 	/*
 	 * Open the cache/primary pair by going through the full open process,
-	 * instantiating the underlying WT_SOURCE object.
+	 * instantiating the underlying AE_SOURCE object.
 	 */
-	if ((ret = ws_source_open(wtds, NULL, uri, config, 0, &ws)) != 0)
+	if ((ret = ws_source_open(aeds, NULL, uri, config, 0, &ws)) != 0)
 		goto err;
-	if ((ret = unlock(wtext, NULL, &ws->lock)) != 0)
+	if ((ret = unlock(aeext, NULL, &ws->lock)) != 0)
 		goto err;
 
 	/* Fake up a cursor. */
-	if ((ret = fake_cursor(wtext, &wtcursor)) != 0)
-		EMSG_ERR(wtext, NULL, ret, "recovery: %s", strerror(ret));
-	cursor = (CURSOR *)wtcursor;
+	if ((ret = fake_cursor(aeext, &aecursor)) != 0)
+		EMSG_ERR(aeext, NULL, ret, "recovery: %s", strerror(ret));
+	cursor = (CURSOR *)aecursor;
 	cursor->ws = ws;
 
 	/* Process, then clear, the cache. */
-	if ((ret = cache_cleaner(wtext, wtcursor, 0, NULL)) != 0)
+	if ((ret = cache_cleaner(aeext, aecursor, 0, NULL)) != 0)
 		goto err;
 	if ((ret = he_truncate(ws->he_cache)) != 0)
-		EMSG_ERR(wtext, NULL, ret,
+		EMSG_ERR(aeext, NULL, ret,
 		    "he_truncate: %s(cache): %s", ws->uri, he_strerror(ret));
 
-	/* Close the underlying WiredTiger sources. */
+	/* Close the underlying ArchEngine sources. */
 err:	while ((ws = hs->ws_head) != NULL) {
 		hs->ws_head = ws->next;
-		ESET(ws_source_close(wtext, NULL, ws));
+		ESET(ws_source_close(aeext, NULL, ws));
 	}
 
 	cursor_destroy(cursor);
@@ -3196,17 +3196,17 @@ helium_namespace_list(void *cookie, const char *name)
 	names = cookie;
 
 	/*
-	 * Ignore any files without a WiredTiger prefix.
+	 * Ignore any files without a ArchEngine prefix.
 	 * Ignore the metadata and cache files.
 	 */
-	if (!prefix_match(name, WT_NAME_PREFIX))
+	if (!prefix_match(name, AE_NAME_PREFIX))
 		return (0);
-	if (strcmp(name, WT_NAME_INIT) == 0)
+	if (strcmp(name, AE_NAME_INIT) == 0)
 		return (0);
-	if (strcmp(name, WT_NAME_TXN) == 0)
+	if (strcmp(name, AE_NAME_TXN) == 0)
 		return (0);
 	if (string_match(
-	    strrchr(name, '.'), WT_NAME_CACHE, strlen(WT_NAME_CACHE)))
+	    strrchr(name, '.'), AE_NAME_CACHE, strlen(AE_NAME_CACHE)))
 		return (0);
 
 	if (names->list_cnt + 1 >= names->list_max) {
@@ -3229,37 +3229,37 @@ helium_namespace_list(void *cookie, const char *name)
  */
 static int
 helium_source_recover(
-    WT_DATA_SOURCE *wtds, HELIUM_SOURCE *hs, WT_CONFIG_ARG *config)
+    AE_DATA_SOURCE *aeds, HELIUM_SOURCE *hs, AE_CONFIG_ARG *config)
 {
 	struct helium_namespace_cookie names;
 	DATA_SOURCE *ds;
-	WT_EXTENSION_API *wtext;
+	AE_EXTENSION_API *aeext;
 	u_int i;
 	int ret = 0;
 
-	ds = (DATA_SOURCE *)wtds;
-	wtext = ds->wtext;
+	ds = (DATA_SOURCE *)aeds;
+	aeext = ds->aeext;
 	memset(&names, 0, sizeof(names));
 
-	VMSG(wtext, NULL, VERBOSE_L1, "recover %s", hs->name);
+	VMSG(aeext, NULL, VERBOSE_L1, "recover %s", hs->name);
 
 	/* Get a list of the cache/primary object pairs in the Helium source. */
 	if ((ret = he_enumerate(
 	    hs->device, helium_namespace_list, &names)) != 0)
-		ERET(wtext, NULL, ret,
+		ERET(aeext, NULL, ret,
 		    "he_enumerate: %s: %s", hs->name, he_strerror(ret));
 
 	/* Recover the objects. */
 	for (i = 0; i < names.list_cnt; ++i)
 		if ((ret = helium_source_recover_namespace(
-		    wtds, hs, names.list[i], config)) != 0)
+		    aeds, hs, names.list[i], config)) != 0)
 			goto err;
 
 	/* Clear the transaction store. */
 	if ((ret = he_truncate(hs->he_txn)) != 0)
-		EMSG_ERR(wtext, NULL, ret,
+		EMSG_ERR(aeext, NULL, ret,
 		    "he_truncate: %s: %s: %s",
-		    hs->name, WT_NAME_TXN, he_strerror(ret));
+		    hs->name, AE_NAME_TXN, he_strerror(ret));
 
 err:	for (i = 0; i < names.list_cnt; ++i)
 		free(names.list[i]);
@@ -3273,19 +3273,19 @@ err:	for (i = 0; i < names.list_cnt; ++i)
  *	Unload the data-source.
  */
 static int
-helium_terminate(WT_DATA_SOURCE *wtds, WT_SESSION *session)
+helium_terminate(AE_DATA_SOURCE *aeds, AE_SESSION *session)
 {
 	DATA_SOURCE *ds;
 	HELIUM_SOURCE *hs, *last;
-	WT_EXTENSION_API *wtext;
+	AE_EXTENSION_API *aeext;
 	int ret = 0;
 
-	ds = (DATA_SOURCE *)wtds;
-	wtext = ds->wtext;
+	ds = (DATA_SOURCE *)aeds;
+	aeext = ds->aeext;
 
 	/* Lock the system down. */
 	if (ds->lockinit)
-		ret = writelock(wtext, session, &ds->global_lock);
+		ret = writelock(aeext, session, &ds->global_lock);
 
 	/*
 	 * Close the Helium sources, close the Helium source that "owns" the
@@ -3298,15 +3298,15 @@ helium_terminate(WT_DATA_SOURCE *wtds, WT_SESSION *session)
 			last = hs;
 			continue;
 		}
-		ESET(helium_source_close(wtext, session, hs));
+		ESET(helium_source_close(aeext, session, hs));
 	}
 	if (last != NULL)
-		ESET(helium_source_close(wtext, session, last));
+		ESET(helium_source_close(aeext, session, last));
 
 	/* Unlock and destroy the system. */
 	if (ds->lockinit) {
-		ESET(unlock(wtext, session, &ds->global_lock));
-		ESET(lock_destroy(wtext, NULL, &ds->global_lock));
+		ESET(unlock(aeext, session, &ds->global_lock));
+		ESET(lock_destroy(aeext, NULL, &ds->global_lock));
 	}
 
 	OVERWRITE_AND_FREE(ds);
@@ -3315,17 +3315,17 @@ helium_terminate(WT_DATA_SOURCE *wtds, WT_SESSION *session)
 }
 
 /*
- * wiredtiger_extension_init --
+ * archengine_extension_init --
  *	Initialize the Helium connector code.
  */
 int
-wiredtiger_extension_init(WT_CONNECTION *connection, WT_CONFIG_ARG *config)
+archengine_extension_init(AE_CONNECTION *connection, AE_CONFIG_ARG *config)
 {
 	/*
-	 * List of the WT_DATA_SOURCE methods -- it's static so it breaks at
+	 * List of the AE_DATA_SOURCE methods -- it's static so it breaks at
 	 * compile-time should the structure change underneath us.
 	 */
-	static const WT_DATA_SOURCE wtds = {
+	static const AE_DATA_SOURCE aeds = {
 		helium_session_create,		/* session.create */
 		NULL,				/* No session.compaction */
 		helium_session_drop,		/* session.drop */
@@ -3345,50 +3345,50 @@ wiredtiger_extension_init(WT_CONNECTION *connection, WT_CONFIG_ARG *config)
 	};
 	DATA_SOURCE *ds;
 	HELIUM_SOURCE *hs;
-	WT_CONFIG_ITEM k, v;
-	WT_CONFIG_PARSER *config_parser;
-	WT_EXTENSION_API *wtext;
+	AE_CONFIG_ITEM k, v;
+	AE_CONFIG_PARSER *config_parser;
+	AE_EXTENSION_API *aeext;
 	int vmajor, vminor, ret = 0;
 	const char **p;
 
 	config_parser = NULL;
 	ds = NULL;
 
-	wtext = connection->get_extension_api(connection);
+	aeext = connection->get_extension_api(connection);
 
 						/* Check the library version */
 #if HE_VERSION_MAJOR != 2 || HE_VERSION_MINOR != 2
-	ERET(wtext, NULL, EINVAL,
+	ERET(aeext, NULL, EINVAL,
 	    "unsupported Levyx/Helium header file %d.%d, expected version 2.2",
 	    HE_VERSION_MAJOR, HE_VERSION_MINOR);
 #endif
 	he_version(&vmajor, &vminor);
 	if (vmajor != 2 || vminor != 2)
-		ERET(wtext, NULL, EINVAL,
+		ERET(aeext, NULL, EINVAL,
 		    "unsupported Levyx/Helium library version %d.%d, expected "
 		    "version 2.2", vmajor, vminor);
 
 	/* Allocate and initialize the local data-source structure. */
 	if ((ds = calloc(1, sizeof(DATA_SOURCE))) == NULL)
 		return (os_errno());
-	ds->wtds = wtds;
-	ds->wtext = wtext;
-	if ((ret = lock_init(wtext, NULL, &ds->global_lock)) != 0)
+	ds->aeds = aeds;
+	ds->aeext = aeext;
+	if ((ret = lock_init(aeext, NULL, &ds->global_lock)) != 0)
 		goto err;
 	ds->lockinit = 1;
 
 	/* Get the configuration string. */
-	if ((ret = wtext->config_get(wtext, NULL, config, "config", &v)) != 0)
-		EMSG_ERR(wtext, NULL, ret,
-		    "WT_EXTENSION_API.config_get: config: %s",
-		    wtext->strerror(wtext, NULL, ret));
+	if ((ret = aeext->config_get(aeext, NULL, config, "config", &v)) != 0)
+		EMSG_ERR(aeext, NULL, ret,
+		    "AE_EXTENSION_API.config_get: config: %s",
+		    aeext->strerror(aeext, NULL, ret));
 
 	/* Step through the list of Helium sources, opening each one. */
-	if ((ret = wtext->config_parser_open(
-	    wtext, NULL, v.str, v.len, &config_parser)) != 0)
-		EMSG_ERR(wtext, NULL, ret,
-		    "WT_EXTENSION_API.config_parser_open: config: %s",
-		    wtext->strerror(wtext, NULL, ret));
+	if ((ret = aeext->config_parser_open(
+	    aeext, NULL, v.str, v.len, &config_parser)) != 0)
+		EMSG_ERR(aeext, NULL, ret,
+		    "AE_EXTENSION_API.config_parser_open: config: %s",
+		    aeext->strerror(aeext, NULL, ret));
 	while ((ret = config_parser->next(config_parser, &k, &v)) == 0) {
 		if (string_match("helium_verbose", k.str, k.len)) {
 			verbose = v.val == 0 ? 0 : 1;
@@ -3397,14 +3397,14 @@ wiredtiger_extension_init(WT_CONNECTION *connection, WT_CONFIG_ARG *config)
 		if ((ret = helium_source_open(ds, &k, &v)) != 0)
 			goto err;
 	}
-	if (ret != WT_NOTFOUND)
-		EMSG_ERR(wtext, NULL, ret,
-		    "WT_CONFIG_PARSER.next: config: %s",
-		    wtext->strerror(wtext, NULL, ret));
+	if (ret != AE_NOTFOUND)
+		EMSG_ERR(aeext, NULL, ret,
+		    "AE_CONFIG_PARSER.next: config: %s",
+		    aeext->strerror(aeext, NULL, ret));
 	if ((ret = config_parser->close(config_parser)) != 0)
-		EMSG_ERR(wtext, NULL, ret,
-		    "WT_CONFIG_PARSER.close: config: %s",
-		    wtext->strerror(wtext, NULL, ret));
+		EMSG_ERR(aeext, NULL, ret,
+		    "AE_CONFIG_PARSER.close: config: %s",
+		    aeext->strerror(aeext, NULL, ret));
 	config_parser = NULL;
 
 	/* Find and open the database transaction store. */
@@ -3413,47 +3413,47 @@ wiredtiger_extension_init(WT_CONNECTION *connection, WT_CONFIG_ARG *config)
 
 	/* Recover each Helium source. */
 	for (hs = ds->hs_head; hs != NULL; hs = hs->next)
-		if ((ret = helium_source_recover(&ds->wtds, hs, config)) != 0)
+		if ((ret = helium_source_recover(&ds->aeds, hs, config)) != 0)
 			goto err;
 
 	/* Start each Helium source cleaner thread. */
 	for (hs = ds->hs_head; hs != NULL; hs = hs->next)
 		if ((ret = pthread_create(
 		    &hs->cleaner_id, NULL, cache_cleaner_worker, hs)) != 0)
-			EMSG_ERR(wtext, NULL, ret,
+			EMSG_ERR(aeext, NULL, ret,
 			    "%s: pthread_create: cleaner thread: %s",
 			    hs->name, strerror(ret));
 
-	/* Add Helium-specific WT_SESSION.create configuration options.  */
+	/* Add Helium-specific AE_SESSION.create configuration options.  */
 	for (p = session_create_opts; *p != NULL; ++p)
 		if ((ret = connection->configure_method(connection,
-		    "WT_SESSION.create", "helium:", *p, "boolean", NULL)) != 0)
-			EMSG_ERR(wtext, NULL, ret,
-			    "WT_CONNECTION.configure_method: session.create: "
+		    "AE_SESSION.create", "helium:", *p, "boolean", NULL)) != 0)
+			EMSG_ERR(aeext, NULL, ret,
+			    "AE_CONNECTION.configure_method: session.create: "
 			    "%s: %s",
-			    *p, wtext->strerror(wtext, NULL, ret));
+			    *p, aeext->strerror(aeext, NULL, ret));
 
 	/* Add the data source */
 	if ((ret = connection->add_data_source(
-	    connection, "helium:", (WT_DATA_SOURCE *)ds, NULL)) != 0)
-		EMSG_ERR(wtext, NULL, ret,
-		    "WT_CONNECTION.add_data_source: %s",
-		    wtext->strerror(wtext, NULL, ret));
+	    connection, "helium:", (AE_DATA_SOURCE *)ds, NULL)) != 0)
+		EMSG_ERR(aeext, NULL, ret,
+		    "AE_CONNECTION.add_data_source: %s",
+		    aeext->strerror(aeext, NULL, ret));
 	return (0);
 
 err:	if (ds != NULL)
-		ESET(helium_terminate((WT_DATA_SOURCE *)ds, NULL));
+		ESET(helium_terminate((AE_DATA_SOURCE *)ds, NULL));
 	if (config_parser != NULL)
 		(void)config_parser->close(config_parser);
 	return (ret);
 }
 
 /*
- * wiredtiger_extension_terminate --
+ * archengine_extension_terminate --
  *	Shutdown the Helium connector code.
  */
 int
-wiredtiger_extension_terminate(WT_CONNECTION *connection)
+archengine_extension_terminate(AE_CONNECTION *connection)
 {
 	(void)connection;			/* Unused parameters */
 

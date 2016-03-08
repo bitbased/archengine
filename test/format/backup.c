@@ -1,6 +1,6 @@
 /*-
  * Public Domain 2014-2015 MongoDB, Inc.
- * Public Domain 2008-2014 WiredTiger, Inc.
+ * Public Domain 2008-2014 ArchEngine, Inc.
  *
  * This is free and unencumbered software released into the public domain.
  *
@@ -35,11 +35,11 @@
 static void
 check_copy(void)
 {
-	WT_CONNECTION *conn;
-	WT_SESSION *session;
+	AE_CONNECTION *conn;
+	AE_SESSION *session;
 	int ret;
 
-	wts_open(g.home_backup, 0, &conn);
+	aes_open(g.home_backup, 0, &conn);
 
 	if ((ret = conn->open_session(
 	    conn, NULL, NULL, &session)) != 0)
@@ -80,16 +80,16 @@ copy_file(const char *name)
 void *
 backup(void *arg)
 {
-	WT_CONNECTION *conn;
-	WT_CURSOR *backup_cursor;
-	WT_SESSION *session;
+	AE_CONNECTION *conn;
+	AE_CURSOR *backup_cursor;
+	AE_SESSION *session;
 	u_int period;
 	int ret;
 	const char *key;
 
 	(void)(arg);
 
-	conn = g.wts_conn;
+	conn = g.aes_conn;
 
 	/* Backups aren't supported for non-standard data sources. */
 	if (DATASOURCE("helium") || DATASOURCE("kvsbdb"))

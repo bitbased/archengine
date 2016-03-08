@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Public Domain 2014-2015 MongoDB, Inc.
-# Public Domain 2008-2014 WiredTiger, Inc.
+# Public Domain 2008-2014 ArchEngine, Inc.
 #
 # This is free and unencumbered software released into the public domain.
 #
@@ -26,15 +26,15 @@
 # ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 # OTHER DEALINGS IN THE SOFTWARE.
 
-import wiredtiger, wttest
-from wtscenario import check_scenarios
+import archengine, aetest
+from aescenario import check_scenarios
 
 # test_cursor01.py
 #    Cursor operations
 # Basic smoke-test of file and table cursors: tests get/set key, insert
 # and forward/backward iteration, and mostly because we don't test them
 # anywhere else, cursor duplication and equality.
-class test_cursor01(wttest.WiredTigerTestCase):
+class test_cursor01(aetest.ArchEngineTestCase):
     """
     Test basic operations
     """
@@ -67,9 +67,9 @@ class test_cursor01(wttest.WiredTigerTestCase):
         keymsg = '/requires key be set/'
         valuemsg = '/requires value be set/'
         self.assertRaisesWithMessage(
-            wiredtiger.WiredTigerError, cursor.get_key, keymsg)
+            archengine.ArchEngineError, cursor.get_key, keymsg)
         self.assertRaisesWithMessage(
-            wiredtiger.WiredTigerError, cursor.get_value, valuemsg)
+            archengine.ArchEngineError, cursor.get_value, valuemsg)
 
     def session_create(self, name, args):
         """
@@ -122,7 +122,7 @@ class test_cursor01(wttest.WiredTigerTestCase):
             i += 1
 
         self.assertEqual(i, self.nentries)
-        self.assertEqual(nextret, wiredtiger.WT_NOTFOUND)
+        self.assertEqual(nextret, archengine.AE_NOTFOUND)
         self.assertCursorHasNoKeyValue(cursor)
         return cursor
 
@@ -151,7 +151,7 @@ class test_cursor01(wttest.WiredTigerTestCase):
             cursor = dupc
 
         self.assertEqual(i, self.nentries)
-        self.assertEqual(nextret, wiredtiger.WT_NOTFOUND)
+        self.assertEqual(nextret, archengine.AE_NOTFOUND)
         self.assertCursorHasNoKeyValue(cursor)
         return cursor
 
@@ -180,7 +180,7 @@ class test_cursor01(wttest.WiredTigerTestCase):
             i -= 1
 
         self.assertEqual(i, -1)
-        self.assertEqual(prevret, wiredtiger.WT_NOTFOUND)
+        self.assertEqual(prevret, archengine.AE_NOTFOUND)
         self.assertCursorHasNoKeyValue(cursor)
         return cursor
 
@@ -205,7 +205,7 @@ class test_cursor01(wttest.WiredTigerTestCase):
             cursor = dupc
 
         self.assertEqual(i, -1)
-        self.assertEqual(prevret, wiredtiger.WT_NOTFOUND)
+        self.assertEqual(prevret, archengine.AE_NOTFOUND)
         self.assertCursorHasNoKeyValue(cursor)
         return cursor
 
@@ -218,4 +218,4 @@ class test_cursor01(wttest.WiredTigerTestCase):
         cursor.close()
 
 if __name__ == '__main__':
-    wttest.run()
+    aetest.run()

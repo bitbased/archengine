@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Public Domain 2014-2015 MongoDB, Inc.
-# Public Domain 2008-2014 WiredTiger, Inc.
+# Public Domain 2008-2014 ArchEngine, Inc.
 #
 # This is free and unencumbered software released into the public domain.
 #
@@ -27,28 +27,28 @@
 # OTHER DEALINGS IN THE SOFTWARE.
 
 import os
-import wiredtiger, wttest
+import archengine, aetest
 
 # test_baseconfig
 #       test base configuration file being ignored.
-class test_baseconfig(wttest.WiredTigerTestCase):
+class test_baseconfig(aetest.ArchEngineTestCase):
     def test_baseconfig(self):
         # Open up another database and modify the baseconfig
         os.mkdir("A")
-        conn = wiredtiger.wiredtiger_open("A", 'create')
-        self.assertTrue(os.path.exists("A/WiredTiger.basecfg"))
-        with open("A/WiredTiger.basecfg", "a") as basecfg_file:
+        conn = archengine.archengine_open("A", 'create')
+        self.assertTrue(os.path.exists("A/ArchEngine.basecfg"))
+        with open("A/ArchEngine.basecfg", "a") as basecfg_file:
             basecfg_file.write("foo!")
         conn.close()
 
         # Open a database, we should assert here as the basecfg is invalid
         self.assertRaisesWithMessage(
-            wiredtiger.WiredTigerError,
-            lambda: wiredtiger.wiredtiger_open("A", ''),
+            archengine.ArchEngineError,
+            lambda: archengine.archengine_open("A", ''),
             '/unknown configuration key/')
 
-        conn = wiredtiger.wiredtiger_open("A", "create,config_base=false")
+        conn = archengine.archengine_open("A", "create,config_base=false")
         conn.close()
 
 if __name__ == '__main__':
-    wttest.run()
+    aetest.run()

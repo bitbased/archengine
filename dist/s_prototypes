@@ -1,7 +1,7 @@
 #! /bin/sh
 
 # Build a list of internal function and variable prototypes.
-t=__wt.$$
+t=__ae.$$
 trap 'rm -f $t; exit 0' 0 1 2 3 13 15
 
 (
@@ -12,7 +12,7 @@ EOF
 
 for i in `sed -e '/^[a-z]/!d' filelist`; do
 	sed -n \
-	    -e '/^__wt_[a-z]/!{' \
+	    -e '/^__ae_[a-z]/!{' \
 		-e h \
 		-e d \
 	    -e '}' \
@@ -31,7 +31,7 @@ for i in `sed -e '/^[a-z]/!d' filelist`; do
 	    -e 's/\* /\*/g' \
 	    -e 's/  */ /g' \
 	    -e 's/^/extern /' \
-	    -e 's/WT_GCC_FUNC_/WT_GCC_FUNC_DECL_/' \
+	    -e 's/AE_GCC_FUNC_/AE_GCC_FUNC_DECL_/' \
 	    -e 's/$/;/p' \
 	    < ../$i
 done) > $t

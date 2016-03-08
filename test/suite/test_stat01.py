@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Public Domain 2014-2015 MongoDB, Inc.
-# Public Domain 2008-2014 WiredTiger, Inc.
+# Public Domain 2008-2014 ArchEngine, Inc.
 #
 # This is free and unencumbered software released into the public domain.
 #
@@ -26,14 +26,14 @@
 # ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 # OTHER DEALINGS IN THE SOFTWARE.
 
-import helper, wiredtiger, wttest
-from wiredtiger import stat
+import helper, archengine, aetest
+from archengine import stat
 from helper import key_populate, simple_populate
-from wtscenario import multiply_scenarios, number_scenarios
+from aescenario import multiply_scenarios, number_scenarios
 
 # test_stat01.py
 #    Statistics operations
-class test_stat01(wttest.WiredTigerTestCase):
+class test_stat01(aetest.ArchEngineTestCase):
     """
     Test statistics
     """
@@ -42,8 +42,8 @@ class test_stat01(wttest.WiredTigerTestCase):
     nentries = 25
 
     types = [
-        ('file', dict(uri='file:test_stat01.wt')),
-        ('table', dict(uri='table:test_stat01.wt'))
+        ('file', dict(uri='file:test_stat01.ae')),
+        ('table', dict(uri='table:test_stat01.ae'))
     ]
     keyfmt = [
         ('recno', dict(keyfmt='r')),
@@ -51,9 +51,9 @@ class test_stat01(wttest.WiredTigerTestCase):
     ]
     scenarios = number_scenarios(multiply_scenarios('.', types, keyfmt))
 
-    # Override WiredTigerTestCase, we have extensions.
+    # Override ArchEngineTestCase, we have extensions.
     def setUpConnectionOpen(self, dir):
-        conn = wiredtiger.wiredtiger_open(dir,
+        conn = archengine.archengine_open(dir,
             'create,statistics=(all),' + 'error_prefix="%s: "' % self.shortid())
         return conn
 
@@ -155,8 +155,8 @@ class test_stat01(wttest.WiredTigerTestCase):
             cursor.close()
 
     def test_missing_file_stats(self):
-        self.assertRaises(wiredtiger.WiredTigerError, lambda:
+        self.assertRaises(archengine.ArchEngineError, lambda:
             self.session.open_cursor('statistics:file:DoesNotExist'))
 
 if __name__ == '__main__':
-    wttest.run()
+    aetest.run()

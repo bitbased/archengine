@@ -1,17 +1,17 @@
 #! /bin/sh
 
 # Check lang directories for potential name conflicts
-t=__wt.$$
+t=__ae.$$
 trap 'rm -f $t; exit 0' 0 1 2 3 13 15
 
 cd ../lang
 
 for d in *; do
-	f=`find $d -name 'wiredtiger_wrap.c'`
+	f=`find $d -name 'archengine_wrap.c'`
 	test -z "$f" && continue
 
-	sed -e '/SWIGINTERN.*__wt_[a-z][a-z]*_[a-z]/!d' \
-	    -e '/__wt_[^(]*__.*(/d' \
+	sed -e '/SWIGINTERN.*__ae_[a-z][a-z]*_[a-z]/!d' \
+	    -e '/__ae_[^(]*__.*(/d' \
 	    -e '/_wrap/d' \
 	    -e "/_${d}_/d" \
 	    $f > $t

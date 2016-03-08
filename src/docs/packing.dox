@@ -1,6 +1,6 @@
 /*! @m_page{{c,java},packing,Packing and Unpacking Data}
 
-WiredTiger's data packing uses format strings similar to those specified in the
+ArchEngine's data packing uses format strings similar to those specified in the
 Python struct module:
   http://docs.python.org/library/struct
 

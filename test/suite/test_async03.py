@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Public Domain 2014-2015 MongoDB, Inc.
-# Public Domain 2008-2014 WiredTiger, Inc.
+# Public Domain 2008-2014 ArchEngine, Inc.
 #
 # This is free and unencumbered software released into the public domain.
 #
@@ -26,10 +26,10 @@
 # ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 # OTHER DEALINGS IN THE SOFTWARE.
 
-from wiredtiger import wiredtiger_open, WiredTigerError
-import sys, threading, wiredtiger, wttest
+from archengine import archengine_open, ArchEngineError
+import sys, threading, archengine, aetest
 
-class Callback(wiredtiger.AsyncCallback):
+class Callback(archengine.AsyncCallback):
     def __init__(self):
         pass
 
@@ -41,13 +41,13 @@ class Callback(wiredtiger.AsyncCallback):
 #    Async operations
 # Try to run async code with an incorrect connection config.
 # We expect an operation not supported error.
-class test_async03(wttest.WiredTigerTestCase):
+class test_async03(aetest.ArchEngineTestCase):
     """
     Test basic operations
     """
     table_name1 = 'test_async03'
 
-    # Overrides WiredTigerTestCase so that we can configure
+    # Overrides ArchEngineTestCase so that we can configure
     # async operations.
     def setUpConnectionOpen(self, dir):
         self.home = dir
@@ -57,7 +57,7 @@ class test_async03(wttest.WiredTigerTestCase):
                 'create,error_prefix="%s: ",' % self.shortid() + \
                 'async=(ops_max=50,threads=3)'  # missing enabled=true !
         sys.stdout.flush()
-        conn = wiredtiger_open(dir, conn_params)
+        conn = archengine_open(dir, conn_params)
         self.pr(`conn`)
         return conn
 
@@ -69,10 +69,10 @@ class test_async03(wttest.WiredTigerTestCase):
         # to ensure key/value is correct.
         callback = Callback()
 
-        self.assertRaises(wiredtiger.WiredTigerError,
+        self.assertRaises(archengine.ArchEngineError,
             lambda: self.conn.async_new_op(tablearg, None, callback))
 
         self.conn.async_flush()
 
 if __name__ == '__main__':
-    wttest.run()
+    aetest.run()

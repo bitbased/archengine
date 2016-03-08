@@ -1,6 +1,6 @@
 /*-
  * Public Domain 2014-2015 MongoDB, Inc.
- * Public Domain 2008-2014 WiredTiger, Inc.
+ * Public Domain 2008-2014 ArchEngine, Inc.
  *
  * This is free and unencumbered software released into the public domain.
  *
@@ -35,8 +35,8 @@
 void *
 compact(void *arg)
 {
-	WT_CONNECTION *conn;
-	WT_SESSION *session;
+	AE_CONNECTION *conn;
+	AE_SESSION *session;
 	u_int period;
 	int ret;
 
@@ -47,7 +47,7 @@ compact(void *arg)
 		return (NULL);
 
 	/* Open a session. */
-	conn = g.wts_conn;
+	conn = g.aes_conn;
 	if ((ret = conn->open_session(conn, NULL, NULL, &session)) != 0)
 		die(ret, "connection.open_session");
 
@@ -65,7 +65,7 @@ compact(void *arg)
 			break;
 
 		if ((ret = session->compact(
-		    session, g.uri, NULL)) != 0 && ret != WT_ROLLBACK)
+		    session, g.uri, NULL)) != 0 && ret != AE_ROLLBACK)
 			die(ret, "session.compact");
 	}
 

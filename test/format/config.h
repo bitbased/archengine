@@ -1,6 +1,6 @@
 /*-
  * Public Domain 2014-2015 MongoDB, Inc.
- * Public Domain 2008-2014 WiredTiger, Inc.
+ * Public Domain 2008-2014 ArchEngine, Inc.
  *
  * This is free and unencumbered software released into the public domain.
  *
@@ -27,7 +27,7 @@
  */
 
 /*
- * Configuration for the wts program is an array of string-based parameters.
+ * Configuration for the aes program is an array of string-based parameters.
  * This is the structure used to declare them.
  */
 typedef struct {
@@ -295,8 +295,8 @@ static CONFIG c[] = {
 	  "to regularly verify during a run",			/* 100% */
 	  C_BOOL, 100, 1, 0, &g.c_verify, NULL },
 
-	{ "wiredtiger_config",
-	  "configuration string used to wiredtiger_open",
+	{ "archengine_config",
+	  "configuration string used to archengine_open",
 	  C_IGNORE|C_STRING, 0, 0, 0, NULL, &g.c_config_open },
 
 	{ "write_pct",

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Public Domain 2014-2015 MongoDB, Inc.
-# Public Domain 2008-2014 WiredTiger, Inc.
+# Public Domain 2008-2014 ArchEngine, Inc.
 #
 # This is free and unencumbered software released into the public domain.
 #
@@ -29,13 +29,13 @@
 # test_perf001.py
 #       Test performance when inserting into a table with an index.
 
-import wiredtiger, wttest
+import archengine, aetest
 import random
 from time import clock, time
-from wtscenario import check_scenarios
+from aescenario import check_scenarios
 
 # Test performance of inserting into a table with an index.
-class test_perf001(wttest.WiredTigerTestCase):
+class test_perf001(aetest.ArchEngineTestCase):
     table_name = 'test_perf001'
 
     scenarios = check_scenarios([
@@ -46,8 +46,8 @@ class test_perf001(wttest.WiredTigerTestCase):
     ])
 
     def setUpConnectionOpen(self, dir):
-        wtopen_args = 'create,cache_size=512M'
-        conn = wiredtiger.wiredtiger_open(dir, wtopen_args)
+        aeopen_args = 'create,cache_size=512M'
+        conn = archengine.archengine_open(dir, aeopen_args)
         self.pr(`conn`)
         return conn
 
@@ -71,4 +71,4 @@ class test_perf001(wttest.WiredTigerTestCase):
         c.close()
 
 if __name__ == '__main__':
-    wttest.run()
+    aetest.run()

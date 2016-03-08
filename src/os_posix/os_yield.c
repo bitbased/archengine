@@ -1,19 +1,19 @@
 /*-
  * Copyright (c) 2014-2015 MongoDB, Inc.
- * Copyright (c) 2008-2014 WiredTiger, Inc.
+ * Copyright (c) 2008-2014 ArchEngine, Inc.
  *	All rights reserved.
  *
  * See the file LICENSE for redistribution information.
  */
 
-#include "wt_internal.h"
+#include "ae_internal.h"
 
 /*
- * __wt_yield --
+ * __ae_yield --
  *	Yield the thread of control.
  */
 void
-__wt_yield(void)
+__ae_yield(void)
 {
 	sched_yield();
 }

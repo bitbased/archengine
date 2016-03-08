@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Public Domain 2014-2015 MongoDB, Inc.
-# Public Domain 2008-2014 WiredTiger, Inc.
+# Public Domain 2008-2014 ArchEngine, Inc.
 #
 # This is free and unencumbered software released into the public domain.
 #
@@ -26,12 +26,12 @@
 # ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 # OTHER DEALINGS IN THE SOFTWARE.
 
-import wiredtiger, wttest
-from helper import copy_wiredtiger_home, key_populate, simple_populate
+import archengine, aetest
+from helper import copy_archengine_home, key_populate, simple_populate
 
 # test_bug014.py
-#    JIRA WT-2115: fast-delete pages can be incorrectly lost due to a crash.
-class test_bug014(wttest.WiredTigerTestCase):
+#    JIRA AE-2115: fast-delete pages can be incorrectly lost due to a crash.
+class test_bug014(aetest.ArchEngineTestCase):
     def test_bug014(self):
         # Populate a table with 1000 keys on small pages.
         uri = 'table:test_bug014'
@@ -57,7 +57,7 @@ class test_bug014(wttest.WiredTigerTestCase):
         ckpt_session.close()
 
         # Simulate a crash by copying to a new directory.
-        copy_wiredtiger_home(".", "RESTART")
+        copy_archengine_home(".", "RESTART")
 
         # Open the new directory.
         conn = self.setUpConnectionOpen("RESTART")
@@ -72,4 +72,4 @@ class test_bug014(wttest.WiredTigerTestCase):
         conn.close()
 
 if __name__ == '__main__':
-    wttest.run()
+    aetest.run()

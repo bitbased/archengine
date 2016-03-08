@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Public Domain 2014-2015 MongoDB, Inc.
-# Public Domain 2008-2014 WiredTiger, Inc.
+# Public Domain 2008-2014 ArchEngine, Inc.
 #
 # This is free and unencumbered software released into the public domain.
 #
@@ -27,7 +27,7 @@
 # OTHER DEALINGS IN THE SOFTWARE.
 #
 # This Python script is run as part of generating the documentation for the
-# WiredTiger Python API.  It runs after doxypy, and turns method names in
+# ArchEngine Python API.  It runs after doxypy, and turns method names in
 # comments into references to the corresponding function in the C API.
 
 import re, sys
@@ -40,7 +40,7 @@ def process(source):
                        m.group(2).strip('_').upper())), source)
 
     # Replace lowercase class names with upper case
-    source = re.sub(r'(\s+#.*)__(wt_\w+)::',
+    source = re.sub(r'(\s+#.*)__(ae_\w+)::',
         lambda m: ('%s%s::' % (m.group(1), m.group(2).upper())), source)
 
     # Replace "char" with "string" in comments
@@ -50,11 +50,11 @@ def process(source):
 
     # Copy documentation -- methods, then global functions
     source = re.sub(r'(\s+# )(\w+)\(self, (connection|cursor|session).*',
-        lambda m: ('%s%s%s@copydoc WT_%s::%s' %
+        lambda m: ('%s%s%s@copydoc AE_%s::%s' %
           (m.group(0), m.group(1), m.group(1), m.group(3).upper(), m.group(2))),
         source)
 
-    source = re.sub(r'(\s+# )(wiredtiger_\w+)\(.*',
+    source = re.sub(r'(\s+# )(archengine_\w+)\(.*',
         lambda m: ('%s%s%s@copydoc ::%s' %
           (m.group(0), m.group(1), m.group(1), m.group(2))), source)
 

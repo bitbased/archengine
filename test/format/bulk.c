@@ -1,6 +1,6 @@
 /*-
  * Public Domain 2014-2015 MongoDB, Inc.
- * Public Domain 2008-2014 WiredTiger, Inc.
+ * Public Domain 2008-2014 ArchEngine, Inc.
  *
  * This is free and unencumbered software released into the public domain.
  *
@@ -29,31 +29,31 @@
 #include "format.h"
 
 void
-wts_load(void)
+aes_load(void)
 {
-	WT_CONNECTION *conn;
-	WT_CURSOR *cursor;
-	WT_ITEM key, value;
-	WT_SESSION *session;
+	AE_CONNECTION *conn;
+	AE_CURSOR *cursor;
+	AE_ITEM key, value;
+	AE_SESSION *session;
 	uint8_t *keybuf, *valbuf;
 	bool is_bulk;
 	int ret;
 
-	conn = g.wts_conn;
+	conn = g.aes_conn;
 	keybuf = valbuf = NULL;
 
 	if ((ret = conn->open_session(conn, NULL, NULL, &session)) != 0)
 		die(ret, "connection.open_session");
 
 	if (g.logging != 0)
-		(void)g.wt_api->msg_printf(g.wt_api, session,
+		(void)g.ae_api->msg_printf(g.ae_api, session,
 		    "=============== bulk load start ===============");
 
 	/*
 	 * No bulk load with data-sources.
 	 *
 	 * XXX
-	 * No bulk load with in-memory configurations (currently, WiredTiger
+	 * No bulk load with in-memory configurations (currently, ArchEngine
 	 * fails in the column-store case unless you specify the key).
 	 *
 	 * No bulk load with custom collators, the order of insertion will not
@@ -96,7 +96,7 @@ wts_load(void)
 				cursor->set_key(cursor, g.key_cnt);
 			cursor->set_value(cursor, *(uint8_t *)value.data);
 			if (g.logging == LOG_OPS)
-				(void)g.wt_api->msg_printf(g.wt_api, session,
+				(void)g.ae_api->msg_printf(g.ae_api, session,
 				    "%-10s %" PRIu32 " {0x%02" PRIx8 "}",
 				    "bulk V",
 				    g.key_cnt, ((uint8_t *)value.data)[0]);
@@ -106,7 +106,7 @@ wts_load(void)
 				cursor->set_key(cursor, g.key_cnt);
 			cursor->set_value(cursor, &value);
 			if (g.logging == LOG_OPS)
-				(void)g.wt_api->msg_printf(g.wt_api, session,
+				(void)g.ae_api->msg_printf(g.ae_api, session,
 				    "%-10s %" PRIu32 " {%.*s}", "bulk V",
 				    g.key_cnt,
 				    (int)value.size, (char *)value.data);
@@ -114,12 +114,12 @@ wts_load(void)
 		case ROW:
 			cursor->set_key(cursor, &key);
 			if (g.logging == LOG_OPS)
-				(void)g.wt_api->msg_printf(g.wt_api, session,
+				(void)g.ae_api->msg_printf(g.ae_api, session,
 				    "%-10s %" PRIu32 " {%.*s}", "bulk K",
 				    g.key_cnt, (int)key.size, (char *)key.data);
 			cursor->set_value(cursor, &value);
 			if (g.logging == LOG_OPS)
-				(void)g.wt_api->msg_printf(g.wt_api, session,
+				(void)g.ae_api->msg_printf(g.ae_api, session,
 				    "%-10s %" PRIu32 " {%.*s}", "bulk V",
 				    g.key_cnt,
 				    (int)value.size, (char *)value.data);
@@ -139,7 +139,7 @@ wts_load(void)
 		die(ret, "cursor.close");
 
 	if (g.logging != 0)
-		(void)g.wt_api->msg_printf(g.wt_api, session,
+		(void)g.ae_api->msg_printf(g.ae_api, session,
 		    "=============== bulk load stop ===============");
 
 	if ((ret = session->close(session, NULL)) != 0)

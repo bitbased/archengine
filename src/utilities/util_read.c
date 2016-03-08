@@ -1,6 +1,6 @@
 /*-
  * Copyright (c) 2014-2015 MongoDB, Inc.
- * Copyright (c) 2008-2014 WiredTiger, Inc.
+ * Copyright (c) 2008-2014 ArchEngine, Inc.
  *	All rights reserved.
  *
  * See the file LICENSE for redistribution information.
@@ -11,23 +11,23 @@
 static int usage(void);
 
 int
-util_read(WT_SESSION *session, int argc, char *argv[])
+util_read(AE_SESSION *session, int argc, char *argv[])
 {
-	WT_CURSOR *cursor;
-	WT_DECL_RET;
+	AE_CURSOR *cursor;
+	AE_DECL_RET;
 	uint64_t recno;
 	int ch;
 	bool rkey, rval;
 	const char *uri, *value;
 
-	while ((ch = __wt_getopt(progname, argc, argv, "")) != EOF)
+	while ((ch = __ae_getopt(progname, argc, argv, "")) != EOF)
 		switch (ch) {
 		case '?':
 		default:
 			return (usage());
 		}
-	argc -= __wt_optind;
-	argv += __wt_optind;
+	argc -= __ae_optind;
+	argv += __ae_optind;
 
 	/* The remaining arguments are a uri followed by a list of keys. */
 	if (argc < 2)
@@ -80,7 +80,7 @@ util_read(WT_SESSION *session, int argc, char *argv[])
 			if (printf("%s\n", value) < 0)
 				return (util_err(session, EIO, NULL));
 			break;
-		case WT_NOTFOUND:
+		case AE_NOTFOUND:
 			(void)util_err(session, 0, "%s: not found", *argv);
 			rval = true;
 			break;

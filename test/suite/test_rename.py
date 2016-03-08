@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Public Domain 2014-2015 MongoDB, Inc.
-# Public Domain 2008-2014 WiredTiger, Inc.
+# Public Domain 2008-2014 ArchEngine, Inc.
 #
 # This is free and unencumbered software released into the public domain.
 #
@@ -27,15 +27,15 @@
 # OTHER DEALINGS IN THE SOFTWARE.
 
 import os, time
-import wiredtiger, wttest
+import archengine, aetest
 from helper import confirm_does_not_exist,\
     complex_populate, complex_populate_check,\
     simple_populate, simple_populate_check
-from wtscenario import check_scenarios
+from aescenario import check_scenarios
 
 # test_rename.py
 #    session level rename operation
-class test_rename(wttest.WiredTigerTestCase):
+class test_rename(aetest.ArchEngineTestCase):
     name1 = 'test_rename1'
     name2 = 'test_rename2'
 
@@ -54,7 +54,7 @@ class test_rename(wttest.WiredTigerTestCase):
         # Open cursors should cause failure.
         if with_cursor:
             cursor = self.session.open_cursor(uri1, None, None)
-            self.assertRaises(wiredtiger.WiredTigerError,
+            self.assertRaises(archengine.ArchEngineError,
                 lambda: self.session.rename(uri1, uri2, None))
             cursor.close()
 
@@ -83,7 +83,7 @@ class test_rename(wttest.WiredTigerTestCase):
         uri1 = self.uri + self.name1
         uri2 = self.uri + self.name2
         confirm_does_not_exist(self, uri1)
-        self.assertRaises(wiredtiger.WiredTigerError,
+        self.assertRaises(archengine.ArchEngineError,
             lambda: self.session.rename(uri1, uri2, None))
 
     def test_rename_bad_uri(self):
@@ -92,9 +92,9 @@ class test_rename(wttest.WiredTigerTestCase):
                 uri2 = "table:" + self.name2
         else:
                 uri2 = "file:" + self.name2
-        self.assertRaisesWithMessage(wiredtiger.WiredTigerError,
+        self.assertRaisesWithMessage(archengine.ArchEngineError,
             lambda: self.session.rename(uri1, uri2, None),
             '/type must match URI/')
 
 if __name__ == '__main__':
-    wttest.run()
+    aetest.run()

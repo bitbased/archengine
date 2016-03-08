@@ -1,6 +1,6 @@
 /*-
  * Public Domain 2014-2015 MongoDB, Inc.
- * Public Domain 2008-2014 WiredTiger, Inc.
+ * Public Domain 2008-2014 ArchEngine, Inc.
  *
  * This is free and unencumbered software released into the public domain.
  *
@@ -61,8 +61,8 @@ static u_int	 page_type;			/* File types */
 static int	 value_unique;			/* Values are unique */
 static int	 verbose;			/* -v flag */
 
-extern int __wt_optind;
-extern char *__wt_optarg;
+extern int __ae_optind;
+extern char *__ae_optarg;
 
 int
 main(int argc, char *argv[])
@@ -77,20 +77,20 @@ main(int argc, char *argv[])
 
 	r = 0;
 	ptype = 0;
-	while ((ch = __wt_getopt(progname, argc, argv, "r:t:v")) != EOF)
+	while ((ch = __ae_getopt(progname, argc, argv, "r:t:v")) != EOF)
 		switch (ch) {
 		case 'r':
-			r = atoi(__wt_optarg);
+			r = atoi(__ae_optarg);
 			if (r == 0)
 				return (usage());
 			break;
 		case 't':
-			if (strcmp(__wt_optarg, "fix") == 0)
-				ptype = WT_PAGE_COL_FIX;
-			else if (strcmp(__wt_optarg, "var") == 0)
-				ptype = WT_PAGE_COL_VAR;
-			else if (strcmp(__wt_optarg, "row") == 0)
-				ptype = WT_PAGE_ROW_LEAF;
+			if (strcmp(__ae_optarg, "fix") == 0)
+				ptype = AE_PAGE_COL_FIX;
+			else if (strcmp(__ae_optarg, "var") == 0)
+				ptype = AE_PAGE_COL_VAR;
+			else if (strcmp(__ae_optarg, "row") == 0)
+				ptype = AE_PAGE_ROW_LEAF;
 			else
 				return (usage());
 			break;
@@ -101,8 +101,8 @@ main(int argc, char *argv[])
 		default:
 			return (usage());
 		}
-	argc -= __wt_optind;
-	argv += __wt_optind;
+	argc -= __ae_optind;
+	argv += __ae_optind;
 	if (argc != 0)
 		return (usage());
 
@@ -124,15 +124,15 @@ t(int r, u_int ptype, int unique)
 #define	NTESTS	24
 	if (r == 0) {
 		if (ptype == 0) {
-			page_type = WT_PAGE_COL_FIX;
+			page_type = AE_PAGE_COL_FIX;
 			for (r = 1; r <= NTESTS; ++r)
 				run(r);
 
-			page_type = WT_PAGE_COL_VAR;
+			page_type = AE_PAGE_COL_VAR;
 			for (r = 1; r <= NTESTS; ++r)
 				run(r);
 
-			page_type = WT_PAGE_ROW_LEAF;
+			page_type = AE_PAGE_ROW_LEAF;
 			for (r = 1; r <= NTESTS; ++r)
 				run(r);
 		} else {
@@ -141,11 +141,11 @@ t(int r, u_int ptype, int unique)
 				run(r);
 		}
 	} else if (ptype == 0) {
-		page_type = WT_PAGE_COL_FIX;
+		page_type = AE_PAGE_COL_FIX;
 		run(r);
-		page_type = WT_PAGE_COL_VAR;
+		page_type = AE_PAGE_COL_VAR;
 		run(r);
-		page_type = WT_PAGE_ROW_LEAF;
+		page_type = AE_PAGE_ROW_LEAF;
 		run(r);
 	}  else {
 		page_type = ptype;
@@ -166,9 +166,9 @@ run(int r)
 {
 	char buf[128];
 
-	printf("\t%s: run %d\n", __wt_page_type_string(page_type), r);
+	printf("\t%s: run %d\n", __ae_page_type_string(page_type), r);
 
-	CHECK(system("rm -f WiredTiger* __slvg.* __schema.*") == 0);
+	CHECK(system("rm -f ArchEngine* __slvg.* __schema.*") == 0);
 	CHECK((res_fp = fopen(RSLT, "w")) != NULL);
 
 	/*
@@ -472,10 +472,10 @@ file_exists(const char *path)
 void
 build(int ikey, int ivalue, int cnt)
 {
-	WT_CONNECTION *conn;
-	WT_CURSOR *cursor;
-	WT_ITEM key, value;
-	WT_SESSION *session;
+	AE_CONNECTION *conn;
+	AE_CURSOR *cursor;
+	AE_ITEM key, value;
+	AE_SESSION *session;
 	char config[256], kbuf[64], vbuf[64];
 	int new_slvg;
 
@@ -483,13 +483,13 @@ build(int ikey, int ivalue, int cnt)
 	 * Disable logging: we're modifying files directly, we don't want to
 	 * run recovery.
 	 */
-	CHECK(wiredtiger_open(
+	CHECK(archengine_open(
 	    NULL, NULL, "create,log=(enabled=false)", &conn) == 0);
 	CHECK(conn->open_session(conn, NULL, NULL, &session) == 0);
 	CHECK(session->drop(session, "file:" LOAD, "force") == 0);
 
 	switch (page_type) {
-	case WT_PAGE_COL_FIX:
+	case AE_PAGE_COL_FIX:
 		(void)snprintf(config, sizeof(config),
 		    "key_format=r,value_format=7t,"
 		    "allocation_size=%d,"
@@ -497,7 +497,7 @@ build(int ikey, int ivalue, int cnt)
 		    "leaf_page_max=%d,leaf_item_max=%d",
 		    PSIZE, PSIZE, OSIZE, PSIZE, OSIZE);
 		break;
-	case WT_PAGE_COL_VAR:
+	case AE_PAGE_COL_VAR:
 		(void)snprintf(config, sizeof(config),
 		    "key_format=r,"
 		    "allocation_size=%d,"
@@ -505,7 +505,7 @@ build(int ikey, int ivalue, int cnt)
 		    "leaf_page_max=%d,leaf_item_max=%d",
 		    PSIZE, PSIZE, OSIZE, PSIZE, OSIZE);
 		break;
-	case WT_PAGE_ROW_LEAF:
+	case AE_PAGE_ROW_LEAF:
 		(void)snprintf(config, sizeof(config),
 		    "key_format=u,"
 		    "allocation_size=%d,"
@@ -521,10 +521,10 @@ build(int ikey, int ivalue, int cnt)
 	    session, "file:" LOAD, NULL, "bulk", &cursor) == 0);
 	for (; cnt > 0; --cnt, ++ikey, ++ivalue) {
 		switch (page_type) {			/* Build the key. */
-		case WT_PAGE_COL_FIX:
-		case WT_PAGE_COL_VAR:
+		case AE_PAGE_COL_FIX:
+		case AE_PAGE_COL_VAR:
 			break;
-		case WT_PAGE_ROW_LEAF:
+		case AE_PAGE_ROW_LEAF:
 			snprintf(kbuf, sizeof(kbuf), "%010d KEY------", ikey);
 			key.data = kbuf;
 			key.size = 20;
@@ -533,11 +533,11 @@ build(int ikey, int ivalue, int cnt)
 		}
 
 		switch (page_type) {			/* Build the value. */
-		case WT_PAGE_COL_FIX:
+		case AE_PAGE_COL_FIX:
 			cursor->set_value(cursor, ivalue & 0x7f);
 			break;
-		case WT_PAGE_COL_VAR:
-		case WT_PAGE_ROW_LEAF:
+		case AE_PAGE_COL_VAR:
+		case AE_PAGE_ROW_LEAF:
 			snprintf(vbuf, sizeof(vbuf),
 			    "%010d VALUE----", value_unique ? ivalue : 37);
 			value.data = vbuf;
@@ -570,8 +570,8 @@ void
 copy(u_int gen, u_int recno)
 {
 	FILE *ifp, *ofp;
-	WT_PAGE_HEADER *dsk;
-	WT_BLOCK_HEADER *blk;
+	AE_PAGE_HEADER *dsk;
+	AE_BLOCK_HEADER *blk;
 	char buf[PSIZE];
 
 	CHECK((ifp = fopen(LOAD, "r")) != NULL);
@@ -596,12 +596,12 @@ copy(u_int gen, u_int recno)
 		CHECK(fseek(ifp, (long)PSIZE, SEEK_SET) == 0);
 		CHECK(fread(buf, 1, PSIZE, ifp) == PSIZE);
 		dsk = (void *)buf;
-		if (page_type != WT_PAGE_ROW_LEAF)
+		if (page_type != AE_PAGE_ROW_LEAF)
 			dsk->recno = recno;
 		dsk->write_gen = gen;
-		blk = WT_BLOCK_HEADER_REF(buf);
+		blk = AE_BLOCK_HEADER_REF(buf);
 		blk->cksum = 0;
-		blk->cksum = __wt_cksum(dsk, PSIZE);
+		blk->cksum = __ae_cksum(dsk, PSIZE);
 		CHECK(fwrite(buf, 1, PSIZE, ofp) == PSIZE);
 	}
 
@@ -617,10 +617,10 @@ void
 process(void)
 {
 	FILE *fp;
-	WT_CONNECTION *conn;
-	WT_CURSOR *cursor;
+	AE_CONNECTION *conn;
+	AE_CURSOR *cursor;
 	const char *key, *value;
-	WT_SESSION *session;
+	AE_SESSION *session;
 	char config[100];
 
 	/* Salvage. */
@@ -631,25 +631,25 @@ process(void)
 		    progname);
 	strcat(config, "log=(enabled=false),");
 
-	CHECK(wiredtiger_open(NULL, NULL, config, &conn) == 0);
+	CHECK(archengine_open(NULL, NULL, config, &conn) == 0);
 	CHECK(conn->open_session(conn, NULL, NULL, &session) == 0);
 	CHECK(session->salvage(session, "file:" SLVG, 0) == 0);
 	CHECK(conn->close(conn, 0) == 0);
 
 	/* Verify. */
-	CHECK(wiredtiger_open(NULL, NULL, config, &conn) == 0);
+	CHECK(archengine_open(NULL, NULL, config, &conn) == 0);
 	CHECK(conn->open_session(conn, NULL, NULL, &session) == 0);
 	CHECK(session->verify(session, "file:" SLVG, 0) == 0);
 	CHECK(conn->close(conn, 0) == 0);
 
 	/* Dump. */
 	CHECK((fp = fopen(DUMP, "w")) != NULL);
-	CHECK(wiredtiger_open(NULL, NULL, config, &conn) == 0);
+	CHECK(archengine_open(NULL, NULL, config, &conn) == 0);
 	CHECK(conn->open_session(conn, NULL, NULL, &session) == 0);
 	CHECK(session->open_cursor(
 	    session, "file:" SLVG, NULL, "dump=print", &cursor) == 0);
 	while (cursor->next(cursor) == 0) {
-		if (page_type == WT_PAGE_ROW_LEAF) {
+		if (page_type == AE_PAGE_ROW_LEAF) {
 			CHECK(cursor->get_key(cursor, &key) == 0);
 			CHECK(fputs(key, fp) >= 0);
 			CHECK(fputc('\n', fp) >= 0);
@@ -671,7 +671,7 @@ empty(int cnt)
 {
 	int i;
 
-	if (page_type == WT_PAGE_COL_FIX)
+	if (page_type == AE_PAGE_COL_FIX)
 		for (i = 0; i < cnt; ++i)
 			fputs("\\00\n", res_fp);
 }
@@ -688,16 +688,16 @@ print_res(int key, int value, int cnt)
 
 	for (; cnt > 0; ++key, ++value, --cnt) {
 		switch (page_type) {			/* Print key */
-		case WT_PAGE_COL_FIX:
-		case WT_PAGE_COL_VAR:
+		case AE_PAGE_COL_FIX:
+		case AE_PAGE_COL_VAR:
 			break;
-		case WT_PAGE_ROW_LEAF:
+		case AE_PAGE_ROW_LEAF:
 			fprintf(res_fp, "%010d KEY------\n", key);
 			break;
 		}
 
 		switch (page_type) {			/* Print value */
-		case WT_PAGE_COL_FIX:
+		case AE_PAGE_COL_FIX:
 			ch = value & 0x7f;
 			if (isprint(ch)) {
 				if (ch == '\\')
@@ -710,8 +710,8 @@ print_res(int key, int value, int cnt)
 			}
 			fputc('\n', res_fp);
 			break;
-		case WT_PAGE_COL_VAR:
-		case WT_PAGE_ROW_LEAF:
+		case AE_PAGE_COL_VAR:
+		case AE_PAGE_ROW_LEAF:
 			fprintf(res_fp,
 			    "%010d VALUE----\n", value_unique ? value : 37);
 			break;

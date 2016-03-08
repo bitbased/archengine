@@ -1,6 +1,6 @@
 /*-
  * Copyright (c) 2014-2015 MongoDB, Inc.
- * Copyright (c) 2008-2014 WiredTiger, Inc.
+ * Copyright (c) 2008-2014 ArchEngine, Inc.
  *	All rights reserved.
  *
  * See the file LICENSE for redistribution information.
@@ -41,21 +41,21 @@
  *
  * Our next best option is to use the number of threads in the application as a
  * heuristic for the number of CPUs (presumably, the application architect has
- * figured out how many CPUs are available). However, inside WiredTiger we don't
+ * figured out how many CPUs are available). However, inside ArchEngine we don't
  * know when the application creates its threads.
  *
  * For now, we use a fixed number of slots. Ideally, we would approximate the
- * largest number of cores we expect on any machine where WiredTiger might be
+ * largest number of cores we expect on any machine where ArchEngine might be
  * run, however, we don't want to waste that much memory on smaller machines.
  * As of 2015, machines with more than 24 CPUs are relatively rare.
  *
  * Default hash table size; use a prime number of buckets rather than assuming
  * a good hash (Reference Sedgewick, Algorithms in C, "Hash Functions").
  */
-#define	WT_COUNTER_SLOTS	23
+#define	AE_COUNTER_SLOTS	23
 
 /*
- * WT_STATS_SLOT_ID is the thread's slot ID for the array of structures.
+ * AE_STATS_SLOT_ID is the thread's slot ID for the array of structures.
  *
  * Ideally, we want a slot per CPU, and we want each thread to index the slot
  * corresponding to the CPU it runs on. Unfortunately, getting the ID of the
@@ -71,8 +71,8 @@
  * Our solution is to use the session ID; there is normally a session per thread
  * and the session ID is a small, monotonically increasing number.
  */
-#define	WT_STATS_SLOT_ID(session)					\
-	((session)->id) % WT_COUNTER_SLOTS
+#define	AE_STATS_SLOT_ID(session)					\
+	((session)->id) % AE_COUNTER_SLOTS
 
 /*
  * Statistic structures are arrays of int64_t's. We have functions to read/write
@@ -81,20 +81,20 @@
  *
  * Translate a statistic's value name to an offset.
  */
-#define	WT_STATS_FIELD_TO_SLOT(stats, fld)				\
+#define	AE_STATS_FIELD_TO_SLOT(stats, fld)				\
 	(int)(&(stats)[0]->fld - (int64_t *)(stats)[0])
 
 /*
  * Sum the values from all structures in the array.
  */
 static inline int64_t
-__wt_stats_aggregate(void *stats_arg, int slot)
+__ae_stats_aggregate(void *stats_arg, int slot)
 {
 	int64_t **stats, aggr_v;
 	int i;
 
 	stats = stats_arg;
-	for (aggr_v = 0, i = 0; i < WT_COUNTER_SLOTS; i++)
+	for (aggr_v = 0, i = 0; i < AE_COUNTER_SLOTS; i++)
 		aggr_v += stats[i][slot];
 
 	/*
@@ -122,13 +122,13 @@ __wt_stats_aggregate(void *stats_arg, int slot)
  * Clear the values in all structures in the array.
  */
 static inline void
-__wt_stats_clear(void *stats_arg, int slot)
+__ae_stats_clear(void *stats_arg, int slot)
 {
 	int64_t **stats;
 	int i;
 
 	stats = stats_arg;
-	for (i = 0; i < WT_COUNTER_SLOTS; i++)
+	for (i = 0; i < AE_COUNTER_SLOTS; i++)
 		stats[i][slot] = 0;
 }
 
@@ -137,57 +137,57 @@ __wt_stats_clear(void *stats_arg, int slot)
  * and writing the field requires different actions: reading sums the values
  * across the array of structures, writing updates a single structure's value.
  */
-#define	WT_STAT_READ(stats, fld)					\
-	__wt_stats_aggregate(stats, WT_STATS_FIELD_TO_SLOT(stats, fld))
-#define	WT_STAT_WRITE(session, stats, fld)				\
-	((stats)[WT_STATS_SLOT_ID(session)]->fld);
+#define	AE_STAT_READ(stats, fld)					\
+	__ae_stats_aggregate(stats, AE_STATS_FIELD_TO_SLOT(stats, fld))
+#define	AE_STAT_WRITE(session, stats, fld)				\
+	((stats)[AE_STATS_SLOT_ID(session)]->fld);
 
-#define	WT_STAT_DECRV(session, stats, fld, value)			\
-	(stats)[WT_STATS_SLOT_ID(session)]->fld -= (int64_t)(value)
-#define	WT_STAT_DECR(session, stats, fld)				\
-	WT_STAT_DECRV(session, stats, fld, 1)
-#define	WT_STAT_INCRV(session, stats, fld, value)			\
-	(stats)[WT_STATS_SLOT_ID(session)]->fld += (int64_t)(value)
-#define	WT_STAT_INCR(session, stats, fld)				\
-	WT_STAT_INCRV(session, stats, fld, 1)
-#define	WT_STAT_SET(session, stats, fld, value) do {			\
-	__wt_stats_clear(stats, WT_STATS_FIELD_TO_SLOT(stats, fld));	\
+#define	AE_STAT_DECRV(session, stats, fld, value)			\
+	(stats)[AE_STATS_SLOT_ID(session)]->fld -= (int64_t)(value)
+#define	AE_STAT_DECR(session, stats, fld)				\
+	AE_STAT_DECRV(session, stats, fld, 1)
+#define	AE_STAT_INCRV(session, stats, fld, value)			\
+	(stats)[AE_STATS_SLOT_ID(session)]->fld += (int64_t)(value)
+#define	AE_STAT_INCR(session, stats, fld)				\
+	AE_STAT_INCRV(session, stats, fld, 1)
+#define	AE_STAT_SET(session, stats, fld, value) do {			\
+	__ae_stats_clear(stats, AE_STATS_FIELD_TO_SLOT(stats, fld));	\
 	(stats)[0]->fld = (int64_t)(value);				\
 } while (0)
 
 /*
  * Update statistics if "fast" statistics are configured.
  */
-#define	WT_STAT_FAST_DECRV(session, stats, fld, value) do {		\
-	if (FLD_ISSET(S2C(session)->stat_flags, WT_CONN_STAT_FAST))	\
-		WT_STAT_DECRV(session, stats, fld, value);		\
+#define	AE_STAT_FAST_DECRV(session, stats, fld, value) do {		\
+	if (FLD_ISSET(S2C(session)->stat_flags, AE_CONN_STAT_FAST))	\
+		AE_STAT_DECRV(session, stats, fld, value);		\
 } while (0)
-#define	WT_STAT_FAST_DECR(session, stats, fld)				\
-	WT_STAT_FAST_DECRV(session, stats, fld, 1)
-#define	WT_STAT_FAST_INCRV(session, stats, fld, value) do {		\
-	if (FLD_ISSET(S2C(session)->stat_flags, WT_CONN_STAT_FAST))	\
-		WT_STAT_INCRV(session, stats, fld, value);		\
+#define	AE_STAT_FAST_DECR(session, stats, fld)				\
+	AE_STAT_FAST_DECRV(session, stats, fld, 1)
+#define	AE_STAT_FAST_INCRV(session, stats, fld, value) do {		\
+	if (FLD_ISSET(S2C(session)->stat_flags, AE_CONN_STAT_FAST))	\
+		AE_STAT_INCRV(session, stats, fld, value);		\
 } while (0)
-#define	WT_STAT_FAST_INCR(session, stats, fld)				\
-	WT_STAT_FAST_INCRV(session, stats, fld, 1)
-#define	WT_STAT_FAST_SET(session, stats, fld, value) do {		\
-	if (FLD_ISSET(S2C(session)->stat_flags, WT_CONN_STAT_FAST))	\
-		WT_STAT_SET(session, stats, fld, value);		\
+#define	AE_STAT_FAST_INCR(session, stats, fld)				\
+	AE_STAT_FAST_INCRV(session, stats, fld, 1)
+#define	AE_STAT_FAST_SET(session, stats, fld, value) do {		\
+	if (FLD_ISSET(S2C(session)->stat_flags, AE_CONN_STAT_FAST))	\
+		AE_STAT_SET(session, stats, fld, value);		\
 } while (0)
 
 /*
  * Update connection handle statistics if "fast" statistics are configured.
  */
-#define	WT_STAT_FAST_CONN_DECR(session, fld)				\
-	WT_STAT_FAST_DECR(session, S2C(session)->stats, fld)
-#define	WT_STAT_FAST_CONN_DECRV(session, fld, value)			\
-	WT_STAT_FAST_DECRV(session, S2C(session)->stats, fld, value)
-#define	WT_STAT_FAST_CONN_INCR(session, fld)				\
-	WT_STAT_FAST_INCR(session, S2C(session)->stats, fld)
-#define	WT_STAT_FAST_CONN_INCRV(session, fld, value)			\
-	WT_STAT_FAST_INCRV(session, S2C(session)->stats, fld, value)
-#define	WT_STAT_FAST_CONN_SET(session, fld, value)			\
-	WT_STAT_FAST_SET(session, S2C(session)->stats, fld, value)
+#define	AE_STAT_FAST_CONN_DECR(session, fld)				\
+	AE_STAT_FAST_DECR(session, S2C(session)->stats, fld)
+#define	AE_STAT_FAST_CONN_DECRV(session, fld, value)			\
+	AE_STAT_FAST_DECRV(session, S2C(session)->stats, fld, value)
+#define	AE_STAT_FAST_CONN_INCR(session, fld)				\
+	AE_STAT_FAST_INCR(session, S2C(session)->stats, fld)
+#define	AE_STAT_FAST_CONN_INCRV(session, fld, value)			\
+	AE_STAT_FAST_INCRV(session, S2C(session)->stats, fld, value)
+#define	AE_STAT_FAST_CONN_SET(session, fld, value)			\
+	AE_STAT_FAST_SET(session, S2C(session)->stats, fld, value)
 
 /*
  * Update data-source handle statistics if "fast" statistics are configured
@@ -197,23 +197,23 @@ __wt_stats_clear(void *stats_arg, int slot)
  * We shouldn't have to check if the data-source handle is NULL, but it's
  * necessary until everything is converted to using data-source handles.
  */
-#define	WT_STAT_FAST_DATA_DECRV(session, fld, value) do {		\
+#define	AE_STAT_FAST_DATA_DECRV(session, fld, value) do {		\
 	if ((session)->dhandle != NULL)					\
-		WT_STAT_FAST_DECRV(					\
+		AE_STAT_FAST_DECRV(					\
 		    session, (session)->dhandle->stats, fld, value);	\
 } while (0)
-#define	WT_STAT_FAST_DATA_DECR(session, fld)				\
-	WT_STAT_FAST_DATA_DECRV(session, fld, 1)
-#define	WT_STAT_FAST_DATA_INCRV(session, fld, value) do {		\
+#define	AE_STAT_FAST_DATA_DECR(session, fld)				\
+	AE_STAT_FAST_DATA_DECRV(session, fld, 1)
+#define	AE_STAT_FAST_DATA_INCRV(session, fld, value) do {		\
 	if ((session)->dhandle != NULL)					\
-		WT_STAT_FAST_INCRV(					\
+		AE_STAT_FAST_INCRV(					\
 		    session, (session)->dhandle->stats, fld, value);	\
 } while (0)
-#define	WT_STAT_FAST_DATA_INCR(session, fld)				\
-	WT_STAT_FAST_DATA_INCRV(session, fld, 1)
-#define	WT_STAT_FAST_DATA_SET(session, fld, value) do {			\
+#define	AE_STAT_FAST_DATA_INCR(session, fld)				\
+	AE_STAT_FAST_DATA_INCRV(session, fld, 1)
+#define	AE_STAT_FAST_DATA_SET(session, fld, value) do {			\
 	if ((session)->dhandle != NULL)					\
-		WT_STAT_FAST_SET(					\
+		AE_STAT_FAST_SET(					\
 		    session, (session)->dhandle->stats, fld, value);	\
 } while (0)
 
@@ -225,8 +225,8 @@ __wt_stats_clear(void *stats_arg, int slot)
 /*
  * Statistics entries for connections.
  */
-#define	WT_CONNECTION_STATS_BASE	1000
-struct __wt_connection_stats {
+#define	AE_CONNECTION_STATS_BASE	1000
+struct __ae_connection_stats {
 	int64_t async_alloc_race;
 	int64_t async_alloc_view;
 	int64_t async_cur_queue;
@@ -393,8 +393,8 @@ struct __wt_connection_stats {
 /*
  * Statistics entries for data sources.
  */
-#define	WT_DSRC_STATS_BASE	2000
-struct __wt_dsrc_stats {
+#define	AE_DSRC_STATS_BASE	2000
+struct __ae_dsrc_stats {
 	int64_t allocation_size;
 	int64_t block_alloc;
 	int64_t block_checkpoint_size;
@@ -499,8 +499,8 @@ struct __wt_dsrc_stats {
 /*
  * Statistics entries for join cursors.
  */
-#define	WT_JOIN_STATS_BASE	3000
-struct __wt_join_stats {
+#define	AE_JOIN_STATS_BASE	3000
+struct __ae_join_stats {
 	int64_t accesses;
 	int64_t actual_count;
 	int64_t bloom_false_positive;

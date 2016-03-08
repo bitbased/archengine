@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-# Check the style of WiredTiger C code.
+# Check the style of ArchEngine C code.
 from dist import source_files
 import re, sys
 
@@ -39,6 +39,6 @@ def lines_could_join():
 missing_comment()
 
 # Don't display lines that could be joined by default; in some cases, the code
-# isn't maintained by WiredTiger, or the line splitting enhances readability.
+# isn't maintained by ArchEngine, or the line splitting enhances readability.
 if len(sys.argv) > 1:
     lines_could_join()

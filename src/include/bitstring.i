@@ -1,6 +1,6 @@
 /*-
  * Public Domain 2014-2015 MongoDB, Inc.
- * Public Domain 2008-2014 WiredTiger, Inc.
+ * Public Domain 2008-2014 ArchEngine, Inc.
  *
  * This is free and unencumbered software released into the public domain.
  *
@@ -74,9 +74,9 @@
  *	Allocate a bitstring.
  */
 static inline int
-__bit_alloc(WT_SESSION_IMPL *session, uint64_t nbits, void *retp)
+__bit_alloc(AE_SESSION_IMPL *session, uint64_t nbits, void *retp)
 {
-	return (__wt_calloc(
+	return (__ae_calloc(
 	    session, (size_t)__bitstr_size(nbits), sizeof(uint8_t), retp));
 }
 
@@ -261,7 +261,7 @@ __bit_getv(uint8_t *bitf, uint64_t entry, uint8_t width)
  *	Return a record number's bit-field value.
  */
 static inline uint8_t
-__bit_getv_recno(WT_PAGE *page, uint64_t recno, uint8_t width)
+__bit_getv_recno(AE_PAGE *page, uint64_t recno, uint8_t width)
 {
 	return (__bit_getv(
 	    page->pg_fix_bitf, recno - page->pg_fix_recno, width));
@@ -311,7 +311,7 @@ __bit_setv(uint8_t *bitf, uint64_t entry, uint8_t width, uint8_t value)
  *	Set a record number's bit-field value.
  */
 static inline void
-__bit_setv_recno(WT_PAGE *page, uint64_t recno, uint8_t width, uint8_t value)
+__bit_setv_recno(AE_PAGE *page, uint64_t recno, uint8_t width, uint8_t value)
 {
 	__bit_setv(page->pg_fix_bitf, recno - page->pg_fix_recno, width, value);
 }

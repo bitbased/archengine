@@ -1,52 +1,52 @@
 /*-
  * Copyright (c) 2014-2015 MongoDB, Inc.
- * Copyright (c) 2008-2014 WiredTiger, Inc.
+ * Copyright (c) 2008-2014 ArchEngine, Inc.
  *	All rights reserved.
  *
  * See the file LICENSE for redistribution information.
  */
 
-#include "wt_internal.h"
+#include "ae_internal.h"
 
 /*
- * __wt_thread_create --
+ * __ae_thread_create --
  *	Create a new thread of control.
  */
 int
-__wt_thread_create(WT_SESSION_IMPL *session,
-    wt_thread_t *tidret, WT_THREAD_CALLBACK(*func)(void *), void *arg)
+__ae_thread_create(AE_SESSION_IMPL *session,
+    ae_thread_t *tidret, AE_THREAD_CALLBACK(*func)(void *), void *arg)
 {
-	WT_DECL_RET;
+	AE_DECL_RET;
 
 	/* Spawn a new thread of control. */
-	WT_SYSCALL_RETRY(pthread_create(tidret, NULL, func, arg), ret);
+	AE_SYSCALL_RETRY(pthread_create(tidret, NULL, func, arg), ret);
 	if (ret == 0)
 		return (0);
-	WT_RET_MSG(session, ret, "pthread_create");
+	AE_RET_MSG(session, ret, "pthread_create");
 }
 
 /*
- * __wt_thread_join --
+ * __ae_thread_join --
  *	Wait for a thread of control to exit.
  */
 int
-__wt_thread_join(WT_SESSION_IMPL *session, wt_thread_t tid)
+__ae_thread_join(AE_SESSION_IMPL *session, ae_thread_t tid)
 {
-	WT_DECL_RET;
+	AE_DECL_RET;
 
-	WT_SYSCALL_RETRY(pthread_join(tid, NULL), ret);
+	AE_SYSCALL_RETRY(pthread_join(tid, NULL), ret);
 	if (ret == 0)
 		return (0);
 
-	WT_RET_MSG(session, ret, "pthread_join");
+	AE_RET_MSG(session, ret, "pthread_join");
 }
 
 /*
- * __wt_thread_id --
+ * __ae_thread_id --
  *	Fill in a printable version of the process and thread IDs.
  */
 void
-__wt_thread_id(char *buf, size_t buflen)
+__ae_thread_id(char *buf, size_t buflen)
 {
 	pthread_t self;
 

@@ -1,11 +1,11 @@
 /*! @page signals Signal handling
 
-WiredTiger has no signal handlers and does not modify process signal handler behavior in any way.
+ArchEngine has no signal handlers and does not modify process signal handler behavior in any way.
 
-WiredTiger restarts any system calls interrupted by a signal.
+ArchEngine restarts any system calls interrupted by a signal.
 
-WiredTiger applications exiting as a result of a signal should exit WiredTiger gracefully, closing any open WiredTiger handles, before terminating the process.
+ArchEngine applications exiting as a result of a signal should exit ArchEngine gracefully, closing any open ArchEngine handles, before terminating the process.
 
-WiredTiger is not re-entrant, and applications using WiredTiger should not make WiredTiger API calls from signal handlers.
+ArchEngine is not re-entrant, and applications using ArchEngine should not make ArchEngine API calls from signal handlers.
 
 */

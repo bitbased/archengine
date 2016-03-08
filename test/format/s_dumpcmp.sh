@@ -5,7 +5,7 @@ trap 'exit 1' 1 2
 top=../..
 
 home="RUNDIR"
-wturi="file:wt"
+aeuri="file:ae"
 
 colflag=0
 bdbdir=""
@@ -25,7 +25,7 @@ while :
 		shift;;
 	-n)
 		shift ;
-		wturi=$1
+		aeuri=$1
 		shift ;;
 	*)
 		break ;;
@@ -37,8 +37,8 @@ if test $# -ne 0; then
 	exit 1
 fi
 
-$top/wt -h $home dump $wturi |
-    sed -e '1,/^Data$/d' > $home/wt_dump
+$top/ae -h $home dump $aeuri |
+    sed -e '1,/^Data$/d' > $home/ae_dump
 
 if test "X$bdbdir" = "X"; then
 	exit 0
@@ -62,6 +62,6 @@ else
 		-e N > $home/bdb_dump
 fi
 
-cmp $home/wt_dump $home/bdb_dump > /dev/null
+cmp $home/ae_dump $home/bdb_dump > /dev/null
 
 exit $?

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Public Domain 2014-2015 MongoDB, Inc.
-# Public Domain 2008-2014 WiredTiger, Inc.
+# Public Domain 2008-2014 ArchEngine, Inc.
 #
 # This is free and unencumbered software released into the public domain.
 #
@@ -26,7 +26,7 @@
 # ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 # OTHER DEALINGS IN THE SOFTWARE.
 
-import wiredtiger, wttest
+import archengine, aetest
 
 pop_data = [
     ( 'USA', 1980, 226542250 ),
@@ -45,7 +45,7 @@ expected_out = [
 
 # test_schema01.py
 #    Test that tables are reconciled correctly when they are empty.
-class test_schema01(wttest.WiredTigerTestCase):
+class test_schema01(aetest.ArchEngineTestCase):
     '''Test various tree types becoming empty'''
 
     basename = 'test_schema01'
@@ -53,12 +53,12 @@ class test_schema01(wttest.WiredTigerTestCase):
     cgname = 'colgroup:' + basename
 
     def __init__(self, *args, **kwargs):
-        wttest.WiredTigerTestCase.__init__(self, *args, **kwargs)
+        aetest.ArchEngineTestCase.__init__(self, *args, **kwargs)
         self.reconcile = False
 
     def reopen(self):
         self.conn.close()
-        self.conn = wiredtiger.wiredtiger_open('.', None)
+        self.conn = archengine.archengine_open('.', None)
         self.session = self.conn.open_session()
 
     def create_table(self):
@@ -100,4 +100,4 @@ class test_schema01(wttest.WiredTigerTestCase):
             self.drop_table()
 
 if __name__ == '__main__':
-    wttest.run()
+    aetest.run()

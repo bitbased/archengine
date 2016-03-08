@@ -1,6 +1,6 @@
 /*-
  * Public Domain 2014-2015 MongoDB, Inc.
- * Public Domain 2008-2014 WiredTiger, Inc.
+ * Public Domain 2008-2014 ArchEngine, Inc.
  *
  * This is free and unencumbered software released into the public domain.
  *
@@ -34,7 +34,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <wiredtiger.h>
+#include <archengine.h>
 
 static const char *home;
 
@@ -42,26 +42,26 @@ int
 main(void)
 {
 	int ret;
-	WT_CONNECTION *conn;
-	WT_SESSION *session;
-	WT_CURSOR *cursor;
+	AE_CONNECTION *conn;
+	AE_SESSION *session;
+	AE_CURSOR *cursor;
 	const char *key, *value;
 
 	/*
 	 * Create a clean test directory for this run of the test program if the
 	 * environment variable isn't already set (as is done by make check).
 	 */
-	if (getenv("WIREDTIGER_HOME") == NULL) {
-		home = "WT_HOME";
-		ret = system("rm -rf WT_HOME && mkdir WT_HOME");
+	if (getenv("ARCHENGINE_HOME") == NULL) {
+		home = "AE_HOME";
+		ret = system("rm -rf AE_HOME && mkdir AE_HOME");
 	} else
 		home = NULL;
 
 	/*! [configure cache size] */
-	if ((ret = wiredtiger_open(home, NULL,
+	if ((ret = archengine_open(home, NULL,
 	    "create,cache_size=500M", &conn)) != 0)
 		fprintf(stderr, "Error connecting to %s: %s\n",
-		    home, wiredtiger_strerror(ret));
+		    home, archengine_strerror(ret));
 	/*! [configure cache size] */
 
 	/*! [create a table] */

@@ -1,6 +1,6 @@
 /*-
  * Public Domain 2014-2015 MongoDB, Inc.
- * Public Domain 2008-2014 WiredTiger, Inc.
+ * Public Domain 2008-2014 ArchEngine, Inc.
  *
  * This is free and unencumbered software released into the public domain.
  *
@@ -30,28 +30,28 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <wiredtiger.h>
-#include <wiredtiger_ext.h>
+#include <archengine.h>
+#include <archengine_ext.h>
 
-/*! [WT_ENCRYPTOR initialization structure] */
+/*! [AE_ENCRYPTOR initialization structure] */
 /* Local encryptor structure. */
 typedef struct {
-	WT_ENCRYPTOR encryptor;		/* Must come first */
+	AE_ENCRYPTOR encryptor;		/* Must come first */
 
-	WT_EXTENSION_API *wt_api;		/* Extension API */
+	AE_EXTENSION_API *ae_api;		/* Extension API */
 
 	unsigned long nop_calls;		/* Count of calls */
 
 } NOP_ENCRYPTOR;
-/*! [WT_ENCRYPTOR initialization structure] */
+/*! [AE_ENCRYPTOR initialization structure] */
 
-/*! [WT_ENCRYPTOR encrypt] */
+/*! [AE_ENCRYPTOR encrypt] */
 /*
  * nop_encrypt --
  *	A simple encryption example that passes data through unchanged.
  */
 static int
-nop_encrypt(WT_ENCRYPTOR *encryptor, WT_SESSION *session,
+nop_encrypt(AE_ENCRYPTOR *encryptor, AE_SESSION *session,
     uint8_t *src, size_t src_len,
     uint8_t *dst, size_t dst_len,
     size_t *result_lenp)
@@ -70,15 +70,15 @@ nop_encrypt(WT_ENCRYPTOR *encryptor, WT_SESSION *session,
 
 	return (0);
 }
-/*! [WT_ENCRYPTOR encrypt] */
+/*! [AE_ENCRYPTOR encrypt] */
 
-/*! [WT_ENCRYPTOR decrypt] */
+/*! [AE_ENCRYPTOR decrypt] */
 /*
  * nop_decrypt --
  *	A simple decryption example that passes data through unchanged.
  */
 static int
-nop_decrypt(WT_ENCRYPTOR *encryptor, WT_SESSION *session,
+nop_decrypt(AE_ENCRYPTOR *encryptor, AE_SESSION *session,
     uint8_t *src, size_t src_len,
     uint8_t *dst, size_t dst_len,
     size_t *result_lenp)
@@ -98,16 +98,16 @@ nop_decrypt(WT_ENCRYPTOR *encryptor, WT_SESSION *session,
 	*result_lenp = dst_len;
 	return (0);
 }
-/*! [WT_ENCRYPTOR decrypt] */
+/*! [AE_ENCRYPTOR decrypt] */
 
-/*! [WT_ENCRYPTOR sizing] */
+/*! [AE_ENCRYPTOR sizing] */
 /*
  * nop_sizing --
- *	A simple sizing example that tells wiredtiger that the
+ *	A simple sizing example that tells archengine that the
  *	encrypted buffer is always the same as the source buffer.
  */
 static int
-nop_sizing(WT_ENCRYPTOR *encryptor, WT_SESSION *session,
+nop_sizing(AE_ENCRYPTOR *encryptor, AE_SESSION *session,
     size_t *expansion_constantp)
 {
 	NOP_ENCRYPTOR *nop_encryptor = (NOP_ENCRYPTOR *)encryptor;
@@ -119,15 +119,15 @@ nop_sizing(WT_ENCRYPTOR *encryptor, WT_SESSION *session,
 	*expansion_constantp = 0;
 	return (0);
 }
-/*! [WT_ENCRYPTOR sizing] */
+/*! [AE_ENCRYPTOR sizing] */
 
-/*! [WT_ENCRYPTOR terminate] */
+/*! [AE_ENCRYPTOR terminate] */
 /*
  * nop_terminate --
- *	WiredTiger no-op encryption termination.
+ *	ArchEngine no-op encryption termination.
  */
 static int
-nop_terminate(WT_ENCRYPTOR *encryptor, WT_SESSION *session)
+nop_terminate(AE_ENCRYPTOR *encryptor, AE_SESSION *session)
 {
 	NOP_ENCRYPTOR *nop_encryptor = (NOP_ENCRYPTOR *)encryptor;
 
@@ -140,15 +140,15 @@ nop_terminate(WT_ENCRYPTOR *encryptor, WT_SESSION *session)
 
 	return (0);
 }
-/*! [WT_ENCRYPTOR terminate] */
+/*! [AE_ENCRYPTOR terminate] */
 
-/*! [WT_ENCRYPTOR initialization function] */
+/*! [AE_ENCRYPTOR initialization function] */
 /*
- * wiredtiger_extension_init --
+ * archengine_extension_init --
  *	A simple shared library encryption example.
  */
 int
-wiredtiger_extension_init(WT_CONNECTION *connection, WT_CONFIG_ARG *config)
+archengine_extension_init(AE_CONNECTION *connection, AE_CONFIG_ARG *config)
 {
 	NOP_ENCRYPTOR *nop_encryptor;
 
@@ -158,7 +158,7 @@ wiredtiger_extension_init(WT_CONNECTION *connection, WT_CONFIG_ARG *config)
 		return (errno);
 
 	/*
-	 * Allocate a local encryptor structure, with a WT_ENCRYPTOR structure
+	 * Allocate a local encryptor structure, with a AE_ENCRYPTOR structure
 	 * as the first field, allowing us to treat references to either type of
 	 * structure as a reference to the other type.
 	 *
@@ -169,10 +169,10 @@ wiredtiger_extension_init(WT_CONNECTION *connection, WT_CONFIG_ARG *config)
 	nop_encryptor->encryptor.sizing = nop_sizing;
 	nop_encryptor->encryptor.terminate = nop_terminate;
 
-	nop_encryptor->wt_api = connection->get_extension_api(connection);
+	nop_encryptor->ae_api = connection->get_extension_api(connection);
 
 						/* Load the encryptor */
 	return (connection->add_encryptor(
-	    connection, "nop", (WT_ENCRYPTOR *)nop_encryptor, NULL));
+	    connection, "nop", (AE_ENCRYPTOR *)nop_encryptor, NULL));
 }
-/*! [WT_ENCRYPTOR initialization function] */
+/*! [AE_ENCRYPTOR initialization function] */

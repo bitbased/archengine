@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Public Domain 2014-2015 MongoDB, Inc.
-# Public Domain 2008-2014 WiredTiger, Inc.
+# Public Domain 2008-2014 ArchEngine, Inc.
 #
 # This is free and unencumbered software released into the public domain.
 #
@@ -32,11 +32,11 @@
 
 import shutil, os
 from suite_subprocess import suite_subprocess
-from wiredtiger import wiredtiger_open
-from wtscenario import multiply_scenarios, number_scenarios
-import wttest
+from archengine import archengine_open
+from aescenario import multiply_scenarios, number_scenarios
+import aetest
 
-class test_txn04(wttest.WiredTigerTestCase, suite_subprocess):
+class test_txn04(aetest.ArchEngineTestCase, suite_subprocess):
     logmax = "100K"
     tablename = 'test_txn04'
     uri = 'table:' + tablename
@@ -64,21 +64,21 @@ class test_txn04(wttest.WiredTigerTestCase, suite_subprocess):
     txn1s = [('t1c', dict(txn1='commit')), ('t1r', dict(txn1='rollback'))]
 
     scenarios = number_scenarios(multiply_scenarios('.', types, op1s, txn1s))
-    # Overrides WiredTigerTestCase
+    # Overrides ArchEngineTestCase
     def setUpConnectionOpen(self, dir):
         self.home = dir
         # Cycle through the different transaction_sync values in a
         # deterministic manner.
         self.txn_sync = self.sync_list[
             self.scenario_number % len(self.sync_list)]
-        self.backup_dir = os.path.join(self.home, "WT_BACKUP")
+        self.backup_dir = os.path.join(self.home, "AE_BACKUP")
         # Set archive false on the home directory.
         conn_params = \
                 'log=(archive=false,enabled,file_max=%s),' % self.logmax + \
                 'create,error_prefix="%s: ",' % self.shortid() + \
                 'transaction_sync="%s",' % self.txn_sync
         # print "Creating conn at '%s' with config '%s'" % (dir, conn_params)
-        conn = wiredtiger_open(dir, conn_params)
+        conn = archengine_open(dir, conn_params)
         self.pr(`conn`)
         self.session2 = conn.open_session()
         return conn
@@ -111,7 +111,7 @@ class test_txn04(wttest.WiredTigerTestCase, suite_subprocess):
 
     def hot_backup(self, backup_uri, committed):
         # If we are backing up a target, assume the directory exists.
-        # We just use the wt backup command.
+        # We just use the ae backup command.
         # A future test extension could also use a cursor.
         cmd = '-h ' + self.home + ' backup '
         if backup_uri != None:
@@ -121,10 +121,10 @@ class test_txn04(wttest.WiredTigerTestCase, suite_subprocess):
             os.mkdir(self.backup_dir)
 
         cmd += self.backup_dir
-        self.runWt(cmd.split())
+        self.runAe(cmd.split())
         self.exception='false'
         backup_conn_params = 'log=(enabled,file_max=%s)' % self.logmax
-        backup_conn = wiredtiger_open(self.backup_dir, backup_conn_params)
+        backup_conn = archengine_open(self.backup_dir, backup_conn_params)
         try:
             self.check(backup_conn.open_session(), None, committed)
         except:
@@ -147,7 +147,7 @@ class test_txn04(wttest.WiredTigerTestCase, suite_subprocess):
         txns = (self.txn1, )
         for i, ot in enumerate(zip(ops, txns)):
             # Perform a full hot backup of the original tables.
-            # The runWt command closes our connection and sessions so
+            # The runAe command closes our connection and sessions so
             # we need to reopen them here.
             self.hot_backup(None, committed)
             self.assertEqual(True, self.exception == 'false')
@@ -203,4 +203,4 @@ class test_txn04(wttest.WiredTigerTestCase, suite_subprocess):
             self.assertEqual(True, self.exception == 'false')
 
 if __name__ == '__main__':
-    wttest.run()
+    aetest.run()

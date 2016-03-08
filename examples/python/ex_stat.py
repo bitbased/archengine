@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Public Domain 2014-2015 MongoDB, Inc.
-# Public Domain 2008-2014 WiredTiger, Inc.
+# Public Domain 2008-2014 ArchEngine, Inc.
 #
 # This is free and unencumbered software released into the public domain.
 #
@@ -30,15 +30,15 @@
 #      This is an example demonstrating how to query database statistics.
 
 import os
-from wiredtiger import wiredtiger_open,WIREDTIGER_VERSION_STRING,stat
+from archengine import archengine_open,ARCHENGINE_VERSION_STRING,stat
 
 
 def main():
     # Create a clean test directory for this run of the test program
-    os.system('rm -rf WT_HOME')
-    os.makedirs('WT_HOME')
+    os.system('rm -rf AE_HOME')
+    os.makedirs('AE_HOME')
     # Connect to the database and open a session
-    conn = wiredtiger_open('WT_HOME', 'create,statistics=(all)')
+    conn = archengine_open('AE_HOME', 'create,statistics=(all)')
     session = conn.open_session()
 
     # Create a simple table
@@ -51,7 +51,7 @@ def main():
     cursor.close()
 
     session.checkpoint()
-    print WIREDTIGER_VERSION_STRING
+    print ARCHENGINE_VERSION_STRING
     print_database_stats(session)
     print_file_stats(session)
     print_overflow_pages(session)

@@ -1,25 +1,25 @@
 /*-
  * Copyright (c) 2014-2015 MongoDB, Inc.
- * Copyright (c) 2008-2014 WiredTiger, Inc.
+ * Copyright (c) 2008-2014 ArchEngine, Inc.
  *	All rights reserved.
  *
  * See the file LICENSE for redistribution information.
  */
 
-#include "wt_internal.h"
+#include "ae_internal.h"
 
 /*
- * __wt_mmap --
+ * __ae_mmap --
  *	Map a file into memory.
  */
 int
-__wt_mmap(WT_SESSION_IMPL *session,
-    WT_FH *fh, void *mapp, size_t *lenp, void **mappingcookie)
+__ae_mmap(AE_SESSION_IMPL *session,
+    AE_FH *fh, void *mapp, size_t *lenp, void **mappingcookie)
 {
 	void *map;
 	size_t orig_size;
 
-	WT_UNUSED(mappingcookie);
+	AE_UNUSED(mappingcookie);
 
 	/*
 	 * Record the current size and only map and set that as the length, it
@@ -35,103 +35,103 @@ __wt_mmap(WT_SESSION_IMPL *session,
 	    MAP_NOCORE |
 #endif
 	    MAP_PRIVATE,
-	    fh->fd, (wt_off_t)0)) == MAP_FAILED) {
-		WT_RET_MSG(session, __wt_errno(),
-		    "%s map error: failed to map %" WT_SIZET_FMT " bytes",
+	    fh->fd, (ae_off_t)0)) == MAP_FAILED) {
+		AE_RET_MSG(session, __ae_errno(),
+		    "%s map error: failed to map %" AE_SIZET_FMT " bytes",
 		    fh->name, orig_size);
 	}
-	(void)__wt_verbose(session, WT_VERB_FILEOPS,
-	    "%s: map %p: %" WT_SIZET_FMT " bytes", fh->name, map, orig_size);
+	(void)__ae_verbose(session, AE_VERB_FILEOPS,
+	    "%s: map %p: %" AE_SIZET_FMT " bytes", fh->name, map, orig_size);
 
 	*(void **)mapp = map;
 	*lenp = orig_size;
 	return (0);
 }
 
-#define	WT_VM_PAGESIZE	4096
+#define	AE_VM_PAGESIZE	4096
 
 /*
- * __wt_mmap_preload --
+ * __ae_mmap_preload --
  *	Cause a section of a memory map to be faulted in.
  */
 int
-__wt_mmap_preload(WT_SESSION_IMPL *session, const void *p, size_t size)
+__ae_mmap_preload(AE_SESSION_IMPL *session, const void *p, size_t size)
 {
 #ifdef HAVE_POSIX_MADVISE
 	/* Linux requires the address be aligned to a 4KB boundary. */
-	WT_BM *bm = S2BT(session)->bm;
-	WT_DECL_RET;
-	void *blk = (void *)((uintptr_t)p & ~(uintptr_t)(WT_VM_PAGESIZE - 1));
-	size += WT_PTRDIFF(p, blk);
+	AE_BM *bm = S2BT(session)->bm;
+	AE_DECL_RET;
+	void *blk = (void *)((uintptr_t)p & ~(uintptr_t)(AE_VM_PAGESIZE - 1));
+	size += AE_PTRDIFF(p, blk);
 
 	/* XXX proxy for "am I doing a scan?" -- manual read-ahead */
-	if (F_ISSET(session, WT_SESSION_NO_CACHE)) {
+	if (F_ISSET(session, AE_SESSION_NO_CACHE)) {
 		/* Read in 2MB blocks every 1MB of data. */
 		if (((uintptr_t)((uint8_t *)blk + size) &
 		    (uintptr_t)((1<<20) - 1)) < (uintptr_t)blk)
 			return (0);
-		size = WT_MIN(WT_MAX(20 * size, 2 << 20),
-		    WT_PTRDIFF((uint8_t *)bm->map + bm->maplen, blk));
+		size = AE_MIN(AE_MAX(20 * size, 2 << 20),
+		    AE_PTRDIFF((uint8_t *)bm->map + bm->maplen, blk));
 	}
 
 	/*
 	 * Manual pages aren't clear on whether alignment is required for the
 	 * size, so we will be conservative.
 	 */
-	size &= ~(size_t)(WT_VM_PAGESIZE - 1);
+	size &= ~(size_t)(AE_VM_PAGESIZE - 1);
 
-	if (size > WT_VM_PAGESIZE &&
+	if (size > AE_VM_PAGESIZE &&
 	    (ret = posix_madvise(blk, size, POSIX_MADV_WILLNEED)) != 0)
-		WT_RET_MSG(session, ret, "posix_madvise will need");
+		AE_RET_MSG(session, ret, "posix_madvise will need");
 #else
-	WT_UNUSED(session);
-	WT_UNUSED(p);
-	WT_UNUSED(size);
+	AE_UNUSED(session);
+	AE_UNUSED(p);
+	AE_UNUSED(size);
 #endif
 
 	return (0);
 }
 
 /*
- * __wt_mmap_discard --
+ * __ae_mmap_discard --
  *	Discard a chunk of the memory map.
  */
 int
-__wt_mmap_discard(WT_SESSION_IMPL *session, void *p, size_t size)
+__ae_mmap_discard(AE_SESSION_IMPL *session, void *p, size_t size)
 {
 #ifdef HAVE_POSIX_MADVISE
 	/* Linux requires the address be aligned to a 4KB boundary. */
-	WT_DECL_RET;
-	void *blk = (void *)((uintptr_t)p & ~(uintptr_t)(WT_VM_PAGESIZE - 1));
-	size += WT_PTRDIFF(p, blk);
+	AE_DECL_RET;
+	void *blk = (void *)((uintptr_t)p & ~(uintptr_t)(AE_VM_PAGESIZE - 1));
+	size += AE_PTRDIFF(p, blk);
 
 	if ((ret = posix_madvise(blk, size, POSIX_MADV_DONTNEED)) != 0)
-		WT_RET_MSG(session, ret, "posix_madvise don't need");
+		AE_RET_MSG(session, ret, "posix_madvise don't need");
 #else
-	WT_UNUSED(session);
-	WT_UNUSED(p);
-	WT_UNUSED(size);
+	AE_UNUSED(session);
+	AE_UNUSED(p);
+	AE_UNUSED(size);
 #endif
 	return (0);
 }
 
 /*
- * __wt_munmap --
+ * __ae_munmap --
  *	Remove a memory mapping.
  */
 int
-__wt_munmap(WT_SESSION_IMPL *session,
-    WT_FH *fh, void *map, size_t len, void **mappingcookie)
+__ae_munmap(AE_SESSION_IMPL *session,
+    AE_FH *fh, void *map, size_t len, void **mappingcookie)
 {
-	WT_UNUSED(mappingcookie);
+	AE_UNUSED(mappingcookie);
 
-	WT_RET(__wt_verbose(session, WT_VERB_FILEOPS,
-	    "%s: unmap %p: %" WT_SIZET_FMT " bytes", fh->name, map, len));
+	AE_RET(__ae_verbose(session, AE_VERB_FILEOPS,
+	    "%s: unmap %p: %" AE_SIZET_FMT " bytes", fh->name, map, len));
 
 	if (munmap(map, len) == 0)
 		return (0);
 
-	WT_RET_MSG(session, __wt_errno(),
-	    "%s unmap error: failed to unmap %" WT_SIZET_FMT " bytes",
+	AE_RET_MSG(session, __ae_errno(),
+	    "%s unmap error: failed to unmap %" AE_SIZET_FMT " bytes",
 	    fh->name, len);
 }

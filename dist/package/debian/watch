@@ -5,4 +5,4 @@
 # Compulsory line, this is a version 3 file
 version=3
 
-http://source.wiredtiger.com/releases/wiredtiger-(.*)\.tar\.bz2
+http://source.archengine.com/releases/archengine-(.*)\.tar\.bz2

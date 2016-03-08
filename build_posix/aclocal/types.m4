@@ -2,15 +2,15 @@
 #	Check for missing types, create substitutes where we can.
 AC_DEFUN([AM_TYPES], [
 	# Basic list of include files that might have types.  We also use
-	# as the list of includes directly included by wiredtiger.h.
+	# as the list of includes directly included by archengine.h.
 	std_includes="
 #include <sys/types.h>
 #include <inttypes.h>
 #include <stdarg.h>
 #include <stdint.h>
 #include <stdio.h>"
-	AC_SUBST(wiredtiger_includes_decl)
-	wiredtiger_includes_decl="$std_includes"
+	AC_SUBST(archengine_includes_decl)
+	archengine_includes_decl="$std_includes"
 
 	# We require FILE, pid_t, size_t, ssize_t, time_t, uintmax_t
 	# and uintptr_t.
@@ -29,7 +29,7 @@ AC_DEFUN([AM_TYPES], [
 	# where it's 4B, not 8B.
 	AC_SUBST(off_t_decl)
 	AC_CHECK_TYPE(off_t,
-	    [off_t_decl="typedef off_t wt_off_t;"],
+	    [off_t_decl="typedef off_t ae_off_t;"],
 	    [AC_MSG_ERROR([No off_t type.])],
 	    $std_includes)
 

@@ -1,20 +1,20 @@
 /*-
  * Copyright (c) 2014-2015 MongoDB, Inc.
- * Copyright (c) 2008-2014 WiredTiger, Inc.
+ * Copyright (c) 2008-2014 ArchEngine, Inc.
  *	All rights reserved.
  *
  * See the file LICENSE for redistribution information.
  */
 
-#include "wt_internal.h"
+#include "ae_internal.h"
 
 /*
- * __wt_buf_grow_worker --
+ * __ae_buf_grow_worker --
  *	Grow a buffer that may be in-use, and ensure that all data is local to
  * the buffer.
  */
 int
-__wt_buf_grow_worker(WT_SESSION_IMPL *session, WT_ITEM *buf, size_t size)
+__ae_buf_grow_worker(AE_SESSION_IMPL *session, AE_ITEM *buf, size_t size)
 {
 	size_t offset;
 	bool copy_data;
@@ -28,8 +28,8 @@ __wt_buf_grow_worker(WT_SESSION_IMPL *session, WT_ITEM *buf, size_t size)
 	 *	Existing data not-local to the buffer: copy the data into the
 	 * buffer and set the data to reference it.
 	 */
-	if (WT_DATA_IN_ITEM(buf)) {
-		offset = WT_PTRDIFF(buf->data, buf->mem);
+	if (AE_DATA_IN_ITEM(buf)) {
+		offset = AE_PTRDIFF(buf->data, buf->mem);
 		copy_data = false;
 	} else {
 		offset = 0;
@@ -41,11 +41,11 @@ __wt_buf_grow_worker(WT_SESSION_IMPL *session, WT_ITEM *buf, size_t size)
 	 * check to see if we actually need to grow anything.
 	 */
 	if (size > buf->memsize) {
-		if (F_ISSET(buf, WT_ITEM_ALIGNED))
-			WT_RET(__wt_realloc_aligned(
+		if (F_ISSET(buf, AE_ITEM_ALIGNED))
+			AE_RET(__ae_realloc_aligned(
 			    session, &buf->memsize, size, &buf->mem));
 		else
-			WT_RET(__wt_realloc(
+			AE_RET(__ae_realloc(
 			    session, &buf->memsize, size, &buf->mem));
 	}
 
@@ -62,12 +62,12 @@ __wt_buf_grow_worker(WT_SESSION_IMPL *session, WT_ITEM *buf, size_t size)
 }
 
 /*
- * __wt_buf_fmt --
+ * __ae_buf_fmt --
  *	Grow a buffer to accommodate a formatted string.
  */
 int
-__wt_buf_fmt(WT_SESSION_IMPL *session, WT_ITEM *buf, const char *fmt, ...)
-    WT_GCC_FUNC_ATTRIBUTE((format (printf, 3, 4)))
+__ae_buf_fmt(AE_SESSION_IMPL *session, AE_ITEM *buf, const char *fmt, ...)
+    AE_GCC_FUNC_ATTRIBUTE((format (printf, 3, 4)))
 {
 	va_list ap;
 	size_t len;
@@ -88,17 +88,17 @@ __wt_buf_fmt(WT_SESSION_IMPL *session, WT_ITEM *buf, const char *fmt, ...)
 		 * If not, double the size of the buffer: we're dealing with
 		 * strings, and we don't expect these numbers to get huge.
 		 */
-		WT_RET(__wt_buf_extend(session, buf, len + 1));
+		AE_RET(__ae_buf_extend(session, buf, len + 1));
 	}
 }
 
 /*
- * __wt_buf_catfmt --
+ * __ae_buf_catfmt --
  *	Grow a buffer to append a formatted string.
  */
 int
-__wt_buf_catfmt(WT_SESSION_IMPL *session, WT_ITEM *buf, const char *fmt, ...)
-    WT_GCC_FUNC_ATTRIBUTE((format (printf, 3, 4)))
+__ae_buf_catfmt(AE_SESSION_IMPL *session, AE_ITEM *buf, const char *fmt, ...)
+    AE_GCC_FUNC_ATTRIBUTE((format (printf, 3, 4)))
 {
 	va_list ap;
 	size_t len, space;
@@ -110,12 +110,12 @@ __wt_buf_catfmt(WT_SESSION_IMPL *session, WT_ITEM *buf, const char *fmt, ...)
 	 * previously existing data at this point, if data wasn't in the local
 	 * buffer, but we don't and it would be bad if we didn't notice it.)
 	 */
-	WT_ASSERT(session, buf->data == NULL || WT_DATA_IN_ITEM(buf));
+	AE_ASSERT(session, buf->data == NULL || AE_DATA_IN_ITEM(buf));
 
 	for (;;) {
 		va_start(ap, fmt);
 		p = (char *)((uint8_t *)buf->mem + buf->size);
-		WT_ASSERT(session, buf->memsize >= buf->size);
+		AE_ASSERT(session, buf->memsize >= buf->size);
 		space = buf->memsize - buf->size;
 		len = (size_t)vsnprintf(p, (size_t)space, fmt, ap);
 		va_end(ap);
@@ -130,23 +130,23 @@ __wt_buf_catfmt(WT_SESSION_IMPL *session, WT_ITEM *buf, const char *fmt, ...)
 		 * If not, double the size of the buffer: we're dealing with
 		 * strings, and we don't expect these numbers to get huge.
 		 */
-		WT_RET(__wt_buf_extend(session, buf, buf->size + len + 1));
+		AE_RET(__ae_buf_extend(session, buf, buf->size + len + 1));
 	}
 }
 
 /*
- * __wt_scr_alloc_func --
+ * __ae_scr_alloc_func --
  *	Scratch buffer allocation function.
  */
 int
-__wt_scr_alloc_func(WT_SESSION_IMPL *session, size_t size, WT_ITEM **scratchp
+__ae_scr_alloc_func(AE_SESSION_IMPL *session, size_t size, AE_ITEM **scratchp
 #ifdef HAVE_DIAGNOSTIC
     , const char *file, int line
 #endif
     )
 {
-	WT_DECL_RET;
-	WT_ITEM *buf, **p, **best, **slot;
+	AE_DECL_RET;
+	AE_ITEM *buf, **p, **best, **slot;
 	size_t allocated;
 	u_int i;
 
@@ -154,10 +154,10 @@ __wt_scr_alloc_func(WT_SESSION_IMPL *session, size_t size, WT_ITEM **scratchp
 	*scratchp = NULL;
 
 	/*
-	 * Each WT_SESSION_IMPL has an array of scratch buffers available for
-	 * use by any function.  We use WT_ITEM structures for scratch memory
+	 * Each AE_SESSION_IMPL has an array of scratch buffers available for
+	 * use by any function.  We use AE_ITEM structures for scratch memory
 	 * because we already have functions that do variable-length allocation
-	 * on a WT_ITEM.  Scratch buffers are allocated only by a single thread
+	 * on a AE_ITEM.  Scratch buffers are allocated only by a single thread
 	 * of control, so no locking is necessary.
 	 *
 	 * Walk the array, looking for a buffer we can use.
@@ -171,7 +171,7 @@ __wt_scr_alloc_func(WT_SESSION_IMPL *session, size_t size, WT_ITEM **scratchp
 			continue;
 		}
 
-		if (F_ISSET(buf, WT_ITEM_INUSE))
+		if (F_ISSET(buf, AE_ITEM_INUSE))
 			continue;
 
 		/*
@@ -194,14 +194,14 @@ __wt_scr_alloc_func(WT_SESSION_IMPL *session, size_t size, WT_ITEM **scratchp
 	 * slot we allocated.
 	 */
 	if (best == NULL && slot == NULL) {
-		allocated = session->scratch_alloc * sizeof(WT_ITEM *);
-		WT_ERR(__wt_realloc(session, &allocated,
-		    (session->scratch_alloc + 10) * sizeof(WT_ITEM *),
+		allocated = session->scratch_alloc * sizeof(AE_ITEM *);
+		AE_ERR(__ae_realloc(session, &allocated,
+		    (session->scratch_alloc + 10) * sizeof(AE_ITEM *),
 		    &session->scratch));
 #ifdef HAVE_DIAGNOSTIC
-		allocated = session->scratch_alloc * sizeof(WT_SCRATCH_TRACK);
-		WT_ERR(__wt_realloc(session, &allocated,
-		    (session->scratch_alloc + 10) * sizeof(WT_SCRATCH_TRACK),
+		allocated = session->scratch_alloc * sizeof(AE_SCRATCH_TRACK);
+		AE_ERR(__ae_realloc(session, &allocated,
+		    (session->scratch_alloc + 10) * sizeof(AE_SCRATCH_TRACK),
 		    &session->scratch_track));
 #endif
 		slot = session->scratch + session->scratch_alloc;
@@ -213,19 +213,19 @@ __wt_scr_alloc_func(WT_SESSION_IMPL *session, size_t size, WT_ITEM **scratchp
 	 * buffer.
 	 */
 	if (best == NULL) {
-		WT_ASSERT(session, slot != NULL);
+		AE_ASSERT(session, slot != NULL);
 		best = slot;
 
-		WT_ERR(__wt_calloc_one(session, best));
+		AE_ERR(__ae_calloc_one(session, best));
 
 		/* Scratch buffers must be aligned. */
-		F_SET(*best, WT_ITEM_ALIGNED);
+		F_SET(*best, AE_ITEM_ALIGNED);
 	}
 
 	/* Grow the buffer as necessary and return. */
 	session->scratch_cached -= (*best)->memsize;
-	WT_ERR(__wt_buf_init(session, *best, size));
-	F_SET(*best, WT_ITEM_INUSE);
+	AE_ERR(__ae_buf_init(session, *best, size));
+	F_SET(*best, AE_ITEM_INUSE);
 
 #ifdef HAVE_DIAGNOSTIC
 	session->scratch_track[best - session->scratch].file = file;
@@ -235,26 +235,26 @@ __wt_scr_alloc_func(WT_SESSION_IMPL *session, size_t size, WT_ITEM **scratchp
 	*scratchp = *best;
 	return (0);
 
-err:	WT_RET_MSG(session, ret,
+err:	AE_RET_MSG(session, ret,
 	    "session unable to allocate a scratch buffer");
 }
 
 /*
- * __wt_scr_discard --
+ * __ae_scr_discard --
  *	Free all memory associated with the scratch buffers.
  */
 void
-__wt_scr_discard(WT_SESSION_IMPL *session)
+__ae_scr_discard(AE_SESSION_IMPL *session)
 {
-	WT_ITEM **bufp;
+	AE_ITEM **bufp;
 	u_int i;
 
 	for (i = 0,
 	    bufp = session->scratch; i < session->scratch_alloc; ++i, ++bufp) {
 		if (*bufp == NULL)
 			continue;
-		if (F_ISSET(*bufp, WT_ITEM_INUSE))
-			__wt_errx(session,
+		if (F_ISSET(*bufp, AE_ITEM_INUSE))
+			__ae_errx(session,
 			    "scratch buffer allocated and never discarded"
 #ifdef HAVE_DIAGNOSTIC
 			    ": %s: %d",
@@ -265,58 +265,58 @@ __wt_scr_discard(WT_SESSION_IMPL *session)
 #endif
 			    );
 
-		__wt_buf_free(session, *bufp);
-		__wt_free(session, *bufp);
+		__ae_buf_free(session, *bufp);
+		__ae_free(session, *bufp);
 	}
 
 	session->scratch_alloc = 0;
 	session->scratch_cached = 0;
-	__wt_free(session, session->scratch);
+	__ae_free(session, session->scratch);
 #ifdef HAVE_DIAGNOSTIC
-	__wt_free(session, session->scratch_track);
+	__ae_free(session, session->scratch_track);
 #endif
 }
 
 /*
- * __wt_ext_scr_alloc --
+ * __ae_ext_scr_alloc --
  *	Allocate a scratch buffer, and return the memory reference.
  */
 void *
-__wt_ext_scr_alloc(
-    WT_EXTENSION_API *wt_api, WT_SESSION *wt_session, size_t size)
+__ae_ext_scr_alloc(
+    AE_EXTENSION_API *ae_api, AE_SESSION *ae_session, size_t size)
 {
-	WT_ITEM *buf;
-	WT_SESSION_IMPL *session;
+	AE_ITEM *buf;
+	AE_SESSION_IMPL *session;
 
-	if ((session = (WT_SESSION_IMPL *)wt_session) == NULL)
-		session = ((WT_CONNECTION_IMPL *)wt_api->conn)->default_session;
+	if ((session = (AE_SESSION_IMPL *)ae_session) == NULL)
+		session = ((AE_CONNECTION_IMPL *)ae_api->conn)->default_session;
 
-	return (__wt_scr_alloc(session, size, &buf) == 0 ? buf->mem : NULL);
+	return (__ae_scr_alloc(session, size, &buf) == 0 ? buf->mem : NULL);
 }
 
 /*
- * __wt_ext_scr_free --
+ * __ae_ext_scr_free --
  *	Free a scratch buffer based on the memory reference.
  */
 void
-__wt_ext_scr_free(WT_EXTENSION_API *wt_api, WT_SESSION *wt_session, void *p)
+__ae_ext_scr_free(AE_EXTENSION_API *ae_api, AE_SESSION *ae_session, void *p)
 {
-	WT_ITEM **bufp;
-	WT_SESSION_IMPL *session;
+	AE_ITEM **bufp;
+	AE_SESSION_IMPL *session;
 	u_int i;
 
-	if ((session = (WT_SESSION_IMPL *)wt_session) == NULL)
-		session = ((WT_CONNECTION_IMPL *)wt_api->conn)->default_session;
+	if ((session = (AE_SESSION_IMPL *)ae_session) == NULL)
+		session = ((AE_CONNECTION_IMPL *)ae_api->conn)->default_session;
 
 	for (i = 0,
 	    bufp = session->scratch; i < session->scratch_alloc; ++i, ++bufp)
 		if (*bufp != NULL && (*bufp)->mem == p) {
 			/*
-			 * Do NOT call __wt_scr_free() here, it clears the
+			 * Do NOT call __ae_scr_free() here, it clears the
 			 * caller's pointer, which would truncate the list.
 			 */
-			F_CLR(*bufp, WT_ITEM_INUSE);
+			F_CLR(*bufp, AE_ITEM_INUSE);
 			return;
 		}
-	__wt_errx(session, "extension free'd non-existent scratch buffer");
+	__ae_errx(session, "extension free'd non-existent scratch buffer");
 }

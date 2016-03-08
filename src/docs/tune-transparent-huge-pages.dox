@@ -1,6 +1,6 @@
 /*! @page tune_transparent_huge_pages Linux transparent huge pages
 
-The performance of WiredTiger applications can be adversely affected
+The performance of ArchEngine applications can be adversely affected
 when transparent huge pages are enabled on Linux systems. Some Linux
 systems enable transparent huge pages by default. See the RedHat
 Enterprise Linux system documentation's

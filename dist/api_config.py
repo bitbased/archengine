@@ -8,9 +8,9 @@ from dist import compare_srcfile
 tmp_file = '__tmp'
 
 #####################################################################
-# Update wiredtiger.in with doxygen comments
+# Update archengine.in with doxygen comments
 #####################################################################
-f='../src/include/wiredtiger.in'
+f='../src/include/archengine.in'
 tfile = open(tmp_file, 'w')
 
 whitespace_re = re.compile(r'\s+')
@@ -135,7 +135,7 @@ for line in open(f, 'r'):
             print >>sys.stderr, "Bad config key " + name
 
         # Deal with duplicates: with complex configurations (like
-        # WT_SESSION::create), it's simpler to deal with duplicates here than
+        # AE_SESSION::create), it's simpler to deal with duplicates here than
         # manually in api_data.py.
         if name == lastname:
             continue
@@ -159,7 +159,7 @@ tfile = open(tmp_file, 'w')
 
 tfile.write('''/* DO NOT EDIT: automatically built by dist/api_config.py. */
 
-#include "wt_internal.h"
+#include "ae_internal.h"
 ''')
 
 # Make a TextWrapper that wraps at commas.
@@ -170,7 +170,7 @@ w.wordsep_re = w.wordsep_simple_re = re.compile(r'(,)')
 ws = textwrap.TextWrapper(width=64, break_on_hyphens=False)
 
 def checkstr(c):
-    '''Generate the function reference and JSON string used by __wt_config_check
+    '''Generate the function reference and JSON string used by __ae_config_check
        to validate the config string'''
     checks = c.flags
     cfunc = str(checks.get('func', ''))
@@ -218,7 +218,7 @@ def add_subconfig(c, cname):
 };
 ''' % {
     'name' : '\n    '.join(ws.wrap(\
-        'static const WT_CONFIG_CHECK confchk_' + cname + '_subconfigs')),
+        'static const AE_CONFIG_CHECK confchk_' + cname + '_subconfigs')),
     'check' : '\n\t'.join(getconfcheck(subc) for subc in sorted(c.subconfig)),
 })
 
@@ -244,7 +244,7 @@ for name in sorted(api_data.methods.keys()):
     ctype = api_data.methods[name].config
     if ctype:
         tfile.write('''
-static const WT_CONFIG_CHECK confchk_%(name)s[] = {
+static const AE_CONFIG_CHECK confchk_%(name)s[] = {
 \t%(check)s
 \t{ NULL, NULL, NULL, NULL, NULL, 0 }
 };
@@ -255,7 +255,7 @@ static const WT_CONFIG_CHECK confchk_%(name)s[] = {
 
 # Write the initialized list of configuration entry structures.
 tfile.write('\n')
-tfile.write('static const WT_CONFIG_ENTRY config_entries[] = {')
+tfile.write('static const AE_CONFIG_ENTRY config_entries[] = {')
 
 slot=-1
 config_defines = ''
@@ -266,8 +266,8 @@ for name in sorted(api_data.methods.keys()):
     # Build a list of #defines that reference specific slots in the list (the
     # #defines are used to avoid a list search where we know the correct slot).
     config_defines +=\
-        '#define\tWT_CONFIG_ENTRY_' + name.replace('.', '_') + '\t' * \
-            max(1, 6 - (len('WT_CONFIG_ENTRY_' + name) / 8)) + \
+        '#define\tAE_CONFIG_ENTRY_' + name.replace('.', '_') + '\t' * \
+            max(1, 6 - (len('AE_CONFIG_ENTRY_' + name) / 8)) + \
             "%2s" % str(slot) + '\n'
 
     # Write the method name and base.
@@ -294,19 +294,19 @@ for name in sorted(api_data.methods.keys()):
 tfile.write('\n\t{ NULL, NULL, NULL, 0 }')
 tfile.write('\n};\n')
 
-# Write the routine that connects the WT_CONNECTION_IMPL structure to the list
+# Write the routine that connects the AE_CONNECTION_IMPL structure to the list
 # of configuration entry structures.
 tfile.write('''
 int
-__wt_conn_config_init(WT_SESSION_IMPL *session)
+__ae_conn_config_init(AE_SESSION_IMPL *session)
 {
-\tWT_CONNECTION_IMPL *conn;
-\tconst WT_CONFIG_ENTRY *ep, **epp;
+\tAE_CONNECTION_IMPL *conn;
+\tconst AE_CONFIG_ENTRY *ep, **epp;
 
 \tconn = S2C(session);
 
 \t/* Build a list of pointers to the configuration information. */
-\tWT_RET(__wt_calloc_def(session, WT_ELEMENTS(config_entries), &epp));
+\tAE_RET(__ae_calloc_def(session, AE_ELEMENTS(config_entries), &epp));
 \tconn->config_entries = epp;
 
 \t/* Fill in the list to reference the default information. */
@@ -319,23 +319,23 @@ __wt_conn_config_init(WT_SESSION_IMPL *session)
 }
 
 void
-__wt_conn_config_discard(WT_SESSION_IMPL *session)
+__ae_conn_config_discard(AE_SESSION_IMPL *session)
 {
-\tWT_CONNECTION_IMPL *conn;
+\tAE_CONNECTION_IMPL *conn;
 
 \tconn = S2C(session);
 
-\t__wt_free(session, conn->config_entries);
+\t__ae_free(session, conn->config_entries);
 }
 
 /*        
- * __wt_conn_config_match --
+ * __ae_conn_config_match --
  *      Return the static configuration entry for a method.
  */
-const WT_CONFIG_ENTRY *
-__wt_conn_config_match(const char *method)
+const AE_CONFIG_ENTRY *
+__ae_conn_config_match(const char *method)
 {
-\tconst WT_CONFIG_ENTRY *ep;
+\tconst AE_CONFIG_ENTRY *ep;
 
 \tfor (ep = config_entries; ep->method != NULL; ++ep)
 \t\tif (strcmp(method, ep->method) == 0)

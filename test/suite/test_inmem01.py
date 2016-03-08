@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Public Domain 2014-2015 MongoDB, Inc.
-# Public Domain 2008-2014 WiredTiger, Inc.
+# Public Domain 2008-2014 ArchEngine, Inc.
 #
 # This is free and unencumbered software released into the public domain.
 #
@@ -26,15 +26,15 @@
 # ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 # OTHER DEALINGS IN THE SOFTWARE.
 
-import wiredtiger, wttest
+import archengine, aetest
 from time import sleep
 from helper import simple_populate, simple_populate_check
 from helper import key_populate, value_populate
-from wtscenario import check_scenarios
+from aescenario import check_scenarios
 
 # test_inmem01.py
 #    Test in-memory configuration.
-class test_inmem01(wttest.WiredTigerTestCase):
+class test_inmem01(aetest.ArchEngineTestCase):
     name = 'inmem01'
     """
     In memory configuration still creates files on disk, but has limits
@@ -54,9 +54,9 @@ class test_inmem01(wttest.WiredTigerTestCase):
         ('row', dict(tablekind='row'))
     ])
 
-    # Override WiredTigerTestCase to create an in-memory database
+    # Override ArchEngineTestCase to create an in-memory database
     def setUpConnectionOpen(self, dir):
-        conn = wiredtiger.wiredtiger_open(dir,
+        conn = archengine.archengine_open(dir,
             'cache_size=5MB,create,' +
             'file_manager=(close_idle_time=0),in_memory=true,cache_size=5MB')
         return conn
@@ -83,8 +83,8 @@ class test_inmem01(wttest.WiredTigerTestCase):
 
     def test_insert_over_capacity(self):
         table_config = self.get_table_config()
-        msg = '/WT_CACHE_FULL.*/'
-        self.assertRaisesHavingMessage(wiredtiger.WiredTigerError,
+        msg = '/AE_CACHE_FULL.*/'
+        self.assertRaisesHavingMessage(archengine.ArchEngineError,
             lambda:simple_populate(self,
                 "table:" + self.name, table_config, 10000000), msg)
 
@@ -96,8 +96,8 @@ class test_inmem01(wttest.WiredTigerTestCase):
 
     def test_insert_over_delete(self):
         table_config = self.get_table_config()
-        msg = '/WT_CACHE_FULL.*/'
-        self.assertRaisesHavingMessage(wiredtiger.WiredTigerError,
+        msg = '/AE_CACHE_FULL.*/'
+        self.assertRaisesHavingMessage(archengine.ArchEngineError,
             lambda:simple_populate(self,
                 "table:" + self.name, table_config, 10000000), msg)
 
@@ -110,8 +110,8 @@ class test_inmem01(wttest.WiredTigerTestCase):
 
     def test_insert_over_delete_replace(self):
         table_config = self.get_table_config()
-        msg = '/WT_CACHE_FULL.*/'
-        self.assertRaisesHavingMessage(wiredtiger.WiredTigerError,
+        msg = '/AE_CACHE_FULL.*/'
+        self.assertRaisesHavingMessage(archengine.ArchEngineError,
             lambda:simple_populate(self,
                 "table:" + self.name, table_config, 10000000), msg)
 
@@ -132,7 +132,7 @@ class test_inmem01(wttest.WiredTigerTestCase):
         for i in range(1, 1000):
             try:
                 cursor[key_populate(cursor, 1)] = value_populate(cursor, 1)
-            except wiredtiger.WiredTigerError:
+            except archengine.ArchEngineError:
                 cursor.reset()
                 sleep(1)
                 continue
@@ -141,4 +141,4 @@ class test_inmem01(wttest.WiredTigerTestCase):
         self.assertTrue(inserted)
 
 if __name__ == '__main__':
-    wttest.run()
+    aetest.run()

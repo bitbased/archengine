@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Public Domain 2014-2015 MongoDB, Inc.
-# Public Domain 2008-2014 WiredTiger, Inc.
+# Public Domain 2008-2014 ArchEngine, Inc.
 #
 # This is free and unencumbered software released into the public domain.
 #
@@ -30,14 +30,14 @@
 #       session level operations on tables
 #
 
-import wiredtiger, wttest
+import archengine, aetest
 from helper import confirm_empty,\
     key_populate, value_populate, simple_populate,\
     complex_populate, complex_value_populate
-from wtscenario import check_scenarios, multiply_scenarios, number_scenarios
+from aescenario import check_scenarios, multiply_scenarios, number_scenarios
 
 # Test truncation arguments.
-class test_truncate_arguments(wttest.WiredTigerTestCase):
+class test_truncate_arguments(aetest.ArchEngineTestCase):
     name = 'test_truncate'
 
     scenarios = check_scenarios([
@@ -51,12 +51,12 @@ class test_truncate_arguments(wttest.WiredTigerTestCase):
         uri = self.type + self.name
         simple_populate(self, uri, 'key_format=S', 100)
         msg = '/either a URI or start/stop cursors/'
-        self.assertRaisesWithMessage(wiredtiger.WiredTigerError,
+        self.assertRaisesWithMessage(archengine.ArchEngineError,
             lambda: self.session.truncate(None, None, None, None), msg)
         cursor = self.session.open_cursor(uri, None)
-        self.assertRaisesWithMessage(wiredtiger.WiredTigerError,
+        self.assertRaisesWithMessage(archengine.ArchEngineError,
             lambda: self.session.truncate(uri, cursor, None, None), msg)
-        self.assertRaisesWithMessage(wiredtiger.WiredTigerError,
+        self.assertRaisesWithMessage(archengine.ArchEngineError,
             lambda: self.session.truncate(uri, None, cursor, None), msg)
 
     # Test truncation of cursors where no key is set, expect errors.
@@ -69,16 +69,16 @@ class test_truncate_arguments(wttest.WiredTigerTestCase):
         c1 = self.session.open_cursor(uri, None)
         c2 = self.session.open_cursor(uri, None)
         c2.set_key(key_populate(c2, 10))
-        self.assertRaisesWithMessage(wiredtiger.WiredTigerError,
+        self.assertRaisesWithMessage(archengine.ArchEngineError,
             lambda: self.session.truncate(None, c1, c2, None), msg)
-        self.assertRaisesWithMessage(wiredtiger.WiredTigerError,
+        self.assertRaisesWithMessage(archengine.ArchEngineError,
             lambda: self.session.truncate(None, c2, c1, None), msg)
         c1.close()
         c2.close()
 
 
 # Test truncation of an object using its URI.
-class test_truncate_uri(wttest.WiredTigerTestCase):
+class test_truncate_uri(aetest.ArchEngineTestCase):
     name = 'test_truncate'
     scenarios = check_scenarios([
         ('file', dict(type='file:')),
@@ -103,7 +103,7 @@ class test_truncate_uri(wttest.WiredTigerTestCase):
 
 
 # Test truncation of cursors in an illegal order.
-class test_truncate_cursor_order(wttest.WiredTigerTestCase):
+class test_truncate_cursor_order(aetest.ArchEngineTestCase):
     name = 'test_truncate'
 
     types = [
@@ -127,14 +127,14 @@ class test_truncate_cursor_order(wttest.WiredTigerTestCase):
         c1.set_key(key_populate(c1, 20))
         c2.set_key(key_populate(c2, 10))
         msg = '/the start cursor position is after the stop cursor position/'
-        self.assertRaisesWithMessage(wiredtiger.WiredTigerError,
+        self.assertRaisesWithMessage(archengine.ArchEngineError,
             lambda: self.session.truncate(None, c1, c2, None), msg)
         c2.set_key(key_populate(c2, 20))
         self.session.truncate(None, c1, c2, None)
 
 
 # Test truncation of cursors past the end of the object.
-class test_truncate_cursor_end(wttest.WiredTigerTestCase):
+class test_truncate_cursor_end(aetest.ArchEngineTestCase):
     name = 'test_truncate'
 
     types = [
@@ -176,7 +176,7 @@ class test_truncate_cursor_end(wttest.WiredTigerTestCase):
 
 
 # Test session.truncate.
-class test_truncate_cursor(wttest.WiredTigerTestCase):
+class test_truncate_cursor(aetest.ArchEngineTestCase):
     name = 'test_truncate'
 
     # Use a small page size because we want to create lots of pages.
@@ -247,7 +247,7 @@ class test_truncate_cursor(wttest.WiredTigerTestCase):
                 cursor.search()
                 self.assertEqual(cursor.get_values(), [0])
             elif v == [0]:
-                self.assertEqual(cursor.search(), wiredtiger.WT_NOTFOUND)
+                self.assertEqual(cursor.search(), archengine.AE_NOTFOUND)
             else:
                 cursor.search()
                 self.assertEqual(cursor.get_values(), v)
@@ -450,4 +450,4 @@ class test_truncate_cursor(wttest.WiredTigerTestCase):
 
 
 if __name__ == '__main__':
-    wttest.run()
+    aetest.run()

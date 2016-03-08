@@ -1,19 +1,19 @@
 /*-
  * Copyright (c) 2014-2015 MongoDB, Inc.
- * Copyright (c) 2008-2014 WiredTiger, Inc.
+ * Copyright (c) 2008-2014 ArchEngine, Inc.
  *	All rights reserved.
  *
  * See the file LICENSE for redistribution information.
  */
 
-#include "wt_internal.h"
+#include "ae_internal.h"
 
 /*
- * __wt_once --
+ * __ae_once --
  *	One-time initialization per process.
  */
 int
-__wt_once(void (*init_routine)(void))
+__ae_once(void (*init_routine)(void))
 {
 	static pthread_once_t once_control = PTHREAD_ONCE_INIT;
 

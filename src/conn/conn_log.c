@@ -1,41 +1,41 @@
 /*-
  * Copyright (c) 2014-2015 MongoDB, Inc.
- * Copyright (c) 2008-2014 WiredTiger, Inc.
+ * Copyright (c) 2008-2014 ArchEngine, Inc.
  *	All rights reserved.
  *
  * See the file LICENSE for redistribution information.
  */
 
-#include "wt_internal.h"
+#include "ae_internal.h"
 
 /*
  * __logmgr_sync_cfg --
  *	Interpret the transaction_sync config.
  */
 static int
-__logmgr_sync_cfg(WT_SESSION_IMPL *session, const char **cfg)
+__logmgr_sync_cfg(AE_SESSION_IMPL *session, const char **cfg)
 {
-	WT_CONFIG_ITEM cval;
-	WT_CONNECTION_IMPL *conn;
+	AE_CONFIG_ITEM cval;
+	AE_CONNECTION_IMPL *conn;
 
 	conn = S2C(session);
 
-	WT_RET(
-	    __wt_config_gets(session, cfg, "transaction_sync.enabled", &cval));
+	AE_RET(
+	    __ae_config_gets(session, cfg, "transaction_sync.enabled", &cval));
 	if (cval.val)
-		FLD_SET(conn->txn_logsync, WT_LOG_SYNC_ENABLED);
+		FLD_SET(conn->txn_logsync, AE_LOG_SYNC_ENABLED);
 	else
-		FLD_CLR(conn->txn_logsync, WT_LOG_SYNC_ENABLED);
+		FLD_CLR(conn->txn_logsync, AE_LOG_SYNC_ENABLED);
 
-	WT_RET(
-	    __wt_config_gets(session, cfg, "transaction_sync.method", &cval));
-	FLD_CLR(conn->txn_logsync, WT_LOG_DSYNC | WT_LOG_FLUSH | WT_LOG_FSYNC);
-	if (WT_STRING_MATCH("dsync", cval.str, cval.len))
-		FLD_SET(conn->txn_logsync, WT_LOG_DSYNC | WT_LOG_FLUSH);
-	else if (WT_STRING_MATCH("fsync", cval.str, cval.len))
-		FLD_SET(conn->txn_logsync, WT_LOG_FSYNC);
-	else if (WT_STRING_MATCH("none", cval.str, cval.len))
-		FLD_SET(conn->txn_logsync, WT_LOG_FLUSH);
+	AE_RET(
+	    __ae_config_gets(session, cfg, "transaction_sync.method", &cval));
+	FLD_CLR(conn->txn_logsync, AE_LOG_DSYNC | AE_LOG_FLUSH | AE_LOG_FSYNC);
+	if (AE_STRING_MATCH("dsync", cval.str, cval.len))
+		FLD_SET(conn->txn_logsync, AE_LOG_DSYNC | AE_LOG_FLUSH);
+	else if (AE_STRING_MATCH("fsync", cval.str, cval.len))
+		FLD_SET(conn->txn_logsync, AE_LOG_FSYNC);
+	else if (AE_STRING_MATCH("none", cval.str, cval.len))
+		FLD_SET(conn->txn_logsync, AE_LOG_FLUSH);
 	return (0);
 }
 
@@ -45,15 +45,15 @@ __logmgr_sync_cfg(WT_SESSION_IMPL *session, const char **cfg)
  */
 static int
 __logmgr_config(
-    WT_SESSION_IMPL *session, const char **cfg, bool *runp, bool reconfig)
+    AE_SESSION_IMPL *session, const char **cfg, bool *runp, bool reconfig)
 {
-	WT_CONFIG_ITEM cval;
-	WT_CONNECTION_IMPL *conn;
+	AE_CONFIG_ITEM cval;
+	AE_CONNECTION_IMPL *conn;
 	bool enabled;
 
 	conn = S2C(session);
 
-	WT_RET(__wt_config_gets(session, cfg, "log.enabled", &cval));
+	AE_RET(__ae_config_gets(session, cfg, "log.enabled", &cval));
 	enabled = cval.val != 0;
 
 	/*
@@ -64,15 +64,15 @@ __logmgr_config(
 	 * and the user is turning it off, return an error.
 	 */
 	if (reconfig &&
-	    ((enabled && !FLD_ISSET(conn->log_flags, WT_CONN_LOG_ENABLED)) ||
-	    (!enabled && FLD_ISSET(conn->log_flags, WT_CONN_LOG_ENABLED))))
+	    ((enabled && !FLD_ISSET(conn->log_flags, AE_CONN_LOG_ENABLED)) ||
+	    (!enabled && FLD_ISSET(conn->log_flags, AE_CONN_LOG_ENABLED))))
 		return (EINVAL);
 
 	/* Logging is incompatible with in-memory */
 	if (enabled) {
-		WT_RET(__wt_config_gets(session, cfg, "in_memory", &cval));
+		AE_RET(__ae_config_gets(session, cfg, "in_memory", &cval));
 		if (cval.val != 0)
-			WT_RET_MSG(session, EINVAL,
+			AE_RET_MSG(session, EINVAL,
 			    "In memory configuration incompatible with "
 			    "log=(enabled=true)");
 	}
@@ -86,22 +86,22 @@ __logmgr_config(
 	 */
 	if (!reconfig) {
 		conn->log_compressor = NULL;
-		WT_RET(__wt_config_gets_none(
+		AE_RET(__ae_config_gets_none(
 		    session, cfg, "log.compressor", &cval));
-		WT_RET(__wt_compressor_config(
+		AE_RET(__ae_compressor_config(
 		    session, &cval, &conn->log_compressor));
 
-		WT_RET(__wt_config_gets(session, cfg, "log.path", &cval));
-		WT_RET(__wt_strndup(
+		AE_RET(__ae_config_gets(session, cfg, "log.path", &cval));
+		AE_RET(__ae_strndup(
 		    session, cval.str, cval.len, &conn->log_path));
 	}
 	/* We are done if logging isn't enabled. */
 	if (!*runp)
 		return (0);
 
-	WT_RET(__wt_config_gets(session, cfg, "log.archive", &cval));
+	AE_RET(__ae_config_gets(session, cfg, "log.archive", &cval));
 	if (cval.val != 0)
-		FLD_SET(conn->log_flags, WT_CONN_LOG_ARCHIVE);
+		FLD_SET(conn->log_flags, AE_CONN_LOG_ARCHIVE);
 
 	if (!reconfig) {
 		/*
@@ -110,9 +110,9 @@ __logmgr_config(
 		 * on the log file size at creation and we don't want to
 		 * re-allocate that memory while running.
 		 */
-		WT_RET(__wt_config_gets(session, cfg, "log.file_max", &cval));
-		conn->log_file_max = (wt_off_t)cval.val;
-		WT_STAT_FAST_CONN_SET(session,
+		AE_RET(__ae_config_gets(session, cfg, "log.file_max", &cval));
+		conn->log_file_max = (ae_off_t)cval.val;
+		AE_STAT_FAST_CONN_SET(session,
 		    log_max_filesize, conn->log_file_max);
 	}
 
@@ -120,7 +120,7 @@ __logmgr_config(
 	 * If pre-allocation is configured, set the initial number to a few.
 	 * We'll adapt as load dictates.
 	 */
-	WT_RET(__wt_config_gets(session, cfg, "log.prealloc", &cval));
+	AE_RET(__ae_config_gets(session, cfg, "log.prealloc", &cval));
 	if (cval.val != 0)
 		conn->log_prealloc = 1;
 
@@ -128,24 +128,24 @@ __logmgr_config(
 	 * Note that it is meaningless to reconfigure this value during
 	 * runtime.  It only matters on create before recovery runs.
 	 */
-	WT_RET(__wt_config_gets_def(session, cfg, "log.recover", 0, &cval));
-	if (cval.len != 0  && WT_STRING_MATCH("error", cval.str, cval.len))
-		FLD_SET(conn->log_flags, WT_CONN_LOG_RECOVER_ERR);
+	AE_RET(__ae_config_gets_def(session, cfg, "log.recover", 0, &cval));
+	if (cval.len != 0  && AE_STRING_MATCH("error", cval.str, cval.len))
+		FLD_SET(conn->log_flags, AE_CONN_LOG_RECOVER_ERR);
 
-	WT_RET(__wt_config_gets(session, cfg, "log.zero_fill", &cval));
+	AE_RET(__ae_config_gets(session, cfg, "log.zero_fill", &cval));
 	if (cval.val != 0)
-		FLD_SET(conn->log_flags, WT_CONN_LOG_ZERO_FILL);
+		FLD_SET(conn->log_flags, AE_CONN_LOG_ZERO_FILL);
 
-	WT_RET(__logmgr_sync_cfg(session, cfg));
+	AE_RET(__logmgr_sync_cfg(session, cfg));
 	return (0);
 }
 
 /*
- * __wt_logmgr_reconfig --
+ * __ae_logmgr_reconfig --
  *	Reconfigure logging.
  */
 int
-__wt_logmgr_reconfig(WT_SESSION_IMPL *session, const char **cfg)
+__ae_logmgr_reconfig(AE_SESSION_IMPL *session, const char **cfg)
 {
 	bool dummy;
 
@@ -158,11 +158,11 @@ __wt_logmgr_reconfig(WT_SESSION_IMPL *session, const char **cfg)
  *	log archive lock held.
  */
 static int
-__log_archive_once(WT_SESSION_IMPL *session, uint32_t backup_file)
+__log_archive_once(AE_SESSION_IMPL *session, uint32_t backup_file)
 {
-	WT_CONNECTION_IMPL *conn;
-	WT_DECL_RET;
-	WT_LOG *log;
+	AE_CONNECTION_IMPL *conn;
+	AE_DECL_RET;
+	AE_LOG *log;
 	uint32_t lognum, min_lognum;
 	u_int i, logcount;
 	bool locked;
@@ -180,37 +180,37 @@ __log_archive_once(WT_SESSION_IMPL *session, uint32_t backup_file)
 	 * disk and the checkpoint LSN.
 	 */
 	if (backup_file != 0)
-		min_lognum = WT_MIN(log->ckpt_lsn.file, backup_file);
+		min_lognum = AE_MIN(log->ckpt_lsn.file, backup_file);
 	else
-		min_lognum = WT_MIN(log->ckpt_lsn.file, log->sync_lsn.file);
-	WT_RET(__wt_verbose(session, WT_VERB_LOG,
+		min_lognum = AE_MIN(log->ckpt_lsn.file, log->sync_lsn.file);
+	AE_RET(__ae_verbose(session, AE_VERB_LOG,
 	    "log_archive: archive to log number %" PRIu32, min_lognum));
 
 	/*
 	 * Main archive code.  Get the list of all log files and
 	 * remove any earlier than the minimum log number.
 	 */
-	WT_RET(__wt_dirlist(session, conn->log_path,
-	    WT_LOG_FILENAME, WT_DIRLIST_INCLUDE, &logfiles, &logcount));
+	AE_RET(__ae_dirlist(session, conn->log_path,
+	    AE_LOG_FILENAME, AE_DIRLIST_INCLUDE, &logfiles, &logcount));
 
 	/*
 	 * We can only archive files if a hot backup is not in progress or
 	 * if we are the backup.
 	 */
-	WT_RET(__wt_readlock(session, conn->hot_backup_lock));
+	AE_RET(__ae_readlock(session, conn->hot_backup_lock));
 	locked = true;
 	if (!conn->hot_backup || backup_file != 0) {
 		for (i = 0; i < logcount; i++) {
-			WT_ERR(__wt_log_extract_lognum(
+			AE_ERR(__ae_log_extract_lognum(
 			    session, logfiles[i], &lognum));
 			if (lognum < min_lognum)
-				WT_ERR(__wt_log_remove(
-				    session, WT_LOG_FILENAME, lognum));
+				AE_ERR(__ae_log_remove(
+				    session, AE_LOG_FILENAME, lognum));
 		}
 	}
-	WT_ERR(__wt_readunlock(session, conn->hot_backup_lock));
+	AE_ERR(__ae_readunlock(session, conn->hot_backup_lock));
 	locked = false;
-	__wt_log_files_free(session, logfiles, logcount);
+	__ae_log_files_free(session, logfiles, logcount);
 	logfiles = NULL;
 	logcount = 0;
 
@@ -222,11 +222,11 @@ __log_archive_once(WT_SESSION_IMPL *session, uint32_t backup_file)
 	log->first_lsn.offset = 0;
 
 	if (0)
-err:		__wt_err(session, ret, "log archive server error");
+err:		__ae_err(session, ret, "log archive server error");
 	if (locked)
-		WT_TRET(__wt_readunlock(session, conn->hot_backup_lock));
+		AE_TRET(__ae_readunlock(session, conn->hot_backup_lock));
 	if (logfiles != NULL)
-		__wt_log_files_free(session, logfiles, logcount);
+		__ae_log_files_free(session, logfiles, logcount);
 	return (ret);
 }
 
@@ -235,11 +235,11 @@ err:		__wt_err(session, ret, "log archive server error");
  *	Perform one iteration of log pre-allocation.
  */
 static int
-__log_prealloc_once(WT_SESSION_IMPL *session)
+__log_prealloc_once(AE_SESSION_IMPL *session)
 {
-	WT_CONNECTION_IMPL *conn;
-	WT_DECL_RET;
-	WT_LOG *log;
+	AE_CONNECTION_IMPL *conn;
+	AE_DECL_RET;
+	AE_LOG *log;
 	u_int i, reccount;
 	char **recfiles;
 
@@ -252,10 +252,10 @@ __log_prealloc_once(WT_SESSION_IMPL *session)
 	 * Allocate up to the maximum number, accounting for any existing
 	 * files that may not have been used yet.
 	 */
-	WT_ERR(__wt_dirlist(session, conn->log_path,
-	    WT_LOG_PREPNAME, WT_DIRLIST_INCLUDE,
+	AE_ERR(__ae_dirlist(session, conn->log_path,
+	    AE_LOG_PREPNAME, AE_DIRLIST_INCLUDE,
 	    &recfiles, &reccount));
-	__wt_log_files_free(session, recfiles, reccount);
+	__ae_log_files_free(session, recfiles, reccount);
 	recfiles = NULL;
 	/*
 	 * Adjust the number of files to pre-allocate if we find that
@@ -263,18 +263,18 @@ __log_prealloc_once(WT_SESSION_IMPL *session)
 	 */
 	if (log->prep_missed > 0) {
 		conn->log_prealloc += log->prep_missed;
-		WT_ERR(__wt_verbose(session, WT_VERB_LOG,
+		AE_ERR(__ae_verbose(session, AE_VERB_LOG,
 		    "Missed %" PRIu32 ". Now pre-allocating up to %" PRIu32,
 		    log->prep_missed, conn->log_prealloc));
 	}
-	WT_STAT_FAST_CONN_SET(session, log_prealloc_max, conn->log_prealloc);
+	AE_STAT_FAST_CONN_SET(session, log_prealloc_max, conn->log_prealloc);
 	/*
 	 * Allocate up to the maximum number that we just computed and detected.
 	 */
 	for (i = reccount; i < (u_int)conn->log_prealloc; i++) {
-		WT_ERR(__wt_log_allocfile(
-		    session, ++log->prep_fileid, WT_LOG_PREPNAME));
-		WT_STAT_FAST_CONN_INCR(session, log_prealloc_files);
+		AE_ERR(__ae_log_allocfile(
+		    session, ++log->prep_fileid, AE_LOG_PREPNAME));
+		AE_STAT_FAST_CONN_INCR(session, log_prealloc_files);
 	}
 	/*
 	 * Reset the missed count now.  If we missed during pre-allocating
@@ -285,50 +285,50 @@ __log_prealloc_once(WT_SESSION_IMPL *session)
 	log->prep_missed = 0;
 
 	if (0)
-err:		__wt_err(session, ret, "log pre-alloc server error");
+err:		__ae_err(session, ret, "log pre-alloc server error");
 	if (recfiles != NULL)
-		__wt_log_files_free(session, recfiles, reccount);
+		__ae_log_files_free(session, recfiles, reccount);
 	return (ret);
 }
 
 /*
- * __wt_log_truncate_files --
+ * __ae_log_truncate_files --
  *	Truncate log files via archive once. Requires that the server is not
  *	currently running.
  */
 int
-__wt_log_truncate_files(
-    WT_SESSION_IMPL *session, WT_CURSOR *cursor, const char *cfg[])
+__ae_log_truncate_files(
+    AE_SESSION_IMPL *session, AE_CURSOR *cursor, const char *cfg[])
 {
-	WT_CONNECTION_IMPL *conn;
-	WT_DECL_RET;
-	WT_LOG *log;
+	AE_CONNECTION_IMPL *conn;
+	AE_DECL_RET;
+	AE_LOG *log;
 	uint32_t backup_file;
 	bool locked;
 
-	WT_UNUSED(cfg);
+	AE_UNUSED(cfg);
 	conn = S2C(session);
 	log = conn->log;
-	if (F_ISSET(conn, WT_CONN_SERVER_RUN) &&
-	    FLD_ISSET(conn->log_flags, WT_CONN_LOG_ARCHIVE))
-		WT_RET_MSG(session, EINVAL,
+	if (F_ISSET(conn, AE_CONN_SERVER_RUN) &&
+	    FLD_ISSET(conn->log_flags, AE_CONN_LOG_ARCHIVE))
+		AE_RET_MSG(session, EINVAL,
 		    "Attempt to archive manually while a server is running");
 
 	backup_file = 0;
 	if (cursor != NULL)
-		backup_file = WT_CURSOR_BACKUP_ID(cursor);
-	WT_ASSERT(session, backup_file <= log->alloc_lsn.file);
-	WT_RET(__wt_verbose(session, WT_VERB_LOG,
+		backup_file = AE_CURSOR_BACKUP_ID(cursor);
+	AE_ASSERT(session, backup_file <= log->alloc_lsn.file);
+	AE_RET(__ae_verbose(session, AE_VERB_LOG,
 	    "log_truncate_files: Archive once up to %" PRIu32,
 	    backup_file));
-	WT_RET(__wt_writelock(session, log->log_archive_lock));
+	AE_RET(__ae_writelock(session, log->log_archive_lock));
 	locked = true;
-	WT_ERR(__log_archive_once(session, backup_file));
-	WT_ERR(__wt_writeunlock(session, log->log_archive_lock));
+	AE_ERR(__log_archive_once(session, backup_file));
+	AE_ERR(__ae_writeunlock(session, log->log_archive_lock));
 	locked = false;
 err:
 	if (locked)
-		WT_RET(__wt_writeunlock(session, log->log_archive_lock));
+		AE_RET(__ae_writeunlock(session, log->log_archive_lock));
 	return (ret);
 }
 
@@ -337,15 +337,15 @@ err:
  *	The log file server thread.  This worker thread manages
  *	log file operations such as closing and syncing.
  */
-static WT_THREAD_RET
+static AE_THREAD_RET
 __log_file_server(void *arg)
 {
-	WT_CONNECTION_IMPL *conn;
-	WT_DECL_RET;
-	WT_FH *close_fh;
-	WT_LOG *log;
-	WT_LSN close_end_lsn, min_lsn;
-	WT_SESSION_IMPL *session;
+	AE_CONNECTION_IMPL *conn;
+	AE_DECL_RET;
+	AE_FH *close_fh;
+	AE_LOG *log;
+	AE_LSN close_end_lsn, min_lsn;
+	AE_SESSION_IMPL *session;
 	uint32_t filenum;
 	bool locked;
 
@@ -353,13 +353,13 @@ __log_file_server(void *arg)
 	conn = S2C(session);
 	log = conn->log;
 	locked = false;
-	while (F_ISSET(conn, WT_CONN_LOG_SERVER_RUN)) {
+	while (F_ISSET(conn, AE_CONN_LOG_SERVER_RUN)) {
 		/*
 		 * If there is a log file to close, make sure any outstanding
 		 * write operations have completed, then fsync and close it.
 		 */
 		if ((close_fh = log->log_close_fh) != NULL) {
-			WT_ERR(__wt_log_extract_lognum(session, close_fh->name,
+			AE_ERR(__ae_log_extract_lognum(session, close_fh->name,
 			    &filenum));
 			/*
 			 * We update the close file handle before updating the
@@ -368,9 +368,9 @@ __log_file_server(void *arg)
 			 * until it is set.  This should rarely happen.
 			 */
 			while (log->log_close_lsn.file < filenum)
-				__wt_yield();
+				__ae_yield();
 
-			if (__wt_log_cmp(
+			if (__ae_log_cmp(
 			    &log->write_lsn, &log->log_close_lsn) >= 0) {
 				/*
 				 * We've copied the file handle, clear out the
@@ -381,7 +381,7 @@ __log_file_server(void *arg)
 				 * not reorder the following two statements.
 				 */
 				close_end_lsn = log->log_close_lsn;
-				WT_FULL_BARRIER();
+				AE_FULL_BARRIER();
 				log->log_close_fh = NULL;
 				/*
 				 * Set the close_end_lsn to the LSN immediately
@@ -392,32 +392,32 @@ __log_file_server(void *arg)
 				 * to move the sync_lsn into the next file for
 				 * later syncs.
 				 */
-				WT_ERR(__wt_fsync(session, close_fh));
+				AE_ERR(__ae_fsync(session, close_fh));
 				/*
 				 * We want to make sure the file size reflects
 				 * actual data and has minimal pre-allocated
 				 * zeroed space.
 				 */
-				WT_ERR(__wt_ftruncate(
+				AE_ERR(__ae_ftruncate(
 				    session, close_fh, close_end_lsn.offset));
 				close_end_lsn.file++;
 				close_end_lsn.offset = 0;
-				__wt_spin_lock(session, &log->log_sync_lock);
+				__ae_spin_lock(session, &log->log_sync_lock);
 				locked = true;
-				WT_ERR(__wt_close(session, &close_fh));
-				WT_ASSERT(session, __wt_log_cmp(
+				AE_ERR(__ae_close(session, &close_fh));
+				AE_ASSERT(session, __ae_log_cmp(
 				    &close_end_lsn, &log->sync_lsn) >= 0);
 				log->sync_lsn = close_end_lsn;
-				WT_ERR(__wt_cond_signal(
+				AE_ERR(__ae_cond_signal(
 				    session, log->log_sync_cond));
 				locked = false;
-				__wt_spin_unlock(session, &log->log_sync_lock);
+				__ae_spin_unlock(session, &log->log_sync_lock);
 			}
 		}
 		/*
 		 * If a later thread asked for a background sync, do it now.
 		 */
-		if (__wt_log_cmp(&log->bg_sync_lsn, &log->sync_lsn) > 0) {
+		if (__ae_log_cmp(&log->bg_sync_lsn, &log->sync_lsn) > 0) {
 			/*
 			 * Save the latest write LSN which is the minimum
 			 * we will have written to disk.
@@ -432,7 +432,7 @@ __log_file_server(void *arg)
 			 * sync LSN to be in the same file so that we know we
 			 * have synchronized all earlier log files.
 			 */
-			if (__wt_log_cmp(&log->bg_sync_lsn, &min_lsn) <= 0) {
+			if (__ae_log_cmp(&log->bg_sync_lsn, &min_lsn) <= 0) {
 				/*
 				 * If the sync file is behind either the one
 				 * wanted for a background sync or the write LSN
@@ -444,25 +444,25 @@ __log_file_server(void *arg)
 				    log->bg_sync_lsn.file) ||
 				    (log->sync_lsn.file < min_lsn.file))
 					continue;
-				WT_ERR(__wt_fsync(session, log->log_fh));
-				__wt_spin_lock(session, &log->log_sync_lock);
+				AE_ERR(__ae_fsync(session, log->log_fh));
+				__ae_spin_lock(session, &log->log_sync_lock);
 				locked = true;
 				/*
 				 * The sync LSN could have advanced while we
 				 * were writing to disk.
 				 */
-				if (__wt_log_cmp(
+				if (__ae_log_cmp(
 				    &log->sync_lsn, &min_lsn) <= 0) {
-					WT_ASSERT(session,
+					AE_ASSERT(session,
 					    min_lsn.file == log->sync_lsn.file);
 					log->sync_lsn = min_lsn;
-					WT_ERR(__wt_cond_signal(
+					AE_ERR(__ae_cond_signal(
 					    session, log->log_sync_cond));
 				}
 				locked = false;
-				__wt_spin_unlock(session, &log->log_sync_lock);
+				__ae_spin_unlock(session, &log->log_sync_lock);
 			} else {
-				WT_ERR(__wt_cond_signal(
+				AE_ERR(__ae_cond_signal(
 				    session, conn->log_wrlsn_cond));
 				/*
 				 * We do not want to wait potentially a second
@@ -470,77 +470,77 @@ __log_file_server(void *arg)
 				 * thread a chance to run and try again in
 				 * this case.
 				 */
-				__wt_yield();
+				__ae_yield();
 				continue;
 			}
 		}
 		/* Wait until the next event. */
-		WT_ERR(__wt_cond_wait(
-		    session, conn->log_file_cond, WT_MILLION / 10));
+		AE_ERR(__ae_cond_wait(
+		    session, conn->log_file_cond, AE_MILLION / 10));
 	}
 
 	if (0) {
-err:		__wt_err(session, ret, "log close server error");
+err:		__ae_err(session, ret, "log close server error");
 	}
 	if (locked)
-		__wt_spin_unlock(session, &log->log_sync_lock);
-	return (WT_THREAD_RET_VALUE);
+		__ae_spin_unlock(session, &log->log_sync_lock);
+	return (AE_THREAD_RET_VALUE);
 }
 
 /*
  * Simple structure for sorting written slots.
  */
 typedef struct {
-	WT_LSN	lsn;
+	AE_LSN	lsn;
 	uint32_t slot_index;
-} WT_LOG_WRLSN_ENTRY;
+} AE_LOG_WRLSN_ENTRY;
 
 /*
- * WT_WRLSN_ENTRY_CMP_LT --
+ * AE_WRLSN_ENTRY_CMP_LT --
  *	Return comparison of a written slot pair by LSN.
  */
-#define	WT_WRLSN_ENTRY_CMP_LT(entry1, entry2)				\
+#define	AE_WRLSN_ENTRY_CMP_LT(entry1, entry2)				\
 	((entry1).lsn.file < (entry2).lsn.file ||			\
 	((entry1).lsn.file == (entry2).lsn.file &&			\
 	(entry1).lsn.offset < (entry2).lsn.offset))
 
 /*
- * __wt_log_wrlsn --
+ * __ae_log_wrlsn --
  *	Process written log slots and attempt to coalesce them if the LSNs
  *	are contiguous.  The purpose of this function is to advance the
  *	write_lsn in LSN order after the buffer is written to the log file.
  */
 int
-__wt_log_wrlsn(WT_SESSION_IMPL *session)
+__ae_log_wrlsn(AE_SESSION_IMPL *session)
 {
-	WT_CONNECTION_IMPL *conn;
-	WT_DECL_RET;
-	WT_LOG *log;
-	WT_LOG_WRLSN_ENTRY written[WT_SLOT_POOL];
-	WT_LOGSLOT *coalescing, *slot;
-	WT_LSN save_lsn;
+	AE_CONNECTION_IMPL *conn;
+	AE_DECL_RET;
+	AE_LOG *log;
+	AE_LOG_WRLSN_ENTRY written[AE_SLOT_POOL];
+	AE_LOGSLOT *coalescing, *slot;
+	AE_LSN save_lsn;
 	size_t written_i;
 	uint32_t i, save_i;
 
 	conn = S2C(session);
 	log = conn->log;
-	__wt_spin_lock(session, &log->log_writelsn_lock);
+	__ae_spin_lock(session, &log->log_writelsn_lock);
 restart:
 	coalescing = NULL;
-	WT_INIT_LSN(&save_lsn);
+	AE_INIT_LSN(&save_lsn);
 	written_i = 0;
 	i = 0;
 
 	/*
 	 * Walk the array once saving any slots that are in the
-	 * WT_LOG_SLOT_WRITTEN state.
+	 * AE_LOG_SLOT_WRITTEN state.
 	 */
-	while (i < WT_SLOT_POOL) {
+	while (i < AE_SLOT_POOL) {
 		save_i = i;
 		slot = &log->slot_pool[i++];
-		WT_ASSERT(session, slot->slot_state != 0 ||
+		AE_ASSERT(session, slot->slot_state != 0 ||
 		    slot->slot_release_lsn.file >= log->write_lsn.file);
-		if (slot->slot_state != WT_LOG_SLOT_WRITTEN)
+		if (slot->slot_state != AE_LOG_SLOT_WRITTEN)
 			continue;
 		written[written_i].slot_index = save_i;
 		written[written_i++].lsn = slot->slot_release_lsn;
@@ -550,8 +550,8 @@ restart:
 	 * based on the release LSN, and then look for them in order.
 	 */
 	if (written_i > 0) {
-		WT_INSERTION_SORT(written, written_i,
-		    WT_LOG_WRLSN_ENTRY, WT_WRLSN_ENTRY_CMP_LT);
+		AE_INSERTION_SORT(written, written_i,
+		    AE_LOG_WRLSN_ENTRY, AE_WRLSN_ENTRY_CMP_LT);
 		/*
 		 * We know the written array is sorted by LSN.  Go
 		 * through them either advancing write_lsn or coalesce
@@ -565,11 +565,11 @@ restart:
 			 * empty slot, where empty means the start and end LSN
 			 * are the same, free it and continue.
 			 */
-			if (__wt_log_cmp(&slot->slot_start_lsn,
+			if (__ae_log_cmp(&slot->slot_start_lsn,
 			    &slot->slot_release_lsn) == 0 &&
-			    __wt_log_cmp(&slot->slot_start_lsn,
+			    __ae_log_cmp(&slot->slot_start_lsn,
 			    &slot->slot_end_lsn) == 0) {
-				__wt_log_slot_free(session, slot);
+				__ae_log_slot_free(session, slot);
 				continue;
 			}
 			if (coalescing != NULL) {
@@ -577,10 +577,10 @@ restart:
 				 * If the write_lsn changed, we may be able to
 				 * process slots.  Try again.
 				 */
-				if (__wt_log_cmp(
+				if (__ae_log_cmp(
 				    &log->write_lsn, &save_lsn) != 0)
 					goto restart;
-				if (__wt_log_cmp(&coalescing->slot_end_lsn,
+				if (__ae_log_cmp(&coalescing->slot_end_lsn,
 				    &written[i].lsn) != 0) {
 					coalescing = slot;
 					continue;
@@ -592,13 +592,13 @@ restart:
 				coalescing->slot_last_offset =
 				    slot->slot_last_offset;
 				coalescing->slot_end_lsn = slot->slot_end_lsn;
-				WT_STAT_FAST_CONN_INCR(
+				AE_STAT_FAST_CONN_INCR(
 				    session, log_slot_coalesced);
 				/*
 				 * Copy the flag for later closing.
 				 */
-				if (F_ISSET(slot, WT_SLOT_CLOSEFH))
-					F_SET(coalescing, WT_SLOT_CLOSEFH);
+				if (F_ISSET(slot, AE_SLOT_CLOSEFH))
+					F_SET(coalescing, AE_SLOT_CLOSEFH);
 			} else {
 				/*
 				 * If this written slot is not the next LSN,
@@ -608,7 +608,7 @@ restart:
 				 * coalescing slots.
 				 */
 				save_lsn = log->write_lsn;
-				if (__wt_log_cmp(
+				if (__ae_log_cmp(
 				    &log->write_lsn, &written[i].lsn) != 0) {
 					coalescing = slot;
 					continue;
@@ -617,7 +617,7 @@ restart:
 				 * If we get here we have a slot to process.
 				 * Advance the LSN and process the slot.
 				 */
-				WT_ASSERT(session, __wt_log_cmp(&written[i].lsn,
+				AE_ASSERT(session, __ae_log_cmp(&written[i].lsn,
 				    &slot->slot_release_lsn) == 0);
 				/*
 				 * We need to maintain the starting offset of
@@ -633,20 +633,20 @@ restart:
 					    slot->slot_last_offset;
 				log->write_start_lsn = slot->slot_start_lsn;
 				log->write_lsn = slot->slot_end_lsn;
-				WT_ERR(__wt_cond_signal(
+				AE_ERR(__ae_cond_signal(
 				    session, log->log_write_cond));
-				WT_STAT_FAST_CONN_INCR(session, log_write_lsn);
+				AE_STAT_FAST_CONN_INCR(session, log_write_lsn);
 				/*
 				 * Signal the close thread if needed.
 				 */
-				if (F_ISSET(slot, WT_SLOT_CLOSEFH))
-					WT_ERR(__wt_cond_signal(
+				if (F_ISSET(slot, AE_SLOT_CLOSEFH))
+					AE_ERR(__ae_cond_signal(
 					    session, conn->log_file_cond));
 			}
-			__wt_log_slot_free(session, slot);
+			__ae_log_slot_free(session, slot);
 		}
 	}
-err:	__wt_spin_unlock(session, &log->log_writelsn_lock);
+err:	__ae_spin_unlock(session, &log->log_writelsn_lock);
 	return (ret);
 }
 
@@ -654,45 +654,45 @@ err:	__wt_spin_unlock(session, &log->log_writelsn_lock);
  * __log_wrlsn_server --
  *	The log wrlsn server thread.
  */
-static WT_THREAD_RET
+static AE_THREAD_RET
 __log_wrlsn_server(void *arg)
 {
-	WT_CONNECTION_IMPL *conn;
-	WT_DECL_RET;
-	WT_SESSION_IMPL *session;
+	AE_CONNECTION_IMPL *conn;
+	AE_DECL_RET;
+	AE_SESSION_IMPL *session;
 
 	session = arg;
 	conn = S2C(session);
-	while (F_ISSET(conn, WT_CONN_LOG_SERVER_RUN)) {
+	while (F_ISSET(conn, AE_CONN_LOG_SERVER_RUN)) {
 		/*
 		 * Write out any log record buffers.
 		 */
-		WT_ERR(__wt_log_wrlsn(session));
-		WT_ERR(__wt_cond_wait(session, conn->log_wrlsn_cond, 10000));
+		AE_ERR(__ae_log_wrlsn(session));
+		AE_ERR(__ae_cond_wait(session, conn->log_wrlsn_cond, 10000));
 	}
 	/*
 	 * On close we need to do this one more time because there could
 	 * be straggling log writes that need to be written.
 	 */
-	WT_ERR(__wt_log_force_write(session, 1));
-	WT_ERR(__wt_log_wrlsn(session));
+	AE_ERR(__ae_log_force_write(session, 1));
+	AE_ERR(__ae_log_wrlsn(session));
 	if (0) {
-err:		__wt_err(session, ret, "log wrlsn server error");
+err:		__ae_err(session, ret, "log wrlsn server error");
 	}
-	return (WT_THREAD_RET_VALUE);
+	return (AE_THREAD_RET_VALUE);
 }
 
 /*
  * __log_server --
  *	The log server thread.
  */
-static WT_THREAD_RET
+static AE_THREAD_RET
 __log_server(void *arg)
 {
-	WT_CONNECTION_IMPL *conn;
-	WT_DECL_RET;
-	WT_LOG *log;
-	WT_SESSION_IMPL *session;
+	AE_CONNECTION_IMPL *conn;
+	AE_DECL_RET;
+	AE_LOG *log;
+	AE_SESSION_IMPL *session;
 	int freq_per_sec;
 	bool signalled;
 
@@ -705,8 +705,8 @@ __log_server(void *arg)
 	 * Set this to the number of times per second we want to force out the
 	 * log slot buffer.
 	 */
-#define	WT_FORCE_PER_SECOND	20
-	freq_per_sec = WT_FORCE_PER_SECOND;
+#define	AE_FORCE_PER_SECOND	20
+	freq_per_sec = AE_FORCE_PER_SECOND;
 
 	/*
 	 * The log server thread does a variety of work.  It forces out any
@@ -719,7 +719,7 @@ __log_server(void *arg)
 	 * don't want log records sitting in the buffer over the time it
 	 * takes to sync out an earlier file.
 	 */
-	while (F_ISSET(conn, WT_CONN_LOG_SERVER_RUN)) {
+	while (F_ISSET(conn, AE_CONN_LOG_SERVER_RUN)) {
 		/*
 		 * Slots depend on future activity.  Force out buffered
 		 * writes in case we are idle.  This cannot be part of the
@@ -727,7 +727,7 @@ __log_server(void *arg)
 		 * and a buffer may need to wait for the write_lsn to advance
 		 * in the case of a synchronous buffer.  We end up with a hang.
 		 */
-		WT_ERR_BUSY_OK(__wt_log_force_write(session, 0));
+		AE_ERR_BUSY_OK(__ae_log_force_write(session, 0));
 
 		/*
 		 * We don't want to archive or pre-allocate files as often as
@@ -735,134 +735,134 @@ __log_server(void *arg)
 		 * or if the condition was signalled.
 		 */
 		if (--freq_per_sec <= 0 || signalled) {
-			freq_per_sec = WT_FORCE_PER_SECOND;
+			freq_per_sec = AE_FORCE_PER_SECOND;
 
 			/*
 			 * Perform log pre-allocation.
 			 */
 			if (conn->log_prealloc > 0)
-				WT_ERR(__log_prealloc_once(session));
+				AE_ERR(__log_prealloc_once(session));
 
 			/*
 			 * Perform the archive.
 			 */
-			if (FLD_ISSET(conn->log_flags, WT_CONN_LOG_ARCHIVE)) {
-				if (__wt_try_writelock(
+			if (FLD_ISSET(conn->log_flags, AE_CONN_LOG_ARCHIVE)) {
+				if (__ae_try_writelock(
 				    session, log->log_archive_lock) == 0) {
 					ret = __log_archive_once(session, 0);
-					WT_TRET(__wt_writeunlock(
+					AE_TRET(__ae_writeunlock(
 					    session, log->log_archive_lock));
-					WT_ERR(ret);
+					AE_ERR(ret);
 				} else
-					WT_ERR(
-					    __wt_verbose(session, WT_VERB_LOG,
+					AE_ERR(
+					    __ae_verbose(session, AE_VERB_LOG,
 					    "log_archive: Blocked due to open "
 					    "log cursor holding archive lock"));
 			}
 		}
 
 		/* Wait until the next event. */
-		WT_ERR(__wt_cond_wait_signal(session, conn->log_cond,
-		    WT_MILLION / WT_FORCE_PER_SECOND, &signalled));
+		AE_ERR(__ae_cond_wait_signal(session, conn->log_cond,
+		    AE_MILLION / AE_FORCE_PER_SECOND, &signalled));
 	}
 
 	if (0) {
-err:		__wt_err(session, ret, "log server error");
+err:		__ae_err(session, ret, "log server error");
 	}
-	return (WT_THREAD_RET_VALUE);
+	return (AE_THREAD_RET_VALUE);
 }
 
 /*
- * __wt_logmgr_create --
+ * __ae_logmgr_create --
  *	Initialize the log subsystem (before running recovery).
  */
 int
-__wt_logmgr_create(WT_SESSION_IMPL *session, const char *cfg[])
+__ae_logmgr_create(AE_SESSION_IMPL *session, const char *cfg[])
 {
-	WT_CONNECTION_IMPL *conn;
-	WT_LOG *log;
+	AE_CONNECTION_IMPL *conn;
+	AE_LOG *log;
 	bool run;
 
 	conn = S2C(session);
 
 	/* Handle configuration. */
-	WT_RET(__logmgr_config(session, cfg, &run, false));
+	AE_RET(__logmgr_config(session, cfg, &run, false));
 
 	/* If logging is not configured, we're done. */
 	if (!run)
 		return (0);
 
-	FLD_SET(conn->log_flags, WT_CONN_LOG_ENABLED);
+	FLD_SET(conn->log_flags, AE_CONN_LOG_ENABLED);
 	/*
-	 * Logging is on, allocate the WT_LOG structure and open the log file.
+	 * Logging is on, allocate the AE_LOG structure and open the log file.
 	 */
-	WT_RET(__wt_calloc_one(session, &conn->log));
+	AE_RET(__ae_calloc_one(session, &conn->log));
 	log = conn->log;
-	WT_RET(__wt_spin_init(session, &log->log_lock, "log"));
-	WT_RET(__wt_spin_init(session, &log->log_slot_lock, "log slot"));
-	WT_RET(__wt_spin_init(session, &log->log_sync_lock, "log sync"));
-	WT_RET(__wt_spin_init(session, &log->log_writelsn_lock,
+	AE_RET(__ae_spin_init(session, &log->log_lock, "log"));
+	AE_RET(__ae_spin_init(session, &log->log_slot_lock, "log slot"));
+	AE_RET(__ae_spin_init(session, &log->log_sync_lock, "log sync"));
+	AE_RET(__ae_spin_init(session, &log->log_writelsn_lock,
 	    "log write LSN"));
-	WT_RET(__wt_rwlock_alloc(session,
+	AE_RET(__ae_rwlock_alloc(session,
 	    &log->log_archive_lock, "log archive lock"));
-	if (FLD_ISSET(conn->direct_io, WT_FILE_TYPE_LOG))
+	if (FLD_ISSET(conn->direct_io, AE_FILE_TYPE_LOG))
 		log->allocsize =
-		    WT_MAX((uint32_t)conn->buffer_alignment, WT_LOG_ALIGN);
+		    AE_MAX((uint32_t)conn->buffer_alignment, AE_LOG_ALIGN);
 	else
-		log->allocsize = WT_LOG_ALIGN;
-	WT_INIT_LSN(&log->alloc_lsn);
-	WT_INIT_LSN(&log->ckpt_lsn);
-	WT_INIT_LSN(&log->first_lsn);
-	WT_INIT_LSN(&log->sync_lsn);
+		log->allocsize = AE_LOG_ALIGN;
+	AE_INIT_LSN(&log->alloc_lsn);
+	AE_INIT_LSN(&log->ckpt_lsn);
+	AE_INIT_LSN(&log->first_lsn);
+	AE_INIT_LSN(&log->sync_lsn);
 	/*
 	 * We only use file numbers for directory sync, so this needs to
 	 * initialized to zero.
 	 */
-	WT_ZERO_LSN(&log->sync_dir_lsn);
-	WT_INIT_LSN(&log->trunc_lsn);
-	WT_INIT_LSN(&log->write_lsn);
-	WT_INIT_LSN(&log->write_start_lsn);
+	AE_ZERO_LSN(&log->sync_dir_lsn);
+	AE_INIT_LSN(&log->trunc_lsn);
+	AE_INIT_LSN(&log->write_lsn);
+	AE_INIT_LSN(&log->write_start_lsn);
 	log->fileid = 0;
-	WT_RET(__wt_cond_alloc(
+	AE_RET(__ae_cond_alloc(
 	    session, "log sync", false, &log->log_sync_cond));
-	WT_RET(__wt_cond_alloc(
+	AE_RET(__ae_cond_alloc(
 	    session, "log write", false, &log->log_write_cond));
-	WT_RET(__wt_log_open(session));
-	WT_RET(__wt_log_slot_init(session));
+	AE_RET(__ae_log_open(session));
+	AE_RET(__ae_log_slot_init(session));
 
 	return (0);
 }
 
 /*
- * __wt_logmgr_open --
+ * __ae_logmgr_open --
  *	Start the log service threads.
  */
 int
-__wt_logmgr_open(WT_SESSION_IMPL *session)
+__ae_logmgr_open(AE_SESSION_IMPL *session)
 {
-	WT_CONNECTION_IMPL *conn;
+	AE_CONNECTION_IMPL *conn;
 	uint32_t session_flags;
 
 	conn = S2C(session);
 
 	/* If no log thread services are configured, we're done. */ 
-	if (!FLD_ISSET(conn->log_flags, WT_CONN_LOG_ENABLED))
+	if (!FLD_ISSET(conn->log_flags, AE_CONN_LOG_ENABLED))
 		return (0);
 
 	/*
 	 * Start the log close thread.  It is not configurable.
 	 * If logging is enabled, this thread runs.
 	 */
-	session_flags = WT_SESSION_NO_DATA_HANDLES;
-	WT_RET(__wt_open_internal_session(conn,
+	session_flags = AE_SESSION_NO_DATA_HANDLES;
+	AE_RET(__ae_open_internal_session(conn,
 	    "log-close-server", false, session_flags, &conn->log_file_session));
-	WT_RET(__wt_cond_alloc(conn->log_file_session,
+	AE_RET(__ae_cond_alloc(conn->log_file_session,
 	    "log close server", false, &conn->log_file_cond));
 
 	/*
 	 * Start the log file close thread.
 	 */
-	WT_RET(__wt_thread_create(conn->log_file_session,
+	AE_RET(__ae_thread_create(conn->log_file_session,
 	    &conn->log_file_tid, __log_file_server, conn->log_file_session));
 	conn->log_file_tid_set = true;
 
@@ -870,11 +870,11 @@ __wt_logmgr_open(WT_SESSION_IMPL *session)
 	 * Start the log write LSN thread.  It is not configurable.
 	 * If logging is enabled, this thread runs.
 	 */
-	WT_RET(__wt_open_internal_session(conn, "log-wrlsn-server",
+	AE_RET(__ae_open_internal_session(conn, "log-wrlsn-server",
 	    false, session_flags, &conn->log_wrlsn_session));
-	WT_RET(__wt_cond_alloc(conn->log_wrlsn_session,
+	AE_RET(__ae_cond_alloc(conn->log_wrlsn_session,
 	    "log write lsn server", false, &conn->log_wrlsn_cond));
-	WT_RET(__wt_thread_create(conn->log_wrlsn_session,
+	AE_RET(__ae_thread_create(conn->log_wrlsn_session,
 	    &conn->log_wrlsn_tid, __log_wrlsn_server, conn->log_wrlsn_session));
 	conn->log_wrlsn_tid_set = true;
 
@@ -885,20 +885,20 @@ __wt_logmgr_open(WT_SESSION_IMPL *session)
 	 * the thread.
 	 */
 	if (conn->log_session != NULL) {
-		WT_ASSERT(session, conn->log_cond != NULL);
-		WT_ASSERT(session, conn->log_tid_set == true);
-		WT_RET(__wt_cond_signal(session, conn->log_cond));
+		AE_ASSERT(session, conn->log_cond != NULL);
+		AE_ASSERT(session, conn->log_tid_set == true);
+		AE_RET(__ae_cond_signal(session, conn->log_cond));
 	} else {
 		/* The log server gets its own session. */
-		WT_RET(__wt_open_internal_session(conn,
+		AE_RET(__ae_open_internal_session(conn,
 		    "log-server", false, session_flags, &conn->log_session));
-		WT_RET(__wt_cond_alloc(conn->log_session,
+		AE_RET(__ae_cond_alloc(conn->log_session,
 		    "log server", false, &conn->log_cond));
 
 		/*
 		 * Start the thread.
 		 */
-		WT_RET(__wt_thread_create(conn->log_session,
+		AE_RET(__ae_thread_create(conn->log_session,
 		    &conn->log_tid, __log_server, conn->log_session));
 		conn->log_tid_set = true;
 	}
@@ -907,76 +907,76 @@ __wt_logmgr_open(WT_SESSION_IMPL *session)
 }
 
 /*
- * __wt_logmgr_destroy --
+ * __ae_logmgr_destroy --
  *	Destroy the log archiving server thread and logging subsystem.
  */
 int
-__wt_logmgr_destroy(WT_SESSION_IMPL *session)
+__ae_logmgr_destroy(AE_SESSION_IMPL *session)
 {
-	WT_CONNECTION_IMPL *conn;
-	WT_DECL_RET;
-	WT_SESSION *wt_session;
+	AE_CONNECTION_IMPL *conn;
+	AE_DECL_RET;
+	AE_SESSION *ae_session;
 
 	conn = S2C(session);
 
-	if (!FLD_ISSET(conn->log_flags, WT_CONN_LOG_ENABLED)) {
+	if (!FLD_ISSET(conn->log_flags, AE_CONN_LOG_ENABLED)) {
 		/*
 		 * We always set up the log_path so printlog can work without
 		 * recovery. Therefore, always free it, even if logging isn't
 		 * on.
 		 */
-		__wt_free(session, conn->log_path);
+		__ae_free(session, conn->log_path);
 		return (0);
 	}
 	if (conn->log_tid_set) {
-		WT_TRET(__wt_cond_signal(session, conn->log_cond));
-		WT_TRET(__wt_thread_join(session, conn->log_tid));
+		AE_TRET(__ae_cond_signal(session, conn->log_cond));
+		AE_TRET(__ae_thread_join(session, conn->log_tid));
 		conn->log_tid_set = false;
 	}
 	if (conn->log_file_tid_set) {
-		WT_TRET(__wt_cond_signal(session, conn->log_file_cond));
-		WT_TRET(__wt_thread_join(session, conn->log_file_tid));
+		AE_TRET(__ae_cond_signal(session, conn->log_file_cond));
+		AE_TRET(__ae_thread_join(session, conn->log_file_tid));
 		conn->log_file_tid_set = false;
 	}
 	if (conn->log_file_session != NULL) {
-		wt_session = &conn->log_file_session->iface;
-		WT_TRET(wt_session->close(wt_session, NULL));
+		ae_session = &conn->log_file_session->iface;
+		AE_TRET(ae_session->close(ae_session, NULL));
 		conn->log_file_session = NULL;
 	}
 	if (conn->log_wrlsn_tid_set) {
-		WT_TRET(__wt_cond_signal(session, conn->log_wrlsn_cond));
-		WT_TRET(__wt_thread_join(session, conn->log_wrlsn_tid));
+		AE_TRET(__ae_cond_signal(session, conn->log_wrlsn_cond));
+		AE_TRET(__ae_thread_join(session, conn->log_wrlsn_tid));
 		conn->log_wrlsn_tid_set = false;
 	}
 	if (conn->log_wrlsn_session != NULL) {
-		wt_session = &conn->log_wrlsn_session->iface;
-		WT_TRET(wt_session->close(wt_session, NULL));
+		ae_session = &conn->log_wrlsn_session->iface;
+		AE_TRET(ae_session->close(ae_session, NULL));
 		conn->log_wrlsn_session = NULL;
 	}
 
-	WT_TRET(__wt_log_slot_destroy(session));
-	WT_TRET(__wt_log_close(session));
+	AE_TRET(__ae_log_slot_destroy(session));
+	AE_TRET(__ae_log_close(session));
 
 	/* Close the server thread's session. */
 	if (conn->log_session != NULL) {
-		wt_session = &conn->log_session->iface;
-		WT_TRET(wt_session->close(wt_session, NULL));
+		ae_session = &conn->log_session->iface;
+		AE_TRET(ae_session->close(ae_session, NULL));
 		conn->log_session = NULL;
 	}
 
 	/* Destroy the condition variables now that all threads are stopped */
-	WT_TRET(__wt_cond_destroy(session, &conn->log_cond));
-	WT_TRET(__wt_cond_destroy(session, &conn->log_file_cond));
-	WT_TRET(__wt_cond_destroy(session, &conn->log_wrlsn_cond));
+	AE_TRET(__ae_cond_destroy(session, &conn->log_cond));
+	AE_TRET(__ae_cond_destroy(session, &conn->log_file_cond));
+	AE_TRET(__ae_cond_destroy(session, &conn->log_wrlsn_cond));
 
-	WT_TRET(__wt_cond_destroy(session, &conn->log->log_sync_cond));
-	WT_TRET(__wt_cond_destroy(session, &conn->log->log_write_cond));
-	WT_TRET(__wt_rwlock_destroy(session, &conn->log->log_archive_lock));
-	__wt_spin_destroy(session, &conn->log->log_lock);
-	__wt_spin_destroy(session, &conn->log->log_slot_lock);
-	__wt_spin_destroy(session, &conn->log->log_sync_lock);
-	__wt_spin_destroy(session, &conn->log->log_writelsn_lock);
-	__wt_free(session, conn->log_path);
-	__wt_free(session, conn->log);
+	AE_TRET(__ae_cond_destroy(session, &conn->log->log_sync_cond));
+	AE_TRET(__ae_cond_destroy(session, &conn->log->log_write_cond));
+	AE_TRET(__ae_rwlock_destroy(session, &conn->log->log_archive_lock));
+	__ae_spin_destroy(session, &conn->log->log_lock);
+	__ae_spin_destroy(session, &conn->log->log_slot_lock);
+	__ae_spin_destroy(session, &conn->log->log_sync_lock);
+	__ae_spin_destroy(session, &conn->log->log_writelsn_lock);
+	__ae_free(session, conn->log_path);
+	__ae_free(session, conn->log);
 	return (ret);
 }

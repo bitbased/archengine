@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Public Domain 2014-2015 MongoDB, Inc.
-# Public Domain 2008-2014 WiredTiger, Inc.
+# Public Domain 2008-2014 ArchEngine, Inc.
 #
 # This is free and unencumbered software released into the public domain.
 #
@@ -30,15 +30,15 @@
 #       session level operations on tables
 #
 
-import wiredtiger, wttest
+import archengine, aetest
 from helper import key_populate, value_populate, simple_populate
-from wtscenario import multiply_scenarios, number_scenarios
+from aescenario import multiply_scenarios, number_scenarios
 
 # test_truncate_fast_delete
 #       When deleting leaf pages that aren't in memory, we set transactional
-# information in the page's WT_REF structure, which results in interesting
+# information in the page's AE_REF structure, which results in interesting
 # issues.
-class test_truncate_fast_delete(wttest.WiredTigerTestCase):
+class test_truncate_fast_delete(aetest.ArchEngineTestCase):
     name = 'test_truncate'
     nentries = 10000
 
@@ -207,4 +207,4 @@ class test_truncate_fast_delete(wttest.WiredTigerTestCase):
 
 
 if __name__ == '__main__':
-    wttest.run()
+    aetest.run()

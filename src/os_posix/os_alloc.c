@@ -1,12 +1,12 @@
 /*-
  * Copyright (c) 2014-2015 MongoDB, Inc.
- * Copyright (c) 2008-2014 WiredTiger, Inc.
+ * Copyright (c) 2008-2014 ArchEngine, Inc.
  *	All rights reserved.
  *
  * See the file LICENSE for redistribution information.
  */
 
-#include "wt_internal.h"
+#include "ae_internal.h"
 
 /*
  * On systems with poor default allocators for allocations greater than 16 KB,
@@ -24,21 +24,21 @@
 #endif
 
 /*
- * There's no malloc interface, WiredTiger never calls malloc.
+ * There's no malloc interface, ArchEngine never calls malloc.
  *
  * The problem is an application might allocate memory, write secret stuff in
- * it, free the memory, then WiredTiger allocates the memory and uses it for a
+ * it, free the memory, then ArchEngine allocates the memory and uses it for a
  * file page or log record, then writes it to disk, without having overwritten
- * it fully.  That results in the secret stuff being protected by WiredTiger's
+ * it fully.  That results in the secret stuff being protected by ArchEngine's
  * permission mechanisms, potentially inappropriate for the secret stuff.
  */
 
 /*
- * __wt_calloc --
+ * __ae_calloc --
  *	ANSI calloc function.
  */
 int
-__wt_calloc(WT_SESSION_IMPL *session, size_t number, size_t size, void *retp)
+__ae_calloc(AE_SESSION_IMPL *session, size_t number, size_t size, void *retp)
 {
 	void *p;
 
@@ -50,16 +50,16 @@ __wt_calloc(WT_SESSION_IMPL *session, size_t number, size_t size, void *retp)
 
 	/*
 	 * !!!
-	 * This function MUST handle a NULL WT_SESSION_IMPL handle.
+	 * This function MUST handle a NULL AE_SESSION_IMPL handle.
 	 */
-	WT_ASSERT(session, number != 0 && size != 0);
+	AE_ASSERT(session, number != 0 && size != 0);
 
 	if (session != NULL)
-		WT_STAT_FAST_CONN_INCR(session, memory_allocation);
+		AE_STAT_FAST_CONN_INCR(session, memory_allocation);
 
 	if ((p = calloc(number, size)) == NULL)
-		WT_RET_MSG(session, __wt_errno(),
-		    "memory allocation of %" WT_SIZET_FMT " bytes failed",
+		AE_RET_MSG(session, __ae_errno(),
+		    "memory allocation of %" AE_SIZET_FMT " bytes failed",
 		    size * number);
 
 	*(void **)retp = p;
@@ -67,11 +67,11 @@ __wt_calloc(WT_SESSION_IMPL *session, size_t number, size_t size, void *retp)
 }
 
 /*
- * __wt_realloc --
+ * __ae_realloc --
  *	ANSI realloc function.
  */
 int
-__wt_realloc(WT_SESSION_IMPL *session,
+__ae_realloc(AE_SESSION_IMPL *session,
     size_t *bytes_allocated_ret, size_t bytes_to_allocate, void *retp)
 {
 	void *p;
@@ -79,7 +79,7 @@ __wt_realloc(WT_SESSION_IMPL *session,
 
 	/*
 	 * !!!
-	 * This function MUST handle a NULL WT_SESSION_IMPL handle.
+	 * This function MUST handle a NULL AE_SESSION_IMPL handle.
 	 *
 	 * Sometimes we're allocating memory and we don't care about the
 	 * final length -- bytes_allocated_ret may be NULL.
@@ -87,23 +87,23 @@ __wt_realloc(WT_SESSION_IMPL *session,
 	p = *(void **)retp;
 	bytes_allocated =
 	    (bytes_allocated_ret == NULL) ? 0 : *bytes_allocated_ret;
-	WT_ASSERT(session,
+	AE_ASSERT(session,
 	    (p == NULL && bytes_allocated == 0) ||
 	    (p != NULL &&
 	    (bytes_allocated_ret == NULL || bytes_allocated != 0)));
-	WT_ASSERT(session, bytes_to_allocate != 0);
-	WT_ASSERT(session, bytes_allocated < bytes_to_allocate);
+	AE_ASSERT(session, bytes_to_allocate != 0);
+	AE_ASSERT(session, bytes_allocated < bytes_to_allocate);
 
 	if (session != NULL) {
 		if (p == NULL)
-			WT_STAT_FAST_CONN_INCR(session, memory_allocation);
+			AE_STAT_FAST_CONN_INCR(session, memory_allocation);
 		else
-			WT_STAT_FAST_CONN_INCR(session, memory_grow);
+			AE_STAT_FAST_CONN_INCR(session, memory_grow);
 	}
 
 	if ((p = realloc(p, bytes_to_allocate)) == NULL)
-		WT_RET_MSG(session, __wt_errno(),
-		    "memory allocation of %" WT_SIZET_FMT " bytes failed",
+		AE_RET_MSG(session, __ae_errno(),
+		    "memory allocation of %" AE_SIZET_FMT " bytes failed",
 		    bytes_to_allocate);
 
 	/*
@@ -111,7 +111,7 @@ __wt_realloc(WT_SESSION_IMPL *session,
 	 * write secret stuff into it, free the memory, then we re-allocate the
 	 * memory and use it for a file page or log record, and then write it to
 	 * disk.  That would result in the secret stuff being protected by the
-	 * WiredTiger permission mechanisms, potentially inappropriate for the
+	 * ArchEngine permission mechanisms, potentially inappropriate for the
 	 * secret stuff.
 	 */
 	memset((uint8_t *)
@@ -126,20 +126,20 @@ __wt_realloc(WT_SESSION_IMPL *session,
 }
 
 /*
- * __wt_realloc_aligned --
+ * __ae_realloc_aligned --
  *	ANSI realloc function that aligns to buffer boundaries, configured with
- *	the "buffer_alignment" key to wiredtiger_open.
+ *	the "buffer_alignment" key to archengine_open.
  */
 int
-__wt_realloc_aligned(WT_SESSION_IMPL *session,
+__ae_realloc_aligned(AE_SESSION_IMPL *session,
     size_t *bytes_allocated_ret, size_t bytes_to_allocate, void *retp)
 {
 #if defined(HAVE_POSIX_MEMALIGN)
-	WT_DECL_RET;
+	AE_DECL_RET;
 
 	/*
 	 * !!!
-	 * This function MUST handle a NULL WT_SESSION_IMPL handle.
+	 * This function MUST handle a NULL AE_SESSION_IMPL handle.
 	 */
 	if (session != NULL && S2C(session)->buffer_alignment > 0) {
 		void *p, *newp;
@@ -152,12 +152,12 @@ __wt_realloc_aligned(WT_SESSION_IMPL *session,
 		p = *(void **)retp;
 		bytes_allocated =
 		    (bytes_allocated_ret == NULL) ? 0 : *bytes_allocated_ret;
-		WT_ASSERT(session,
+		AE_ASSERT(session,
 		    (p == NULL && bytes_allocated == 0) ||
 		    (p != NULL &&
 		    (bytes_allocated_ret == NULL || bytes_allocated != 0)));
-		WT_ASSERT(session, bytes_to_allocate != 0);
-		WT_ASSERT(session, bytes_allocated < bytes_to_allocate);
+		AE_ASSERT(session, bytes_to_allocate != 0);
+		AE_ASSERT(session, bytes_allocated < bytes_to_allocate);
 
 		/*
 		 * We are going to allocate an aligned buffer.  When we do this
@@ -168,20 +168,20 @@ __wt_realloc_aligned(WT_SESSION_IMPL *session,
 		 * the size be a multiple of the alignment anyway.
 		 */
 		bytes_to_allocate =
-		    WT_ALIGN(bytes_to_allocate, S2C(session)->buffer_alignment);
+		    AE_ALIGN(bytes_to_allocate, S2C(session)->buffer_alignment);
 
-		WT_STAT_FAST_CONN_INCR(session, memory_allocation);
+		AE_STAT_FAST_CONN_INCR(session, memory_allocation);
 
 		if ((ret = posix_memalign(&newp,
 		    S2C(session)->buffer_alignment,
 		    bytes_to_allocate)) != 0)
-			WT_RET_MSG(session, ret,
-			     "memory allocation of %" WT_SIZET_FMT
+			AE_RET_MSG(session, ret,
+			     "memory allocation of %" AE_SIZET_FMT
 			     " bytes failed", bytes_to_allocate);
 
 		if (p != NULL)
 			memcpy(newp, p, bytes_allocated);
-		__wt_free(session, p);
+		__ae_free(session, p);
 		p = newp;
 
 		/* Clear the allocated memory (see above). */
@@ -203,16 +203,16 @@ __wt_realloc_aligned(WT_SESSION_IMPL *session,
 	 * Windows note: Visual C CRT memalign does not match Posix behavior
 	 * and would also double each allocation so it is bad for memory use
 	 */
-	return (__wt_realloc(
+	return (__ae_realloc(
 	    session, bytes_allocated_ret, bytes_to_allocate, retp));
 }
 
 /*
- * __wt_strndup --
+ * __ae_strndup --
  *	Duplicate a byte string of a given length (and NUL-terminate).
  */
 int
-__wt_strndup(WT_SESSION_IMPL *session, const void *str, size_t len, void *retp)
+__ae_strndup(AE_SESSION_IMPL *session, const void *str, size_t len, void *retp)
 {
 	void *p;
 
@@ -221,7 +221,7 @@ __wt_strndup(WT_SESSION_IMPL *session, const void *str, size_t len, void *retp)
 		return (0);
 	}
 
-	WT_RET(__wt_calloc(session, len + 1, 1, &p));
+	AE_RET(__ae_calloc(session, len + 1, 1, &p));
 
 	/*
 	 * Don't change this to strncpy, we rely on this function to duplicate
@@ -234,11 +234,11 @@ __wt_strndup(WT_SESSION_IMPL *session, const void *str, size_t len, void *retp)
 }
 
 /*
- * __wt_free_int --
+ * __ae_free_int --
  *	ANSI free function.
  */
 void
-__wt_free_int(WT_SESSION_IMPL *session, const void *p_arg)
+__ae_free_int(AE_SESSION_IMPL *session, const void *p_arg)
 {
 	void *p;
 
@@ -256,10 +256,10 @@ __wt_free_int(WT_SESSION_IMPL *session, const void *p_arg)
 
 	/*
 	 * !!!
-	 * This function MUST handle a NULL WT_SESSION_IMPL handle.
+	 * This function MUST handle a NULL AE_SESSION_IMPL handle.
 	 */
 	if (session != NULL)
-		WT_STAT_FAST_CONN_INCR(session, memory_free);
+		AE_STAT_FAST_CONN_INCR(session, memory_free);
 
 	free(p);
 }

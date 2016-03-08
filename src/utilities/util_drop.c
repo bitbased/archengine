@@ -1,6 +1,6 @@
 /*-
  * Copyright (c) 2014-2015 MongoDB, Inc.
- * Copyright (c) 2008-2014 WiredTiger, Inc.
+ * Copyright (c) 2008-2014 ArchEngine, Inc.
  *	All rights reserved.
  *
  * See the file LICENSE for redistribution information.
@@ -11,21 +11,21 @@
 static int usage(void);
 
 int
-util_drop(WT_SESSION *session, int argc, char *argv[])
+util_drop(AE_SESSION *session, int argc, char *argv[])
 {
-	WT_DECL_RET;
+	AE_DECL_RET;
 	int ch;
 	char *name;
 
-	while ((ch = __wt_getopt(progname, argc, argv, "")) != EOF)
+	while ((ch = __ae_getopt(progname, argc, argv, "")) != EOF)
 		switch (ch) {
 		case '?':
 		default:
 			return (usage());
 		}
 
-	argc -= __wt_optind;
-	argv += __wt_optind;
+	argc -= __ae_optind;
+	argv += __ae_optind;
 
 	/* The remaining argument is the uri. */
 	if (argc != 1)

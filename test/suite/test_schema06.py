@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Public Domain 2014-2015 MongoDB, Inc.
-# Public Domain 2008-2014 WiredTiger, Inc.
+# Public Domain 2008-2014 ArchEngine, Inc.
 #
 # This is free and unencumbered software released into the public domain.
 #
@@ -26,11 +26,11 @@
 # ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 # OTHER DEALINGS IN THE SOFTWARE.
 
-import wiredtiger, wttest
+import archengine, aetest
 
 # test_schema06.py
 #    Repeatedly create and drop indices
-class test_schema06(wttest.WiredTigerTestCase):
+class test_schema06(aetest.ArchEngineTestCase):
     """
     Test basic operations
     """
@@ -161,4 +161,4 @@ class test_schema06(wttest.WiredTigerTestCase):
             self.assertEqual(count, n)
 
 if __name__ == '__main__':
-    wttest.run()
+    aetest.run()

@@ -11,21 +11,21 @@ Huffman coding can be high, and should be considered.
 To configure Huffman encoding for the key in a row-store, specify \c
 huffman_key=english, \c huffman_key=utf8<file> or \c
 huffman_key=utf16<file> in the configuration passed to \c
-WT_SESSION::create.
+AE_SESSION::create.
 
 To configure Huffman encoding for a variable-length value in either a
 row-store or a column-store, specify \c huffman_value=english, \c
 huffman_value=utf8<file> or \c huffman_value=utf16<file> in the
-configuration passed to \c WT_SESSION::create.
+configuration passed to \c AE_SESSION::create.
 
-Setting Huffman encoding to \c english configures WiredTiger to use a
+Setting Huffman encoding to \c english configures ArchEngine to use a
 built-in English language frequency table.  The English language
 frequency table is based on \c "Case-sensitive letter and bigram
 frequency counts from large-scale English corpora", by Michael N. Jones
 and D.J.K. Mewhort, modified to support space and tab characters.
 
 Setting Huffman encoding to \c utf8<file> or \c utf16<file> configures
-WiredTiger to use a frequency table read from a file.  (Note: the \c <
+ArchEngine to use a frequency table read from a file.  (Note: the \c <
 and \c > characters are not literal, and should not appear in the
 string.)
 

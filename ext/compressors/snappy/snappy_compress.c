@@ -1,6 +1,6 @@
 /*-
  * Public Domain 2014-2015 MongoDB, Inc.
- * Public Domain 2008-2014 WiredTiger, Inc.
+ * Public Domain 2008-2014 ArchEngine, Inc.
  *
  * This is free and unencumbered software released into the public domain.
  *
@@ -31,34 +31,34 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <wiredtiger.h>
-#include <wiredtiger_ext.h>
+#include <archengine.h>
+#include <archengine_ext.h>
 
 /*
  * We need to include the configuration file to detect whether this extension
- * is being built into the WiredTiger library.
+ * is being built into the ArchEngine library.
  */
-#include "wiredtiger_config.h"
+#include "archengine_config.h"
 
 /* Local compressor structure. */
 typedef struct {
-	WT_COMPRESSOR compressor;		/* Must come first */
+	AE_COMPRESSOR compressor;		/* Must come first */
 
-	WT_EXTENSION_API *wt_api;		/* Extension API */
+	AE_EXTENSION_API *ae_api;		/* Extension API */
 } SNAPPY_COMPRESSOR;
 
 /*
- * wt_snappy_error --
+ * ae_snappy_error --
  *	Output an error message, and return a standard error code.
  */
 static int
-wt_snappy_error(WT_COMPRESSOR *compressor,
-    WT_SESSION *session, const char *call, snappy_status snret)
+ae_snappy_error(AE_COMPRESSOR *compressor,
+    AE_SESSION *session, const char *call, snappy_status snret)
 {
-	WT_EXTENSION_API *wt_api;
+	AE_EXTENSION_API *ae_api;
 	const char *msg;
 
-	wt_api = ((SNAPPY_COMPRESSOR *)compressor)->wt_api;
+	ae_api = ((SNAPPY_COMPRESSOR *)compressor)->ae_api;
 
 	msg = "unknown snappy status error";
 	switch (snret) {
@@ -72,17 +72,17 @@ wt_snappy_error(WT_COMPRESSOR *compressor,
 		return (0);
 	}
 
-	(void)wt_api->err_printf(wt_api,
+	(void)ae_api->err_printf(ae_api,
 	    session, "snappy error: %s: %s: %d", call, msg, snret);
-	return (WT_ERROR);
+	return (AE_ERROR);
 }
 
 /*
- * wt_snappy_compress --
- *	WiredTiger snappy compression.
+ * ae_snappy_compress --
+ *	ArchEngine snappy compression.
  */
 static int
-wt_snappy_compress(WT_COMPRESSOR *compressor, WT_SESSION *session,
+ae_snappy_compress(AE_COMPRESSOR *compressor, AE_SESSION *session,
     uint8_t *src, size_t src_len,
     uint8_t *dst, size_t dst_len,
     size_t *result_lenp, int *compression_failed)
@@ -92,7 +92,7 @@ wt_snappy_compress(WT_COMPRESSOR *compressor, WT_SESSION *session,
 	char *snapbuf;
 
 	/*
-	 * dst_len was computed in wt_snappy_pre_size, so we know it's big
+	 * dst_len was computed in ae_snappy_pre_size, so we know it's big
 	 * enough.  Skip past the space we'll use to store the final count
 	 * of compressed bytes.
 	 */
@@ -105,7 +105,7 @@ wt_snappy_compress(WT_COMPRESSOR *compressor, WT_SESSION *session,
 	if (snret == SNAPPY_OK) {
 		/*
 		 * On decompression, snappy requires the exact compressed byte
-		 * count (the current value of snaplen).  WiredTiger does not
+		 * count (the current value of snaplen).  ArchEngine does not
 		 * preserve that value, so save snaplen at the beginning of the
 		 * destination buffer.
 		 */
@@ -118,32 +118,32 @@ wt_snappy_compress(WT_COMPRESSOR *compressor, WT_SESSION *session,
 			*compression_failed = 1;
 		return (0);
 	}
-	return (wt_snappy_error(compressor, session, "snappy_compress", snret));
+	return (ae_snappy_error(compressor, session, "snappy_compress", snret));
 }
 
 /*
- * wt_snappy_decompress --
- *	WiredTiger snappy decompression.
+ * ae_snappy_decompress --
+ *	ArchEngine snappy decompression.
  */
 static int
-wt_snappy_decompress(WT_COMPRESSOR *compressor, WT_SESSION *session,
+ae_snappy_decompress(AE_COMPRESSOR *compressor, AE_SESSION *session,
     uint8_t *src, size_t src_len,
     uint8_t *dst, size_t dst_len,
     size_t *result_lenp)
 {
-	WT_EXTENSION_API *wt_api;
+	AE_EXTENSION_API *ae_api;
 	snappy_status snret;
 	size_t snaplen;
 
-	wt_api = ((SNAPPY_COMPRESSOR *)compressor)->wt_api;
+	ae_api = ((SNAPPY_COMPRESSOR *)compressor)->ae_api;
 
 	/* retrieve the saved length */
 	snaplen = *(size_t *)src;
 	if (snaplen + sizeof(size_t) > src_len) {
-		(void)wt_api->err_printf(wt_api,
+		(void)ae_api->err_printf(ae_api,
 		    session,
-		    "wt_snappy_decompress: stored size exceeds buffer size");
-		return (WT_ERROR);
+		    "ae_snappy_decompress: stored size exceeds buffer size");
+		return (AE_ERROR);
 	}
 
 	/* dst_len is an input and an output arg. */
@@ -156,15 +156,15 @@ wt_snappy_decompress(WT_COMPRESSOR *compressor, WT_SESSION *session,
 	}
 
 	return (
-	    wt_snappy_error(compressor, session, "snappy_decompress", snret));
+	    ae_snappy_error(compressor, session, "snappy_decompress", snret));
 }
 
 /*
- * wt_snappy_pre_size --
- *	WiredTiger snappy destination buffer sizing.
+ * ae_snappy_pre_size --
+ *	ArchEngine snappy destination buffer sizing.
  */
 static int
-wt_snappy_pre_size(WT_COMPRESSOR *compressor, WT_SESSION *session,
+ae_snappy_pre_size(AE_COMPRESSOR *compressor, AE_SESSION *session,
     uint8_t *src, size_t src_len,
     size_t *result_lenp)
 {
@@ -175,7 +175,7 @@ wt_snappy_pre_size(WT_COMPRESSOR *compressor, WT_SESSION *session,
 	/*
 	 * Snappy requires the dest buffer be somewhat larger than the source.
 	 * Fortunately, this is fast to compute, and will give us a dest buffer
-	 * in wt_snappy_compress that we can compress to directly.  We add space
+	 * in ae_snappy_compress that we can compress to directly.  We add space
 	 * in the dest buffer to store the accurate compressed size.
 	 */
 	*result_lenp = snappy_max_compressed_length(src_len) + sizeof(size_t);
@@ -183,11 +183,11 @@ wt_snappy_pre_size(WT_COMPRESSOR *compressor, WT_SESSION *session,
 }
 
 /*
- * wt_snappy_terminate --
- *	WiredTiger snappy compression termination.
+ * ae_snappy_terminate --
+ *	ArchEngine snappy compression termination.
  */
 static int
-wt_snappy_terminate(WT_COMPRESSOR *compressor, WT_SESSION *session)
+ae_snappy_terminate(AE_COMPRESSOR *compressor, AE_SESSION *session)
 {
 	(void)session;				/* Unused parameters */
 
@@ -195,16 +195,16 @@ wt_snappy_terminate(WT_COMPRESSOR *compressor, WT_SESSION *session)
 	return (0);
 }
 
-int snappy_extension_init(WT_CONNECTION *, WT_CONFIG_ARG *);
+int snappy_extension_init(AE_CONNECTION *, AE_CONFIG_ARG *);
 
 /*
  * snappy_extension_init --
- *	WiredTiger snappy compression extension - called directly when
- *	Snappy support is built in, or via wiredtiger_extension_init when
+ *	ArchEngine snappy compression extension - called directly when
+ *	Snappy support is built in, or via archengine_extension_init when
  *	snappy support is included via extension loading.
  */
 int
-snappy_extension_init(WT_CONNECTION *connection, WT_CONFIG_ARG *config)
+snappy_extension_init(AE_CONNECTION *connection, AE_CONFIG_ARG *config)
 {
 	SNAPPY_COMPRESSOR *snappy_compressor;
 
@@ -213,16 +213,16 @@ snappy_extension_init(WT_CONNECTION *connection, WT_CONFIG_ARG *config)
 	if ((snappy_compressor = calloc(1, sizeof(SNAPPY_COMPRESSOR))) == NULL)
 		return (errno);
 
-	snappy_compressor->compressor.compress = wt_snappy_compress;
+	snappy_compressor->compressor.compress = ae_snappy_compress;
 	snappy_compressor->compressor.compress_raw = NULL;
-	snappy_compressor->compressor.decompress = wt_snappy_decompress;
-	snappy_compressor->compressor.pre_size = wt_snappy_pre_size;
-	snappy_compressor->compressor.terminate = wt_snappy_terminate;
+	snappy_compressor->compressor.decompress = ae_snappy_decompress;
+	snappy_compressor->compressor.pre_size = ae_snappy_pre_size;
+	snappy_compressor->compressor.terminate = ae_snappy_terminate;
 
-	snappy_compressor->wt_api = connection->get_extension_api(connection);
+	snappy_compressor->ae_api = connection->get_extension_api(connection);
 
 	return (connection->add_compressor(
-	    connection, "snappy", (WT_COMPRESSOR *)snappy_compressor, NULL));
+	    connection, "snappy", (AE_COMPRESSOR *)snappy_compressor, NULL));
 }
 
 /*
@@ -231,11 +231,11 @@ snappy_extension_init(WT_CONNECTION *connection, WT_CONFIG_ARG *config)
  */
 #ifndef	HAVE_BUILTIN_EXTENSION_SNAPPY
 /*
- * wiredtiger_extension_init --
- *	WiredTiger snappy compression extension.
+ * archengine_extension_init --
+ *	ArchEngine snappy compression extension.
  */
 int
-wiredtiger_extension_init(WT_CONNECTION *connection, WT_CONFIG_ARG *config)
+archengine_extension_init(AE_CONNECTION *connection, AE_CONFIG_ARG *config)
 {
 	return snappy_extension_init(connection, config);
 }

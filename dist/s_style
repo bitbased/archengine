@@ -1,7 +1,7 @@
 #! /bin/sh
 
 # General style correction and cleanup.
-t=__wt.$$
+t=__ae.$$
 trap 'rm -f $t; exit 0' 0 1 2 3 13 15
 
 # s_style is re-entrant, when run with no parameters it calls itself
@@ -11,13 +11,13 @@ if [ $# -ne 1 ]; then
 
 	find bench examples ext src test \
 	    -name '*.[chisy]' -o -name '*.in' -o -name '*.dox' |
-	sed -e '/Makefile.in/d' -e '/build_win\/wiredtiger_config.h/d' |
+	sed -e '/Makefile.in/d' -e '/build_win\/archengine_config.h/d' |
 	xargs -P 20 -n 1 -I{} sh ./dist/s_style {}
 else
 	# General style correction and cleanup for a single file
 	f=$1
 	fname=`basename $f`
-	t=__wt_s_style.$fname.$$
+	t=__ae_s_style.$fname.$$
 
 	if [ ! -e $f ]; then
 		echo "$0 error $1 does not exist"
@@ -41,8 +41,8 @@ else
 		cat $t
 	fi
 
-	if grep WT_DEADLOCK $f | grep -v '#define.WT_DEADLOCK' > $t; then
-		echo "$f: WT_DEADLOCK deprecated in favor of WT_ROLLBACK"
+	if grep AE_DEADLOCK $f | grep -v '#define.AE_DEADLOCK' > $t; then
+		echo "$f: AE_DEADLOCK deprecated in favor of AE_ROLLBACK"
 		cat $t
 	fi
 
@@ -55,8 +55,8 @@ else
 	   ! expr "$f" : 'src/os_win/.*' > /dev/null &&
 	   ! expr "$f" : 'src/include/extern.h' > /dev/null &&
 	   ! expr "$f" : 'src/include/os.h' > /dev/null &&
-	   grep '__wt_errno' $f > $t; then
-		echo "$f: upper-level code should not call __wt_errno"
+	   grep '__ae_errno' $f > $t; then
+		echo "$f: upper-level code should not call __ae_errno"
 		cat $t
 	fi
 
@@ -70,12 +70,12 @@ else
 
 	egrep -w 'off_t' $f > $t
 	test -s $t && {
-		echo "$f: off_t type declaration, use wt_off_t"
+		echo "$f: off_t type declaration, use ae_off_t"
 		cat $t
 	}
 
 	# Alignment directive before "struct".
-	egrep 'WT_COMPILER_TYPE_ALIGN.*struct' $f > $t
+	egrep 'AE_COMPILER_TYPE_ALIGN.*struct' $f > $t
 	test -s $t && {
 		echo "$f: compiler alignment direction must precede \"struct\""
 		cat $t

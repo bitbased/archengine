@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Public Domain 2014-2015 MongoDB, Inc.
-# Public Domain 2008-2014 WiredTiger, Inc.
+# Public Domain 2008-2014 ArchEngine, Inc.
 #
 # This is free and unencumbered software released into the public domain.
 #
@@ -27,12 +27,12 @@
 # OTHER DEALINGS IN THE SOFTWARE.
 
 import os
-import wiredtiger, wttest
-from wiredtiger import stat
+import archengine, aetest
+from archengine import stat
 
 # test_config04.py
 #    Individually test config options
-class test_config04(wttest.WiredTigerTestCase):
+class test_config04(aetest.ArchEngineTestCase):
     table_name1 = 'test_config04'
     nentries = 100
 
@@ -70,13 +70,13 @@ class test_config04(wttest.WiredTigerTestCase):
 
     def common_test(self, configextra):
         """
-        Call wiredtiger_open and run a simple test.
+        Call archengine_open and run a simple test.
         configextra are any extra configuration strings needed on the open.
         """
         configarg = 'create,statistics=(fast)'
         if configextra != None:
             configarg += ',' + configextra
-        self.conn = wiredtiger.wiredtiger_open('.', configarg)
+        self.conn = archengine.archengine_open('.', configarg)
         self.session = self.conn.open_session(None)
         self.populate_and_check()
 
@@ -88,8 +88,8 @@ class test_config04(wttest.WiredTigerTestCase):
 
     def test_bad_config(self):
         msg = '/unknown configuration key/'
-        self.assertRaisesWithMessage(wiredtiger.WiredTigerError,
-            lambda: wiredtiger.wiredtiger_open('.', 'not_valid,another_bad=10'),
+        self.assertRaisesWithMessage(archengine.ArchEngineError,
+            lambda: archengine.archengine_open('.', 'not_valid,another_bad=10'),
             msg)
 
     def test_cache_size_number(self):
@@ -122,15 +122,15 @@ class test_config04(wttest.WiredTigerTestCase):
         self.common_cache_size_test('2T', 2*self.T)
 
     def test_cache_too_small(self):
-        self.assertRaisesWithMessage(wiredtiger.WiredTigerError,
-            lambda: wiredtiger.wiredtiger_open('.', 'create,cache_size=900000'),
+        self.assertRaisesWithMessage(archengine.ArchEngineError,
+            lambda: archengine.archengine_open('.', 'create,cache_size=900000'),
             "/Value too small for key 'cache_size' the minimum is/")
 
     def test_cache_too_large(self):
         T11 = 11 * self.T  # 11 Terabytes
         configstr = 'create,cache_size=' + str(T11)
-        self.assertRaisesWithMessage(wiredtiger.WiredTigerError,
-            lambda: wiredtiger.wiredtiger_open('.', configstr),
+        self.assertRaisesWithMessage(archengine.ArchEngineError,
+            lambda: archengine.archengine_open('.', configstr),
             "/Value too large for key 'cache_size' the maximum is/")
 
     def test_eviction(self):
@@ -138,14 +138,14 @@ class test_config04(wttest.WiredTigerTestCase):
         # Note
 
     def test_eviction_bad(self):
-        self.assertRaisesWithMessage(wiredtiger.WiredTigerError, lambda:
-            wiredtiger.wiredtiger_open('.', 'create,eviction_target=91,' +
+        self.assertRaisesWithMessage(archengine.ArchEngineError, lambda:
+            archengine.archengine_open('.', 'create,eviction_target=91,' +
                                        'eviction_trigger=81'),
             "/eviction target must be lower than the eviction trigger/")
 
     def test_eviction_bad2(self):
-        self.assertRaisesWithMessage(wiredtiger.WiredTigerError, lambda:
-            wiredtiger.wiredtiger_open('.', 'create,eviction_target=86,' +
+        self.assertRaisesWithMessage(archengine.ArchEngineError, lambda:
+            archengine.archengine_open('.', 'create,eviction_target=86,' +
                                        'eviction_trigger=86'),
             "/eviction target must be lower than the eviction trigger/")
 
@@ -177,4 +177,4 @@ class test_config04(wttest.WiredTigerTestCase):
         self.common_test('')
 
 if __name__ == '__main__':
-    wttest.run()
+    aetest.run()

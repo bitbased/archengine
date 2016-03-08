@@ -1,14 +1,14 @@
 /*-
  * Copyright (c) 2014-2015 MongoDB, Inc.
- * Copyright (c) 2008-2014 WiredTiger, Inc.
+ * Copyright (c) 2008-2014 ArchEngine, Inc.
  *	All rights reserved.
  *
  * See the file LICENSE for redistribution information.
  */
 
-#include "wt_internal.h"
+#include "ae_internal.h"
 
-_Check_return_opt_ int __cdecl _wt_vsnprintf(
+_Check_return_opt_ int __cdecl _ae_vsnprintf(
     _Out_writes_(_MaxCount) char * _DstBuf,
     _In_ size_t _MaxCount,
     _In_z_ _Printf_format_string_ const char * _Format,
@@ -17,7 +17,7 @@ _Check_return_opt_ int __cdecl _wt_vsnprintf(
 	int len;
 
 	/*
-	 * WiredTiger will call with length 0 to get the needed buffer size
+	 * ArchEngine will call with length 0 to get the needed buffer size
 	 * We call the count only version in this case since vsnprintf_s assumes
 	 * length is greater than zero or else it triggers the invalid_parameter
 	 * handler.

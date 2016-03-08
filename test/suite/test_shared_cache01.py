@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Public Domain 2014-2015 MongoDB, Inc.
-# Public Domain 2008-2014 WiredTiger, Inc.
+# Public Domain 2008-2014 ArchEngine, Inc.
 #
 # This is free and unencumbered software released into the public domain.
 #
@@ -29,14 +29,14 @@
 
 import os
 import shutil
-import wiredtiger, wttest
-from wttest import unittest
+import archengine, aetest
+from aetest import unittest
 from helper import key_populate, simple_populate
 
 # test_shared_cache01.py
 #    Checkpoint tests
 # Test shared cache shared amongst multiple connections.
-class test_shared_cache01(wttest.WiredTigerTestCase):
+class test_shared_cache01(aetest.ArchEngineTestCase):
 
     uri = 'table:test_shared_cache01'
     # Setup fairly large items to use up cache
@@ -72,7 +72,7 @@ class test_shared_cache01(wttest.WiredTigerTestCase):
         for name in connections:
             shutil.rmtree(name, True)
             os.mkdir(name)
-            next_conn =  wiredtiger.wiredtiger_open(
+            next_conn =  archengine.archengine_open(
                 name,
                 'create,error_prefix="' + self.shortid() + ': "' +
                 pool_opts + extra_opts)
@@ -89,7 +89,7 @@ class test_shared_cache01(wttest.WiredTigerTestCase):
     # Basic test of shared cache
     def test_shared_cache_basic(self):
         nops = 1000
-        self.openConnections(['WT_TEST1', 'WT_TEST2'])
+        self.openConnections(['AE_TEST1', 'AE_TEST2'])
 
         for sess in self.sessions:
             sess.create(self.uri, "key_format=S,value_format=S")
@@ -99,7 +99,7 @@ class test_shared_cache01(wttest.WiredTigerTestCase):
     # Test of shared cache with more connections
     def test_shared_cache_more_connections(self):
         nops = 1000
-        self.openConnections(['WT_TEST1', 'WT_TEST2', 'WT_TEST3', 'WT_TEST4'])
+        self.openConnections(['AE_TEST1', 'AE_TEST2', 'AE_TEST3', 'AE_TEST4'])
 
         for sess in self.sessions:
             sess.create(self.uri, "key_format=S,value_format=S")
@@ -109,7 +109,7 @@ class test_shared_cache01(wttest.WiredTigerTestCase):
     # Do enough work for the shared cache to be fully allocated.
     def test_shared_cache_full(self):
         nops = 10000
-        self.openConnections(['WT_TEST1', 'WT_TEST2'])
+        self.openConnections(['AE_TEST1', 'AE_TEST2'])
         for sess in self.sessions:
             sess.create(self.uri, "key_format=S,value_format=S")
 
@@ -122,7 +122,7 @@ class test_shared_cache01(wttest.WiredTigerTestCase):
     def test_shared_cache_rebalance(self):
         # About 100 MB of data with ~250 byte values.
         nops = 200000
-        self.openConnections(['WT_TEST1', 'WT_TEST2'])
+        self.openConnections(['AE_TEST1', 'AE_TEST2'])
 
         for sess in self.sessions:
             sess.create(self.uri, "key_format=S,value_format=S")
@@ -132,13 +132,13 @@ class test_shared_cache01(wttest.WiredTigerTestCase):
     # Add a new connection once the shared cache is already established.
     def test_shared_cache_late_join(self):
         nops = 1000
-        self.openConnections(['WT_TEST1', 'WT_TEST2'])
+        self.openConnections(['AE_TEST1', 'AE_TEST2'])
 
         for sess in self.sessions:
             sess.create(self.uri, "key_format=S,value_format=S")
             self.add_records(sess, 0, nops)
 
-        self.openConnections(['WT_TEST3'], add=1)
+        self.openConnections(['AE_TEST3'], add=1)
         self.sessions[-1].create(self.uri, "key_format=S,value_format=S")
         for sess in self.sessions:
             self.add_records(sess, 0, nops)
@@ -147,7 +147,7 @@ class test_shared_cache01(wttest.WiredTigerTestCase):
     # Close a connection and keep using other connections.
     def test_shared_cache_leaving(self):
         nops = 10000
-        self.openConnections(['WT_TEST1', 'WT_TEST2', 'WT_TEST3'])
+        self.openConnections(['AE_TEST1', 'AE_TEST2', 'AE_TEST3'])
 
         for sess in self.sessions:
             sess.create(self.uri, "key_format=S,value_format=S")
@@ -164,7 +164,7 @@ class test_shared_cache01(wttest.WiredTigerTestCase):
     def test_shared_cache_verbose(self):
         nops = 1000
         self.openConnections(
-                ['WT_TEST1', 'WT_TEST2'], extra_opts="verbose=[shared_cache]")
+                ['AE_TEST1', 'AE_TEST2'], extra_opts="verbose=[shared_cache]")
 
         for sess in self.sessions:
             sess.create(self.uri, "key_format=S,value_format=S")
@@ -174,9 +174,9 @@ class test_shared_cache01(wttest.WiredTigerTestCase):
     # Test opening a connection outside of the shared cache
     def test_shared_cache_mixed(self):
         nops = 1000
-        self.openConnections(['WT_TEST1', 'WT_TEST2'])
+        self.openConnections(['AE_TEST1', 'AE_TEST2'])
 
-        self.openConnections(['WT_TEST3'], add=1, pool_opts=',cache_size=50M')
+        self.openConnections(['AE_TEST3'], add=1, pool_opts=',cache_size=50M')
         for sess in self.sessions:
             sess.create(self.uri, "key_format=S,value_format=S")
             self.add_records(sess, 0, nops)
@@ -185,7 +185,7 @@ class test_shared_cache01(wttest.WiredTigerTestCase):
     # Test default config values
     def test_shared_cache_defaults(self):
         nops = 1000
-        self.openConnections(['WT_TEST1', 'WT_TEST2'], pool_opts=',shared_cache=(name=pool,size=200M)')
+        self.openConnections(['AE_TEST1', 'AE_TEST2'], pool_opts=',shared_cache=(name=pool,size=200M)')
 
         for sess in self.sessions:
             sess.create(self.uri, "key_format=S,value_format=S")
@@ -195,7 +195,7 @@ class test_shared_cache01(wttest.WiredTigerTestCase):
     # Test default config values
     def test_shared_cache_defaults2(self):
         nops = 1000
-        self.openConnections(['WT_TEST1', 'WT_TEST2'], pool_opts=',shared_cache=(name=pool)')
+        self.openConnections(['AE_TEST1', 'AE_TEST2'], pool_opts=',shared_cache=(name=pool)')
 
         for sess in self.sessions:
             sess.create(self.uri, "key_format=S,value_format=S")
@@ -203,4 +203,4 @@ class test_shared_cache01(wttest.WiredTigerTestCase):
         self.closeConnections()
 
 if __name__ == '__main__':
-    wttest.run()
+    aetest.run()

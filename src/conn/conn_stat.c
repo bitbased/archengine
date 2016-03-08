@@ -1,12 +1,12 @@
 /*-
  * Copyright (c) 2014-2015 MongoDB, Inc.
- * Copyright (c) 2008-2014 WiredTiger, Inc.
+ * Copyright (c) 2008-2014 ArchEngine, Inc.
  *	All rights reserved.
  *
  * See the file LICENSE for redistribution information.
  */
 
-#include "wt_internal.h"
+#include "ae_internal.h"
 
 #ifdef __GNUC__
 #if __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ > 1)
@@ -24,42 +24,42 @@
  *	Free the array of statistics sources.
  */
 static void
-__stat_sources_free(WT_SESSION_IMPL *session, char ***sources)
+__stat_sources_free(AE_SESSION_IMPL *session, char ***sources)
 {
 	char **p;
 
 	if ((p = (*sources)) != NULL) {
 		for (; *p != NULL; ++p)
-			__wt_free(session, *p);
-		__wt_free(session, *sources);
+			__ae_free(session, *p);
+		__ae_free(session, *sources);
 	}
 }
 
 /*
- * __wt_conn_stat_init --
+ * __ae_conn_stat_init --
  *	Initialize the per-connection statistics.
  */
 void
-__wt_conn_stat_init(WT_SESSION_IMPL *session)
+__ae_conn_stat_init(AE_SESSION_IMPL *session)
 {
-	WT_CONNECTION_IMPL *conn;
-	WT_CONNECTION_STATS **stats;
+	AE_CONNECTION_IMPL *conn;
+	AE_CONNECTION_STATS **stats;
 
 	conn = S2C(session);
 	stats = conn->stats;
 
-	__wt_async_stats_update(session);
-	__wt_cache_stats_update(session);
-	__wt_las_stats_update(session);
-	__wt_txn_stats_update(session);
+	__ae_async_stats_update(session);
+	__ae_cache_stats_update(session);
+	__ae_las_stats_update(session);
+	__ae_txn_stats_update(session);
 
-	WT_STAT_SET(session, stats, file_open, conn->open_file_count);
-	WT_STAT_SET(session,
+	AE_STAT_SET(session, stats, file_open, conn->open_file_count);
+	AE_STAT_SET(session,
 	    stats, session_cursor_open, conn->open_cursor_count);
-	WT_STAT_SET(session, stats, dh_conn_handle_count, conn->dhandle_count);
-	WT_STAT_SET(session,
+	AE_STAT_SET(session, stats, dh_conn_handle_count, conn->dhandle_count);
+	AE_STAT_SET(session,
 	    stats, rec_split_stashed_objects, conn->split_stashed_objects);
-	WT_STAT_SET(session,
+	AE_STAT_SET(session,
 	    stats, rec_split_stashed_bytes, conn->split_stashed_bytes);
 }
 
@@ -68,45 +68,45 @@ __wt_conn_stat_init(WT_SESSION_IMPL *session)
  *	Parse and setup the statistics server options.
  */
 static int
-__statlog_config(WT_SESSION_IMPL *session, const char **cfg, bool *runp)
+__statlog_config(AE_SESSION_IMPL *session, const char **cfg, bool *runp)
 {
-	WT_CONFIG objectconf;
-	WT_CONFIG_ITEM cval, k, v;
-	WT_CONNECTION_IMPL *conn;
-	WT_DECL_RET;
+	AE_CONFIG objectconf;
+	AE_CONFIG_ITEM cval, k, v;
+	AE_CONNECTION_IMPL *conn;
+	AE_DECL_RET;
 	int cnt;
 	char **sources;
 
 	conn = S2C(session);
 	sources = NULL;
 
-	WT_RET(__wt_config_gets(session, cfg, "statistics_log.wait", &cval));
+	AE_RET(__ae_config_gets(session, cfg, "statistics_log.wait", &cval));
 	/* Only start the server if wait time is non-zero */
 	*runp = cval.val != 0;
-	conn->stat_usecs = (uint64_t)cval.val * WT_MILLION;
+	conn->stat_usecs = (uint64_t)cval.val * AE_MILLION;
 
-	WT_RET(__wt_config_gets(
+	AE_RET(__ae_config_gets(
 	    session, cfg, "statistics_log.on_close", &cval));
 	if (cval.val != 0)
-		FLD_SET(conn->stat_flags, WT_CONN_STAT_ON_CLOSE);
+		FLD_SET(conn->stat_flags, AE_CONN_STAT_ON_CLOSE);
 
 	/*
 	 * Statistics logging configuration requires either a wait time or an
 	 * on-close setting.
 	 */
-	if (!*runp && !FLD_ISSET(conn->stat_flags, WT_CONN_STAT_ON_CLOSE))
+	if (!*runp && !FLD_ISSET(conn->stat_flags, AE_CONN_STAT_ON_CLOSE))
 		return (0);
 
-	WT_RET(__wt_config_gets(session, cfg, "statistics_log.sources", &cval));
-	WT_RET(__wt_config_subinit(session, &objectconf, &cval));
-	for (cnt = 0; (ret = __wt_config_next(&objectconf, &k, &v)) == 0; ++cnt)
+	AE_RET(__ae_config_gets(session, cfg, "statistics_log.sources", &cval));
+	AE_RET(__ae_config_subinit(session, &objectconf, &cval));
+	for (cnt = 0; (ret = __ae_config_next(&objectconf, &k, &v)) == 0; ++cnt)
 		;
-	WT_RET_NOTFOUND_OK(ret);
+	AE_RET_NOTFOUND_OK(ret);
 	if (cnt != 0) {
-		WT_RET(__wt_calloc_def(session, cnt + 1, &sources));
-		WT_RET(__wt_config_subinit(session, &objectconf, &cval));
+		AE_RET(__ae_calloc_def(session, cnt + 1, &sources));
+		AE_RET(__ae_config_subinit(session, &objectconf, &cval));
 		for (cnt = 0;
-		    (ret = __wt_config_next(&objectconf, &k, &v)) == 0; ++cnt) {
+		    (ret = __ae_config_next(&objectconf, &k, &v)) == 0; ++cnt) {
 			/*
 			 * XXX
 			 * Only allow "file:" and "lsm:" for now: "file:" works
@@ -114,27 +114,27 @@ __statlog_config(WT_SESSION_IMPL *session, const char **cfg, bool *runp)
 			 * works because we can easily walk the list of open LSM
 			 * objects, even though it hasn't been converted.
 			 */
-			if (!WT_PREFIX_MATCH(k.str, "file:") &&
-			    !WT_PREFIX_MATCH(k.str, "lsm:"))
-				WT_ERR_MSG(session, EINVAL,
+			if (!AE_PREFIX_MATCH(k.str, "file:") &&
+			    !AE_PREFIX_MATCH(k.str, "lsm:"))
+				AE_ERR_MSG(session, EINVAL,
 				    "statistics_log sources configuration only "
 				    "supports objects of type \"file\" or "
 				    "\"lsm\"");
-			WT_ERR(
-			    __wt_strndup(session, k.str, k.len, &sources[cnt]));
+			AE_ERR(
+			    __ae_strndup(session, k.str, k.len, &sources[cnt]));
 		}
-		WT_ERR_NOTFOUND_OK(ret);
+		AE_ERR_NOTFOUND_OK(ret);
 
 		conn->stat_sources = sources;
 		sources = NULL;
 	}
 
-	WT_ERR(__wt_config_gets(session, cfg, "statistics_log.path", &cval));
-	WT_ERR(__wt_nfilename(session, cval.str, cval.len, &conn->stat_path));
+	AE_ERR(__ae_config_gets(session, cfg, "statistics_log.path", &cval));
+	AE_ERR(__ae_nfilename(session, cval.str, cval.len, &conn->stat_path));
 
-	WT_ERR(__wt_config_gets(
+	AE_ERR(__ae_config_gets(
 	    session, cfg, "statistics_log.timestamp", &cval));
-	WT_ERR(__wt_strndup(session, cval.str, cval.len, &conn->stat_format));
+	AE_ERR(__ae_strndup(session, cval.str, cval.len, &conn->stat_format));
 
 err:	__stat_sources_free(session, &sources);
 	return (ret);
@@ -145,18 +145,18 @@ err:	__stat_sources_free(session, &sources);
  *	Dump out handle/connection statistics.
  */
 static int
-__statlog_dump(WT_SESSION_IMPL *session, const char *name, bool conn_stats)
+__statlog_dump(AE_SESSION_IMPL *session, const char *name, bool conn_stats)
 {
-	WT_CONNECTION_IMPL *conn;
-	WT_CURSOR *cursor;
-	WT_CURSOR_STAT *cst;
-	WT_DECL_ITEM(tmp);
-	WT_DECL_RET;
+	AE_CONNECTION_IMPL *conn;
+	AE_CURSOR *cursor;
+	AE_CURSOR_STAT *cst;
+	AE_DECL_ITEM(tmp);
+	AE_DECL_RET;
 	int64_t *stats;
 	int i;
 	const char *desc, *uri;
 	const char *cfg[] = {
-	    WT_CONFIG_BASE(session, WT_SESSION_open_cursor), NULL };
+	    AE_CONFIG_BASE(session, AE_SESSION_open_cursor), NULL };
 
 	conn = S2C(session);
 
@@ -164,8 +164,8 @@ __statlog_dump(WT_SESSION_IMPL *session, const char *name, bool conn_stats)
 	if (conn_stats)
 		uri = "statistics:";
 	else {
-		WT_RET(__wt_scr_alloc(session, 0, &tmp));
-		WT_ERR(__wt_buf_fmt(session, tmp, "statistics:%s", name));
+		AE_RET(__ae_scr_alloc(session, 0, &tmp));
+		AE_ERR(__ae_buf_fmt(session, tmp, "statistics:%s", name));
 		uri = tmp->data;
 	}
 
@@ -175,31 +175,31 @@ __statlog_dump(WT_SESSION_IMPL *session, const char *name, bool conn_stats)
 	 * If we don't find an underlying object, silently ignore it, the object
 	 * may exist only intermittently.
 	 */
-	switch (ret = __wt_curstat_open(session, uri, NULL, cfg, &cursor)) {
+	switch (ret = __ae_curstat_open(session, uri, NULL, cfg, &cursor)) {
 	case 0:
-		cst = (WT_CURSOR_STAT *)cursor;
+		cst = (AE_CURSOR_STAT *)cursor;
 		for (stats = cst->stats, i = 0; i <  cst->stats_count; ++i) {
 			if (conn_stats)
-				WT_ERR(__wt_stat_connection_desc(cst, i,
+				AE_ERR(__ae_stat_connection_desc(cst, i,
 				    &desc));
 			else
-				WT_ERR(__wt_stat_dsrc_desc(cst, i, &desc));
-			WT_ERR(__wt_fprintf(conn->stat_fp,
+				AE_ERR(__ae_stat_dsrc_desc(cst, i, &desc));
+			AE_ERR(__ae_fprintf(conn->stat_fp,
 			    "%s %" PRId64 " %s %s\n",
 			    conn->stat_stamp, stats[i], name, desc));
 		}
-		WT_ERR(cursor->close(cursor));
+		AE_ERR(cursor->close(cursor));
 		break;
 	case EBUSY:
 	case ENOENT:
-	case WT_NOTFOUND:
+	case AE_NOTFOUND:
 		ret = 0;
 		break;
 	default:
 		break;
 	}
 
-err:	__wt_scr_free(session, &tmp);
+err:	__ae_scr_free(session, &tmp);
 	return (ret);
 }
 
@@ -208,20 +208,20 @@ err:	__wt_scr_free(session, &tmp);
  *	Review a single open handle and dump statistics on demand.
  */
 static int
-__statlog_apply(WT_SESSION_IMPL *session, const char *cfg[])
+__statlog_apply(AE_SESSION_IMPL *session, const char *cfg[])
 {
-	WT_DATA_HANDLE *dhandle;
-	WT_DECL_RET;
+	AE_DATA_HANDLE *dhandle;
+	AE_DECL_RET;
 	char **p;
 
-	WT_UNUSED(cfg);
+	AE_UNUSED(cfg);
 
 	dhandle = session->dhandle;
 
 	/* Check for a match on the set of sources. */
 	for (p = S2C(session)->stat_sources; *p != NULL; ++p)
-		if (WT_PREFIX_MATCH(dhandle->name, *p)) {
-			WT_WITHOUT_DHANDLE(session, ret =
+		if (AE_PREFIX_MATCH(dhandle->name, *p)) {
+			AE_WITHOUT_DHANDLE(session, ret =
 			    __statlog_dump(session, dhandle->name, false));
 			return (ret);
 		}
@@ -236,11 +236,11 @@ __statlog_apply(WT_SESSION_IMPL *session, const char *cfg[])
  * This code should be removed when LSM objects are converted to data handles.
  */
 static int
-__statlog_lsm_apply(WT_SESSION_IMPL *session)
+__statlog_lsm_apply(AE_SESSION_IMPL *session)
 {
-#define	WT_LSM_TREE_LIST_SLOTS	100
-	WT_LSM_TREE *lsm_tree, *list[WT_LSM_TREE_LIST_SLOTS];
-	WT_DECL_RET;
+#define	AE_LSM_TREE_LIST_SLOTS	100
+	AE_LSM_TREE *lsm_tree, *list[AE_LSM_TREE_LIST_SLOTS];
+	AE_DECL_RET;
 	int cnt;
 	bool locked;
 	char **p;
@@ -258,36 +258,36 @@ __statlog_lsm_apply(WT_SESSION_IMPL *session)
 	 * classic deadlock.  This is temporary code so I'm not going to do
 	 * anything fancy.
 	 * It is OK to not keep holding the schema lock after populating
-	 * the list of matching LSM trees, since the __wt_lsm_tree_get call
+	 * the list of matching LSM trees, since the __ae_lsm_tree_get call
 	 * will bump a reference count, so the tree won't go away.
 	 */
-	__wt_spin_lock(session, &S2C(session)->schema_lock);
+	__ae_spin_lock(session, &S2C(session)->schema_lock);
 	locked = true;
 	TAILQ_FOREACH(lsm_tree, &S2C(session)->lsmqh, q) {
-		if (cnt == WT_LSM_TREE_LIST_SLOTS)
+		if (cnt == AE_LSM_TREE_LIST_SLOTS)
 			break;
 		for (p = S2C(session)->stat_sources; *p != NULL; ++p)
-			if (WT_PREFIX_MATCH(lsm_tree->name, *p)) {
-				WT_ERR(__wt_lsm_tree_get(session,
+			if (AE_PREFIX_MATCH(lsm_tree->name, *p)) {
+				AE_ERR(__ae_lsm_tree_get(session,
 				    lsm_tree->name, false, &list[cnt++]));
 				break;
 			}
 	}
-	__wt_spin_unlock(session, &S2C(session)->schema_lock);
+	__ae_spin_unlock(session, &S2C(session)->schema_lock);
 	locked = false;
 
 	while (cnt > 0) {
 		--cnt;
-		WT_TRET(__statlog_dump(session, list[cnt]->name, false));
-		__wt_lsm_tree_release(session, list[cnt]);
+		AE_TRET(__statlog_dump(session, list[cnt]->name, false));
+		__ae_lsm_tree_release(session, list[cnt]);
 	}
 
 err:	if (locked)
-		__wt_spin_unlock(session, &S2C(session)->schema_lock);
+		__ae_spin_unlock(session, &S2C(session)->schema_lock);
 	/* Release any LSM trees on error. */
 	while (cnt > 0) {
 		--cnt;
-		__wt_lsm_tree_release(session, list[cnt]);
+		__ae_lsm_tree_release(session, list[cnt]);
 	}
 	return (ret);
 }
@@ -297,53 +297,53 @@ err:	if (locked)
  *	Output a set of statistics into the current log file.
  */
 static int
-__statlog_log_one(WT_SESSION_IMPL *session, WT_ITEM *path, WT_ITEM *tmp)
+__statlog_log_one(AE_SESSION_IMPL *session, AE_ITEM *path, AE_ITEM *tmp)
 {
 	FILE *log_file;
-	WT_CONNECTION_IMPL *conn;
-	WT_DECL_RET;
+	AE_CONNECTION_IMPL *conn;
+	AE_DECL_RET;
 	struct timespec ts;
 	struct tm *tm, _tm;
 
 	conn = S2C(session);
 
 	/* Get the current local time of day. */
-	WT_RET(__wt_epoch(session, &ts));
+	AE_RET(__ae_epoch(session, &ts));
 	tm = localtime_r(&ts.tv_sec, &_tm);
 
 	/* Create the logging path name for this time of day. */
 	if (strftime(tmp->mem, tmp->memsize, conn->stat_path, tm) == 0)
-		WT_RET_MSG(session, ENOMEM, "strftime path conversion");
+		AE_RET_MSG(session, ENOMEM, "strftime path conversion");
 
 	/* If the path has changed, cycle the log file. */
 	if ((log_file = conn->stat_fp) == NULL ||
 	    path == NULL || strcmp(tmp->mem, path->mem) != 0) {
 		conn->stat_fp = NULL;
-		WT_RET(__wt_fclose(&log_file, WT_FHANDLE_APPEND));
+		AE_RET(__ae_fclose(&log_file, AE_FHANDLE_APPEND));
 		if (path != NULL)
 			(void)strcpy(path->mem, tmp->mem);
-		WT_RET(__wt_fopen(session,
-		    tmp->mem, WT_FHANDLE_APPEND, WT_FOPEN_FIXED, &log_file));
+		AE_RET(__ae_fopen(session,
+		    tmp->mem, AE_FHANDLE_APPEND, AE_FOPEN_FIXED, &log_file));
 	}
 	conn->stat_fp = log_file;
 
 	/* Create the entry prefix for this time of day. */
 	if (strftime(tmp->mem, tmp->memsize, conn->stat_format, tm) == 0)
-		WT_RET_MSG(session, ENOMEM, "strftime timestamp conversion");
+		AE_RET_MSG(session, ENOMEM, "strftime timestamp conversion");
 	conn->stat_stamp = tmp->mem;
 
 	/* Dump the connection statistics. */
-	WT_RET(__statlog_dump(session, conn->home, true));
+	AE_RET(__statlog_dump(session, conn->home, true));
 
 	/*
 	 * Lock the schema and walk the list of open handles, dumping
 	 * any that match the list of object sources.
 	 */
 	if (conn->stat_sources != NULL) {
-		WT_WITH_HANDLE_LIST_LOCK(session, ret =
-		    __wt_conn_btree_apply(
+		AE_WITH_HANDLE_LIST_LOCK(session, ret =
+		    __ae_conn_btree_apply(
 		    session, false, NULL, __statlog_apply, NULL));
-		WT_RET(ret);
+		AE_RET(ret);
 	}
 
 	/*
@@ -355,38 +355,38 @@ __statlog_log_one(WT_SESSION_IMPL *session, WT_ITEM *path, WT_ITEM *tmp)
 	 * data handles.
 	 */
 	if (conn->stat_sources != NULL)
-		WT_RET(__statlog_lsm_apply(session));
+		AE_RET(__statlog_lsm_apply(session));
 
 	/* Flush. */
-	return (__wt_fflush(conn->stat_fp));
+	return (__ae_fflush(conn->stat_fp));
 }
 
 /*
- * __wt_statlog_log_one --
+ * __ae_statlog_log_one --
  *	Log a set of statistics into the configured statistics log. Requires
  *	that the server is not currently running.
  */
 int
-__wt_statlog_log_one(WT_SESSION_IMPL *session)
+__ae_statlog_log_one(AE_SESSION_IMPL *session)
 {
-	WT_CONNECTION_IMPL *conn;
-	WT_DECL_RET;
-	WT_DECL_ITEM(tmp);
+	AE_CONNECTION_IMPL *conn;
+	AE_DECL_RET;
+	AE_DECL_ITEM(tmp);
 
 	conn = S2C(session);
 
-	if (!FLD_ISSET(conn->stat_flags, WT_CONN_STAT_ON_CLOSE))
+	if (!FLD_ISSET(conn->stat_flags, AE_CONN_STAT_ON_CLOSE))
 		return (0);
 
-	if (F_ISSET(conn, WT_CONN_SERVER_RUN) &&
-	    F_ISSET(conn, WT_CONN_SERVER_STATISTICS))
-		WT_RET_MSG(session, EINVAL,
+	if (F_ISSET(conn, AE_CONN_SERVER_RUN) &&
+	    F_ISSET(conn, AE_CONN_SERVER_STATISTICS))
+		AE_RET_MSG(session, EINVAL,
 		    "Attempt to log statistics while a server is running");
 
-	WT_RET(__wt_scr_alloc(session, strlen(conn->stat_path) + 128, &tmp));
-	WT_ERR(__statlog_log_one(session, NULL, tmp));
+	AE_RET(__ae_scr_alloc(session, strlen(conn->stat_path) + 128, &tmp));
+	AE_ERR(__statlog_log_one(session, NULL, tmp));
 
-err:	__wt_scr_free(session, &tmp);
+err:	__ae_scr_free(session, &tmp);
 	return (ret);
 }
 
@@ -394,19 +394,19 @@ err:	__wt_scr_free(session, &tmp);
  * __statlog_server --
  *	The statistics server thread.
  */
-static WT_THREAD_RET
+static AE_THREAD_RET
 __statlog_server(void *arg)
 {
-	WT_CONNECTION_IMPL *conn;
-	WT_DECL_RET;
-	WT_ITEM path, tmp;
-	WT_SESSION_IMPL *session;
+	AE_CONNECTION_IMPL *conn;
+	AE_DECL_RET;
+	AE_ITEM path, tmp;
+	AE_SESSION_IMPL *session;
 
 	session = arg;
 	conn = S2C(session);
 
-	WT_CLEAR(path);
-	WT_CLEAR(tmp);
+	AE_CLEAR(path);
+	AE_CLEAR(tmp);
 
 	/*
 	 * We need a temporary place to build a path and an entry prefix.
@@ -415,25 +415,25 @@ __statlog_server(void *arg)
 	 * We also need a place to store the current path, because that's
 	 * how we know when to close/re-open the file.
 	 */
-	WT_ERR(__wt_buf_init(session, &path, strlen(conn->stat_path) + 128));
-	WT_ERR(__wt_buf_init(session, &tmp, strlen(conn->stat_path) + 128));
+	AE_ERR(__ae_buf_init(session, &path, strlen(conn->stat_path) + 128));
+	AE_ERR(__ae_buf_init(session, &tmp, strlen(conn->stat_path) + 128));
 
-	while (F_ISSET(conn, WT_CONN_SERVER_RUN) &&
-	    F_ISSET(conn, WT_CONN_SERVER_STATISTICS)) {
+	while (F_ISSET(conn, AE_CONN_SERVER_RUN) &&
+	    F_ISSET(conn, AE_CONN_SERVER_STATISTICS)) {
 		/* Wait until the next event. */
-		WT_ERR(
-		    __wt_cond_wait(session, conn->stat_cond, conn->stat_usecs));
+		AE_ERR(
+		    __ae_cond_wait(session, conn->stat_cond, conn->stat_usecs));
 
-		if (!FLD_ISSET(conn->stat_flags, WT_CONN_STAT_NONE))
-			WT_ERR(__statlog_log_one(session, &path, &tmp));
+		if (!FLD_ISSET(conn->stat_flags, AE_CONN_STAT_NONE))
+			AE_ERR(__statlog_log_one(session, &path, &tmp));
 	}
 
 	if (0) {
-err:		WT_PANIC_MSG(session, ret, "statistics log server error");
+err:		AE_PANIC_MSG(session, ret, "statistics log server error");
 	}
-	__wt_buf_free(session, &path);
-	__wt_buf_free(session, &tmp);
-	return (WT_THREAD_RET_VALUE);
+	__ae_buf_free(session, &path);
+	__ae_buf_free(session, &tmp);
+	return (AE_THREAD_RET_VALUE);
 }
 
 /*
@@ -441,22 +441,22 @@ err:		WT_PANIC_MSG(session, ret, "statistics log server error");
  *	Start the statistics server thread.
  */
 static int
-__statlog_start(WT_CONNECTION_IMPL *conn)
+__statlog_start(AE_CONNECTION_IMPL *conn)
 {
-	WT_SESSION_IMPL *session;
+	AE_SESSION_IMPL *session;
 
 	/* Nothing to do if the server is already running. */
 	if (conn->stat_session != NULL)
 		return (0);
 
-	F_SET(conn, WT_CONN_SERVER_STATISTICS);
+	F_SET(conn, AE_CONN_SERVER_STATISTICS);
 
 	/* The statistics log server gets its own session. */
-	WT_RET(__wt_open_internal_session(
+	AE_RET(__ae_open_internal_session(
 	    conn, "statlog-server", true, 0, &conn->stat_session));
 	session = conn->stat_session;
 
-	WT_RET(__wt_cond_alloc(
+	AE_RET(__ae_cond_alloc(
 	    session, "statistics log server", false, &conn->stat_cond));
 
 	/*
@@ -469,7 +469,7 @@ __statlog_start(WT_CONNECTION_IMPL *conn)
 	 * have more than one thread, I just didn't feel like writing the code
 	 * to figure out the scheduling.
 	 */
-	WT_RET(__wt_thread_create(
+	AE_RET(__ae_thread_create(
 	    session, &conn->stat_tid, __statlog_server, session));
 	conn->stat_tid_set = true;
 
@@ -477,13 +477,13 @@ __statlog_start(WT_CONNECTION_IMPL *conn)
 }
 
 /*
- * __wt_statlog_create --
+ * __ae_statlog_create --
  *	Start the statistics server thread.
  */
 int
-__wt_statlog_create(WT_SESSION_IMPL *session, const char *cfg[])
+__ae_statlog_create(AE_SESSION_IMPL *session, const char *cfg[])
 {
-	WT_CONNECTION_IMPL *conn;
+	AE_CONNECTION_IMPL *conn;
 	bool start;
 
 	conn = S2C(session);
@@ -495,56 +495,56 @@ __wt_statlog_create(WT_SESSION_IMPL *session, const char *cfg[])
 	 * configuration changes - but that makes our lives easier.
 	 */
 	if (conn->stat_session != NULL)
-		WT_RET(__wt_statlog_destroy(session, false));
+		AE_RET(__ae_statlog_destroy(session, false));
 
-	WT_RET(__statlog_config(session, cfg, &start));
+	AE_RET(__statlog_config(session, cfg, &start));
 	if (start)
-		WT_RET(__statlog_start(conn));
+		AE_RET(__statlog_start(conn));
 
 	return (0);
 }
 
 /*
- * __wt_statlog_destroy --
+ * __ae_statlog_destroy --
  *	Destroy the statistics server thread.
  */
 int
-__wt_statlog_destroy(WT_SESSION_IMPL *session, bool is_close)
+__ae_statlog_destroy(AE_SESSION_IMPL *session, bool is_close)
 {
-	WT_CONNECTION_IMPL *conn;
-	WT_DECL_RET;
-	WT_SESSION *wt_session;
+	AE_CONNECTION_IMPL *conn;
+	AE_DECL_RET;
+	AE_SESSION *ae_session;
 
 	conn = S2C(session);
 
-	F_CLR(conn, WT_CONN_SERVER_STATISTICS);
+	F_CLR(conn, AE_CONN_SERVER_STATISTICS);
 	if (conn->stat_tid_set) {
-		WT_TRET(__wt_cond_signal(session, conn->stat_cond));
-		WT_TRET(__wt_thread_join(session, conn->stat_tid));
+		AE_TRET(__ae_cond_signal(session, conn->stat_cond));
+		AE_TRET(__ae_thread_join(session, conn->stat_tid));
 		conn->stat_tid_set = false;
 	}
 
 	/* Log a set of statistics on shutdown if configured. */
 	if (is_close)
-		WT_TRET(__wt_statlog_log_one(session));
+		AE_TRET(__ae_statlog_log_one(session));
 
-	WT_TRET(__wt_cond_destroy(session, &conn->stat_cond));
+	AE_TRET(__ae_cond_destroy(session, &conn->stat_cond));
 
 	__stat_sources_free(session, &conn->stat_sources);
-	__wt_free(session, conn->stat_path);
-	__wt_free(session, conn->stat_format);
+	__ae_free(session, conn->stat_path);
+	__ae_free(session, conn->stat_format);
 
 	/* Close the server thread's session. */
 	if (conn->stat_session != NULL) {
-		wt_session = &conn->stat_session->iface;
-		WT_TRET(wt_session->close(wt_session, NULL));
+		ae_session = &conn->stat_session->iface;
+		AE_TRET(ae_session->close(ae_session, NULL));
 	}
 
 	/* Clear connection settings so reconfigure is reliable. */
 	conn->stat_session = NULL;
 	conn->stat_tid_set = false;
 	conn->stat_format = NULL;
-	WT_TRET(__wt_fclose(&conn->stat_fp, WT_FHANDLE_APPEND));
+	AE_TRET(__ae_fclose(&conn->stat_fp, AE_FHANDLE_APPEND));
 	conn->stat_path = NULL;
 	conn->stat_sources = NULL;
 	conn->stat_stamp = NULL;

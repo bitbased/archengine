@@ -1,37 +1,37 @@
 /*-
  * Copyright (c) 2014-2015 MongoDB, Inc.
- * Copyright (c) 2008-2014 WiredTiger, Inc.
+ * Copyright (c) 2008-2014 ArchEngine, Inc.
  *	All rights reserved.
  *
  * See the file LICENSE for redistribution information.
  */
 
 /*
- * __wt_cache_read_gen --
+ * __ae_cache_read_gen --
  *      Get the current read generation number.
  */
 static inline uint64_t
-__wt_cache_read_gen(WT_SESSION_IMPL *session)
+__ae_cache_read_gen(AE_SESSION_IMPL *session)
 {
 	return (S2C(session)->cache->read_gen);
 }
 
 /*
- * __wt_cache_read_gen_incr --
+ * __ae_cache_read_gen_incr --
  *      Increment the current read generation number.
  */
 static inline void
-__wt_cache_read_gen_incr(WT_SESSION_IMPL *session)
+__ae_cache_read_gen_incr(AE_SESSION_IMPL *session)
 {
 	++S2C(session)->cache->read_gen;
 }
 
 /*
- * __wt_cache_read_gen_bump --
+ * __ae_cache_read_gen_bump --
  *      Get the read generation to keep a page in memory.
  */
 static inline uint64_t
-__wt_cache_read_gen_bump(WT_SESSION_IMPL *session)
+__ae_cache_read_gen_bump(AE_SESSION_IMPL *session)
 {
 	/*
 	 * We return read-generations from the future (where "the future" is
@@ -42,38 +42,38 @@ __wt_cache_read_gen_bump(WT_SESSION_IMPL *session)
 	 * page.  In other words, the goal is to avoid some number of updates
 	 * immediately after each update we have to make.
 	 */
-	return (__wt_cache_read_gen(session) + WT_READGEN_STEP);
+	return (__ae_cache_read_gen(session) + AE_READGEN_STEP);
 }
 
 /*
- * __wt_cache_read_gen_new --
+ * __ae_cache_read_gen_new --
  *      Get the read generation for a new page in memory.
  */
 static inline uint64_t
-__wt_cache_read_gen_new(WT_SESSION_IMPL *session)
+__ae_cache_read_gen_new(AE_SESSION_IMPL *session)
 {
-	WT_CACHE *cache;
+	AE_CACHE *cache;
 
 	cache = S2C(session)->cache;
-	return (__wt_cache_read_gen(session) + cache->read_gen_oldest) / 2;
+	return (__ae_cache_read_gen(session) + cache->read_gen_oldest) / 2;
 }
 
 /*
- * __wt_cache_pages_inuse --
+ * __ae_cache_pages_inuse --
  *	Return the number of pages in use.
  */
 static inline uint64_t
-__wt_cache_pages_inuse(WT_CACHE *cache)
+__ae_cache_pages_inuse(AE_CACHE *cache)
 {
 	return (cache->pages_inmem - cache->pages_evict);
 }
 
 /*
- * __wt_cache_bytes_inuse --
+ * __ae_cache_bytes_inuse --
  *	Return the number of bytes in use.
  */
 static inline uint64_t
-__wt_cache_bytes_inuse(WT_CACHE *cache)
+__ae_cache_bytes_inuse(AE_CACHE *cache)
 {
 	uint64_t bytes_inuse;
 
@@ -87,11 +87,11 @@ __wt_cache_bytes_inuse(WT_CACHE *cache)
 }
 
 /*
- * __wt_cache_dirty_inuse --
+ * __ae_cache_dirty_inuse --
  *	Return the number of dirty bytes in use.
  */
 static inline uint64_t
-__wt_cache_dirty_inuse(WT_CACHE *cache)
+__ae_cache_dirty_inuse(AE_CACHE *cache)
 {
 	uint64_t dirty_inuse;
 
@@ -104,18 +104,18 @@ __wt_cache_dirty_inuse(WT_CACHE *cache)
 }
 
 /*
- * __wt_session_can_wait --
+ * __ae_session_can_wait --
  *	Return if a session available for a potentially slow operation.
  */
 static inline int
-__wt_session_can_wait(WT_SESSION_IMPL *session)
+__ae_session_can_wait(AE_SESSION_IMPL *session)
 {
 	/*
 	 * Return if a session available for a potentially slow operation;
 	 * for example, used by the block manager in the case of flushing
 	 * the system cache.
 	 */
-	if (!F_ISSET(session, WT_SESSION_CAN_WAIT))
+	if (!F_ISSET(session, AE_SESSION_CAN_WAIT))
 		return (0);
 
 	/*
@@ -124,33 +124,33 @@ __wt_session_can_wait(WT_SESSION_IMPL *session)
 	 * highjack the thread for eviction.
 	 */
 	if (F_ISSET(session,
-	    WT_SESSION_NO_EVICTION | WT_SESSION_LOCKED_SCHEMA))
+	    AE_SESSION_NO_EVICTION | AE_SESSION_LOCKED_SCHEMA))
 		return (0);
 
 	return (1);
 }
 
 /*
- * __wt_eviction_dirty_target --
+ * __ae_eviction_dirty_target --
  *	Return if the eviction server is running to reduce the number of dirty
  * pages (versus running to discard pages from the cache).
  */
 static inline bool
-__wt_eviction_dirty_target(WT_SESSION_IMPL *session)
+__ae_eviction_dirty_target(AE_SESSION_IMPL *session)
 {
-	return (FLD_ISSET(S2C(session)->cache->state, WT_EVICT_PASS_DIRTY));
+	return (FLD_ISSET(S2C(session)->cache->state, AE_EVICT_PASS_DIRTY));
 }
 
 /*
- * __wt_eviction_needed --
+ * __ae_eviction_needed --
  *	Return if an application thread should do eviction, and the cache full
  * percentage as a side-effect.
  */
 static inline bool
-__wt_eviction_needed(WT_SESSION_IMPL *session, u_int *pct_fullp)
+__ae_eviction_needed(AE_SESSION_IMPL *session, u_int *pct_fullp)
 {
-	WT_CONNECTION_IMPL *conn;
-	WT_CACHE *cache;
+	AE_CONNECTION_IMPL *conn;
+	AE_CACHE *cache;
 	uint64_t bytes_inuse, bytes_max;
 	u_int pct_full;
 
@@ -161,7 +161,7 @@ __wt_eviction_needed(WT_SESSION_IMPL *session, u_int *pct_fullp)
 	 * Avoid division by zero if the cache size has not yet been set in a
 	 * shared cache.
 	 */
-	bytes_inuse = __wt_cache_bytes_inuse(cache);
+	bytes_inuse = __ae_cache_bytes_inuse(cache);
 	bytes_max = conn->cache_size + 1;
 
 	/*
@@ -175,36 +175,36 @@ __wt_eviction_needed(WT_SESSION_IMPL *session, u_int *pct_fullp)
 		return (true);
 
 	/* Return if there are too many dirty bytes in cache. */
-	if (__wt_cache_dirty_inuse(cache) >
+	if (__ae_cache_dirty_inuse(cache) >
 	    (cache->eviction_dirty_trigger * bytes_max) / 100)
 		return (true);
 	return (false);
 }
 
 /*
- * __wt_cache_full --
+ * __ae_cache_full --
  *	Return if the cache is at (or over) capacity.
  */
 static inline bool
-__wt_cache_full(WT_SESSION_IMPL *session)
+__ae_cache_full(AE_SESSION_IMPL *session)
 {
-	WT_CONNECTION_IMPL *conn;
-	WT_CACHE *cache;
+	AE_CONNECTION_IMPL *conn;
+	AE_CACHE *cache;
 
 	conn = S2C(session);
 	cache = conn->cache;
 
-	return (__wt_cache_bytes_inuse(cache) >= conn->cache_size);
+	return (__ae_cache_bytes_inuse(cache) >= conn->cache_size);
 }
 
 /*
- * __wt_cache_eviction_check --
+ * __ae_cache_eviction_check --
  *	Evict pages if the cache crosses its boundaries.
  */
 static inline int
-__wt_cache_eviction_check(WT_SESSION_IMPL *session, bool busy, bool *didworkp)
+__ae_cache_eviction_check(AE_SESSION_IMPL *session, bool busy, bool *didworkp)
 {
-	WT_BTREE *btree;
+	AE_BTREE *btree;
 	u_int pct_full;
 
 	if (didworkp != NULL)
@@ -215,12 +215,12 @@ __wt_cache_eviction_check(WT_SESSION_IMPL *session, bool busy, bool *didworkp)
 	 * that case, or when holding the schema or handle list locks (which
 	 * block eviction), we don't want to highjack the thread for eviction.
 	 */
-	if (F_ISSET(session, WT_SESSION_NO_EVICTION |
-	    WT_SESSION_LOCKED_HANDLE_LIST | WT_SESSION_LOCKED_SCHEMA))
+	if (F_ISSET(session, AE_SESSION_NO_EVICTION |
+	    AE_SESSION_LOCKED_HANDLE_LIST | AE_SESSION_LOCKED_SCHEMA))
 		return (0);
 
 	/* In memory configurations don't block when the cache is full. */
-	if (F_ISSET(S2C(session), WT_CONN_IN_MEMORY))
+	if (F_ISSET(S2C(session), AE_CONN_IN_MEMORY))
 		return (0);
 
 	/*
@@ -228,11 +228,11 @@ __wt_cache_eviction_check(WT_SESSION_IMPL *session, bool busy, bool *didworkp)
 	 * mostly because they're not contributing to the problem.
 	 */
 	btree = S2BT_SAFE(session);
-	if (btree != NULL && F_ISSET(btree, WT_BTREE_NO_EVICTION))
+	if (btree != NULL && F_ISSET(btree, AE_BTREE_NO_EVICTION))
 		return (0);
 
 	/* Check if eviction is needed. */
-	if (!__wt_eviction_needed(session, &pct_full))
+	if (!__ae_eviction_needed(session, &pct_full))
 		return (0);
 
 	/*
@@ -242,5 +242,5 @@ __wt_cache_eviction_check(WT_SESSION_IMPL *session, bool busy, bool *didworkp)
 	if (didworkp != NULL)
 		*didworkp = true;
 
-	return (__wt_cache_eviction_worker(session, busy, pct_full));
+	return (__ae_cache_eviction_worker(session, busy, pct_full));
 }

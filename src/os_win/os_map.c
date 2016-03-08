@@ -1,19 +1,19 @@
 /*-
  * Copyright (c) 2014-2015 MongoDB, Inc.
- * Copyright (c) 2008-2014 WiredTiger, Inc.
+ * Copyright (c) 2008-2014 ArchEngine, Inc.
  *	All rights reserved.
  *
  * See the file LICENSE for redistribution information.
  */
 
-#include "wt_internal.h"
+#include "ae_internal.h"
 
 /*
- * __wt_mmap --
+ * __ae_mmap --
  *	Map a file into memory.
  */
 int
-__wt_mmap(WT_SESSION_IMPL *session, WT_FH *fh, void *mapp, size_t *lenp,
+__ae_mmap(AE_SESSION_IMPL *session, AE_FH *fh, void *mapp, size_t *lenp,
    void** mappingcookie)
 {
 	void *map;
@@ -30,9 +30,9 @@ __wt_mmap(WT_SESSION_IMPL *session, WT_FH *fh, void *mapp, size_t *lenp,
 	*mappingcookie =
 	    CreateFileMappingA(fh->filehandle, NULL, PAGE_READONLY, 0, 0, NULL);
 	if (*mappingcookie == NULL)
-		WT_RET_MSG(session, __wt_errno(),
+		AE_RET_MSG(session, __ae_errno(),
 			"%s CreateFileMapping error: failed to map %"
-			WT_SIZET_FMT " bytes",
+			AE_SIZET_FMT " bytes",
 			fh->name, orig_size);
 
 	if ((map = MapViewOfFile(
@@ -40,12 +40,12 @@ __wt_mmap(WT_SESSION_IMPL *session, WT_FH *fh, void *mapp, size_t *lenp,
 		CloseHandle(*mappingcookie);
 		*mappingcookie = NULL;
 
-		WT_RET_MSG(session, __wt_errno(),
-		    "%s map error: failed to map %" WT_SIZET_FMT " bytes",
+		AE_RET_MSG(session, __ae_errno(),
+		    "%s map error: failed to map %" AE_SIZET_FMT " bytes",
 		    fh->name, orig_size);
 	}
-	(void)__wt_verbose(session, WT_VERB_FILEOPS,
-	    "%s: MapViewOfFile %p: %" WT_SIZET_FMT " bytes",
+	(void)__ae_verbose(session, AE_VERB_FILEOPS,
+	    "%s: MapViewOfFile %p: %" AE_SIZET_FMT " bytes",
 	    fh->name, map, orig_size);
 
 	*(void **)mapp = map;
@@ -54,53 +54,53 @@ __wt_mmap(WT_SESSION_IMPL *session, WT_FH *fh, void *mapp, size_t *lenp,
 }
 
 /*
- * __wt_mmap_preload --
+ * __ae_mmap_preload --
  *	Cause a section of a memory map to be faulted in.
  */
 int
-__wt_mmap_preload(WT_SESSION_IMPL *session, const void *p, size_t size)
+__ae_mmap_preload(AE_SESSION_IMPL *session, const void *p, size_t size)
 {
-	WT_UNUSED(session);
-	WT_UNUSED(p);
-	WT_UNUSED(size);
+	AE_UNUSED(session);
+	AE_UNUSED(p);
+	AE_UNUSED(size);
 
 	return (0);
 }
 
 /*
- * __wt_mmap_discard --
+ * __ae_mmap_discard --
  *	Discard a chunk of the memory map.
  */
 int
-__wt_mmap_discard(WT_SESSION_IMPL *session, void *p, size_t size)
+__ae_mmap_discard(AE_SESSION_IMPL *session, void *p, size_t size)
 {
-	WT_UNUSED(session);
-	WT_UNUSED(p);
-	WT_UNUSED(size);
+	AE_UNUSED(session);
+	AE_UNUSED(p);
+	AE_UNUSED(size);
 	return (0);
 }
 
 /*
- * __wt_munmap --
+ * __ae_munmap --
  *	Remove a memory mapping.
  */
 int
-__wt_munmap(WT_SESSION_IMPL *session, WT_FH *fh, void *map, size_t len,
+__ae_munmap(AE_SESSION_IMPL *session, AE_FH *fh, void *map, size_t len,
    void** mappingcookie)
 {
-	WT_RET(__wt_verbose(session, WT_VERB_FILEOPS,
-	    "%s: UnmapViewOfFile %p: %" WT_SIZET_FMT " bytes",
+	AE_RET(__ae_verbose(session, AE_VERB_FILEOPS,
+	    "%s: UnmapViewOfFile %p: %" AE_SIZET_FMT " bytes",
 	    fh->name, map, len));
 
 	if (UnmapViewOfFile(map) == 0) {
-		WT_RET_MSG(session, __wt_errno(),
-		    "%s UnmapViewOfFile error: failed to unmap %" WT_SIZET_FMT
+		AE_RET_MSG(session, __ae_errno(),
+		    "%s UnmapViewOfFile error: failed to unmap %" AE_SIZET_FMT
 		    " bytes",
 		    fh->name, len);
 	}
 
 	if (CloseHandle(*mappingcookie) == 0) {
-		WT_RET_MSG(session, __wt_errno(),
+		AE_RET_MSG(session, __ae_errno(),
 		    "CloseHandle: MapViewOfFile: %s", fh->name);
 	}
 

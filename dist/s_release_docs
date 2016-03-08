@@ -1,5 +1,5 @@
 #!/bin/sh
-# Build a WiredTiger release package.
+# Build a ArchEngine release package.
 
 set -e
 
@@ -7,7 +7,7 @@ set -e
 
 TOPDIR=`pwd`/..
 RELEASE_DIR=$TOPDIR/releases
-DOC_DIR=$TOPDIR/../wiredtiger.github.com
+DOC_DIR=$TOPDIR/../archengine.github.com
 DOCFILE=$TOPDIR/src/docs/top/main.dox
 tmp=$0.tmp
 
@@ -40,7 +40,7 @@ if [ ! -f "$RELEASE_DIR/$RELEASE_PACKAGE" ]; then
 	echo "Invalid release package: $RELEASE_DIR/$RELEASE_PACKAGE"
 fi
 
-pkgver="$WIREDTIGER_VERSION"
+pkgver="$ARCHENGINE_VERSION"
 
 # Find the old versions in the documentation.
 oldrel=`grep current $DOCFILE | cut -d ' ' -f 2 | cut -d '<' -f 1`
@@ -55,7 +55,7 @@ PREV_VERSION_PATCH=`echo $prevrel | cut -d '.' -f 3`
 
 # Update the release versions on the landing page.
 sed -e "s/$oldrel/$pkgver/" $DOCFILE > $tmp && mv $tmp $DOCFILE
-if [ $OLD_VERSION_MINOR != $WIREDTIGER_VERSION_MINOR ]; then
+if [ $OLD_VERSION_MINOR != $ARCHENGINE_VERSION_MINOR ]; then
 	sed -e "s/$prevrel/$oldrel/" $DOCFILE > $tmp && mv $tmp $DOCFILE
 fi
 
@@ -68,9 +68,9 @@ echo "Rebuild documentation root"
 # Unpack the documentation into the right location
 (mkdir -p $DOC_DIR/$pkgver && cd $RELEASE_DIR && \
     cp $RELEASE_PACKAGE $DOC_DIR/releases/ &&
-    tar xjf $RELEASE_PACKAGE -C $DOC_DIR/$pkgver --strip-components 2 wiredtiger-$pkgver/docs)
+    tar xjf $RELEASE_PACKAGE -C $DOC_DIR/$pkgver --strip-components 2 archengine-$pkgver/docs)
 
-(cd $DOC_DIR && git add . $pkgver releases/wiredtiger-$pkgver.tar.bz2 && \
+(cd $DOC_DIR && git add . $pkgver releases/archengine-$pkgver.tar.bz2 && \
     git commit -m "Release $pkgver")
 
 echo "Finished packaging documentation, you should now push the results. Run:"

@@ -1,5 +1,5 @@
 /*-
- * Public Domain 2008-2014 WiredTiger, Inc.
+ * Public Domain 2008-2014 ArchEngine, Inc.
  *
  * This is free and unencumbered software released into the public domain.
  *
@@ -27,7 +27,7 @@
 
 #include <assert.h>
 #include <iostream>
-#include "leveldb_wt.h"
+#include "leveldb_ae.h"
 
 using namespace std;
 
@@ -35,7 +35,7 @@ extern "C" int main() {
   leveldb::DB* db;
   leveldb::Options options;
   options.create_if_missing = true;
-  leveldb::Status s = leveldb::DB::Open(options, "WTLDB_HOME", &db);
+  leveldb::Status s = leveldb::DB::Open(options, "AELDB_HOME", &db);
   assert(s.ok());
 
   s = db->Put(leveldb::WriteOptions(), "key", "value");
@@ -123,7 +123,7 @@ extern "C" int main() {
   // Read through the backup database
   leveldb::DB* db_bkup;
   options.create_if_missing = false;
-  s = leveldb::DB::Open(options, "WTLDB_HOME/backup-test", &db_bkup);
+  s = leveldb::DB::Open(options, "AELDB_HOME/backup-test", &db_bkup);
   read_options.snapshot = db_bkup->GetSnapshot();
   iter = db_bkup->NewIterator(read_options);
   cout << "Read Backup database:" << endl;

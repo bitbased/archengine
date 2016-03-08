@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Public Domain 2014-2015 MongoDB, Inc.
-# Public Domain 2008-2014 WiredTiger, Inc.
+# Public Domain 2008-2014 ArchEngine, Inc.
 #
 # This is free and unencumbered software released into the public domain.
 #
@@ -31,12 +31,12 @@
 #
 
 import os, time
-import wiredtiger, wttest
+import archengine, aetest
 from helper import complex_populate, key_populate, simple_populate
-from wtscenario import check_scenarios
+from aescenario import check_scenarios
 
 # Test session.open_cursor with cursor duplication.
-class test_duplicate_cursor(wttest.WiredTigerTestCase):
+class test_duplicate_cursor(aetest.ArchEngineTestCase):
     name = 'test_dupc'
     nentries = 1000
 
@@ -66,7 +66,7 @@ class test_duplicate_cursor(wttest.WiredTigerTestCase):
             cursor.close()
             cursor = dupc
         self.assertEqual(next, self.nentries)
-        self.assertEqual(nextret, wiredtiger.WT_NOTFOUND)
+        self.assertEqual(nextret, archengine.AE_NOTFOUND)
         cursor.close()
 
     def test_duplicate_cursor(self):
@@ -84,4 +84,4 @@ class test_duplicate_cursor(wttest.WiredTigerTestCase):
             self.session.drop(uri, None)
 
 if __name__ == '__main__':
-    wttest.run()
+    aetest.run()

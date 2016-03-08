@@ -1,6 +1,6 @@
 /*-
  * Copyright (c) 2014-2015 MongoDB, Inc.
- * Copyright (c) 2008-2014 WiredTiger, Inc.
+ * Copyright (c) 2008-2014 ArchEngine, Inc.
  *	All rights reserved.
  *
  * See the file LICENSE for redistribution information.
@@ -11,12 +11,12 @@
 #include <x86intrin.h>
 #endif
 						/* 16B alignment */
-#define	WT_ALIGNED_16(p)	(((uintptr_t)(p) & 0x0f) == 0)
-#define	WT_VECTOR_SIZE		16		/* chunk size */
+#define	AE_ALIGNED_16(p)	(((uintptr_t)(p) & 0x0f) == 0)
+#define	AE_VECTOR_SIZE		16		/* chunk size */
 #endif
 
 /*
- * __wt_lex_compare --
+ * __ae_lex_compare --
  *	Lexicographic comparison routine.
  *
  * Returns:
@@ -28,30 +28,30 @@
  * the application is looking at when we call its comparison function.
  */
 static inline int
-__wt_lex_compare(const WT_ITEM *user_item, const WT_ITEM *tree_item)
+__ae_lex_compare(const AE_ITEM *user_item, const AE_ITEM *tree_item)
 {
 	size_t len, usz, tsz;
 	const uint8_t *userp, *treep;
 
 	usz = user_item->size;
 	tsz = tree_item->size;
-	len = WT_MIN(usz, tsz);
+	len = AE_MIN(usz, tsz);
 
 	userp = user_item->data;
 	treep = tree_item->data;
 
 #ifdef HAVE_X86INTRIN_H
 	/* Use vector instructions if we'll execute at least 2 of them. */
-	if (len >= WT_VECTOR_SIZE * 2) {
+	if (len >= AE_VECTOR_SIZE * 2) {
 		size_t remain;
 		__m128i res_eq, u, t;
 
-		remain = len % WT_VECTOR_SIZE;
+		remain = len % AE_VECTOR_SIZE;
 		len -= remain;
-		if (WT_ALIGNED_16(userp) && WT_ALIGNED_16(treep))
+		if (AE_ALIGNED_16(userp) && AE_ALIGNED_16(treep))
 			for (; len > 0;
-			    len -= WT_VECTOR_SIZE,
-			    userp += WT_VECTOR_SIZE, treep += WT_VECTOR_SIZE) {
+			    len -= AE_VECTOR_SIZE,
+			    userp += AE_VECTOR_SIZE, treep += AE_VECTOR_SIZE) {
 				u = _mm_load_si128((__m128i *)userp);
 				t = _mm_load_si128((__m128i *)treep);
 				res_eq = _mm_cmpeq_epi8(u, t);
@@ -60,8 +60,8 @@ __wt_lex_compare(const WT_ITEM *user_item, const WT_ITEM *tree_item)
 			}
 		else
 			for (; len > 0;
-			    len -= WT_VECTOR_SIZE,
-			    userp += WT_VECTOR_SIZE, treep += WT_VECTOR_SIZE) {
+			    len -= AE_VECTOR_SIZE,
+			    userp += AE_VECTOR_SIZE, treep += AE_VECTOR_SIZE) {
 				u = _mm_loadu_si128((__m128i *)userp);
 				t = _mm_loadu_si128((__m128i *)treep);
 				res_eq = _mm_cmpeq_epi8(u, t);
@@ -84,16 +84,16 @@ __wt_lex_compare(const WT_ITEM *user_item, const WT_ITEM *tree_item)
 }
 
 /*
- * __wt_compare --
- *	The same as __wt_lex_compare, but using the application's collator
+ * __ae_compare --
+ *	The same as __ae_lex_compare, but using the application's collator
  * function when configured.
  */
 static inline int
-__wt_compare(WT_SESSION_IMPL *session, WT_COLLATOR *collator,
-    const WT_ITEM *user_item, const WT_ITEM *tree_item, int *cmpp)
+__ae_compare(AE_SESSION_IMPL *session, AE_COLLATOR *collator,
+    const AE_ITEM *user_item, const AE_ITEM *tree_item, int *cmpp)
 {
 	if (collator == NULL) {
-		*cmpp = __wt_lex_compare(user_item, tree_item);
+		*cmpp = __ae_lex_compare(user_item, tree_item);
 		return (0);
 	}
 	return (collator->compare(
@@ -101,7 +101,7 @@ __wt_compare(WT_SESSION_IMPL *session, WT_COLLATOR *collator,
 }
 
 /*
- * __wt_lex_compare_skip --
+ * __ae_lex_compare_skip --
  *	Lexicographic comparison routine, skipping leading bytes.
  *
  * Returns:
@@ -113,32 +113,32 @@ __wt_compare(WT_SESSION_IMPL *session, WT_COLLATOR *collator,
  * the application is looking at when we call its comparison function.
  */
 static inline int
-__wt_lex_compare_skip(
-    const WT_ITEM *user_item, const WT_ITEM *tree_item, size_t *matchp)
+__ae_lex_compare_skip(
+    const AE_ITEM *user_item, const AE_ITEM *tree_item, size_t *matchp)
 {
 	size_t len, usz, tsz;
 	const uint8_t *userp, *treep;
 
 	usz = user_item->size;
 	tsz = tree_item->size;
-	len = WT_MIN(usz, tsz) - *matchp;
+	len = AE_MIN(usz, tsz) - *matchp;
 
 	userp = (uint8_t *)user_item->data + *matchp;
 	treep = (uint8_t *)tree_item->data + *matchp;
 
 #ifdef HAVE_X86INTRIN_H
 	/* Use vector instructions if we'll execute at least 2 of them. */
-	if (len >= WT_VECTOR_SIZE * 2) {
+	if (len >= AE_VECTOR_SIZE * 2) {
 		size_t remain;
 		__m128i res_eq, u, t;
 
-		remain = len % WT_VECTOR_SIZE;
+		remain = len % AE_VECTOR_SIZE;
 		len -= remain;
-		if (WT_ALIGNED_16(userp) && WT_ALIGNED_16(treep))
+		if (AE_ALIGNED_16(userp) && AE_ALIGNED_16(treep))
 			for (; len > 0;
-			    len -= WT_VECTOR_SIZE,
-			    userp += WT_VECTOR_SIZE, treep += WT_VECTOR_SIZE,
-			    *matchp += WT_VECTOR_SIZE) {
+			    len -= AE_VECTOR_SIZE,
+			    userp += AE_VECTOR_SIZE, treep += AE_VECTOR_SIZE,
+			    *matchp += AE_VECTOR_SIZE) {
 				u = _mm_load_si128((__m128i *)userp);
 				t = _mm_load_si128((__m128i *)treep);
 				res_eq = _mm_cmpeq_epi8(u, t);
@@ -147,9 +147,9 @@ __wt_lex_compare_skip(
 			}
 		else
 			for (; len > 0;
-			    len -= WT_VECTOR_SIZE,
-			    userp += WT_VECTOR_SIZE, treep += WT_VECTOR_SIZE,
-			    *matchp += WT_VECTOR_SIZE) {
+			    len -= AE_VECTOR_SIZE,
+			    userp += AE_VECTOR_SIZE, treep += AE_VECTOR_SIZE,
+			    *matchp += AE_VECTOR_SIZE) {
 				u = _mm_loadu_si128((__m128i *)userp);
 				t = _mm_loadu_si128((__m128i *)treep);
 				res_eq = _mm_cmpeq_epi8(u, t);
@@ -172,17 +172,17 @@ __wt_lex_compare_skip(
 }
 
 /*
- * __wt_compare_skip --
- *	The same as __wt_lex_compare_skip, but using the application's collator
+ * __ae_compare_skip --
+ *	The same as __ae_lex_compare_skip, but using the application's collator
  * function when configured.
  */
 static inline int
-__wt_compare_skip(WT_SESSION_IMPL *session, WT_COLLATOR *collator,
-    const WT_ITEM *user_item, const WT_ITEM *tree_item, int *cmpp,
+__ae_compare_skip(AE_SESSION_IMPL *session, AE_COLLATOR *collator,
+    const AE_ITEM *user_item, const AE_ITEM *tree_item, int *cmpp,
     size_t *matchp)
 {
 	if (collator == NULL) {
-		*cmpp = __wt_lex_compare_skip(user_item, tree_item, matchp);
+		*cmpp = __ae_lex_compare_skip(user_item, tree_item, matchp);
 		return (0);
 	}
 	return (collator->compare(
@@ -190,7 +190,7 @@ __wt_compare_skip(WT_SESSION_IMPL *session, WT_COLLATOR *collator,
 }
 
 /*
- * __wt_lex_compare_short --
+ * __ae_lex_compare_short --
  *	Lexicographic comparison routine for short keys.
  *
  * Returns:
@@ -202,14 +202,14 @@ __wt_compare_skip(WT_SESSION_IMPL *session, WT_COLLATOR *collator,
  * the application is looking at when we call its comparison function.
  */
 static inline int
-__wt_lex_compare_short(const WT_ITEM *user_item, const WT_ITEM *tree_item)
+__ae_lex_compare_short(const AE_ITEM *user_item, const AE_ITEM *tree_item)
 {
 	size_t len, usz, tsz;
 	const uint8_t *userp, *treep;
 
 	usz = user_item->size;
 	tsz = tree_item->size;
-	len = WT_MIN(usz, tsz);
+	len = AE_MIN(usz, tsz);
 
 	userp = user_item->data;
 	treep = tree_item->data;
@@ -218,22 +218,22 @@ __wt_lex_compare_short(const WT_ITEM *user_item, const WT_ITEM *tree_item)
 	 * The maximum packed uint64_t is 9B, catch row-store objects using
 	 * packed record numbers as keys.
 	 */
-#define	WT_COMPARE_SHORT_MAXLEN 9
-#undef	WT_COMPARE_SHORT
-#define	WT_COMPARE_SHORT(n)						\
+#define	AE_COMPARE_SHORT_MAXLEN 9
+#undef	AE_COMPARE_SHORT
+#define	AE_COMPARE_SHORT(n)						\
 	case n:								\
 		if (*userp != *treep)					\
 			break;						\
 		++userp, ++treep
 	switch (len) {
-	WT_COMPARE_SHORT(9);
-	WT_COMPARE_SHORT(8);
-	WT_COMPARE_SHORT(7);
-	WT_COMPARE_SHORT(6);
-	WT_COMPARE_SHORT(5);
-	WT_COMPARE_SHORT(4);
-	WT_COMPARE_SHORT(3);
-	WT_COMPARE_SHORT(2);
+	AE_COMPARE_SHORT(9);
+	AE_COMPARE_SHORT(8);
+	AE_COMPARE_SHORT(7);
+	AE_COMPARE_SHORT(6);
+	AE_COMPARE_SHORT(5);
+	AE_COMPARE_SHORT(4);
+	AE_COMPARE_SHORT(3);
+	AE_COMPARE_SHORT(2);
 	case 1:
 		if (*userp != *treep)
 			break;

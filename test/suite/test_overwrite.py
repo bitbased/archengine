@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Public Domain 2014-2015 MongoDB, Inc.
-# Public Domain 2008-2014 WiredTiger, Inc.
+# Public Domain 2008-2014 ArchEngine, Inc.
 #
 # This is free and unencumbered software released into the public domain.
 #
@@ -26,13 +26,13 @@
 # ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 # OTHER DEALINGS IN THE SOFTWARE.
 
-import wiredtiger, wttest
+import archengine, aetest
 from helper import key_populate, simple_populate
-from wtscenario import check_scenarios
+from aescenario import check_scenarios
 
 # test_overwrite.py
 #    cursor overwrite configuration method
-class test_overwrite(wttest.WiredTigerTestCase):
+class test_overwrite(aetest.ArchEngineTestCase):
     name = 'overwrite'
     scenarios = check_scenarios([
         ('file-r', dict(type='file:',keyfmt='r')),
@@ -52,7 +52,7 @@ class test_overwrite(wttest.WiredTigerTestCase):
         cursor = self.session.open_cursor(uri, None, "overwrite=false")
         cursor.set_key(key_populate(cursor, 5))
         cursor.set_value('XXXXXXXXXX')
-        self.assertRaises(wiredtiger.WiredTigerError, lambda: cursor.insert())
+        self.assertRaises(archengine.ArchEngineError, lambda: cursor.insert())
 
         # One additional test for the insert method: duplicate the cursor with
         # overwrite configured and then the insert should succeed.  This test
@@ -100,7 +100,7 @@ class test_overwrite(wttest.WiredTigerTestCase):
         # Remove of a non-existent record with overwrite off fails.
         cursor = self.session.open_cursor(uri, None, "overwrite=false")
         cursor.set_key(key_populate(cursor, 200))
-        self.assertEquals(cursor.remove(), wiredtiger.WT_NOTFOUND)
+        self.assertEquals(cursor.remove(), archengine.AE_NOTFOUND)
 
         # Remove of a non-existent record with overwrite on succeeds.
         cursor = self.session.open_cursor(uri, None)
@@ -127,7 +127,7 @@ class test_overwrite(wttest.WiredTigerTestCase):
         cursor = self.session.open_cursor(uri, None, "overwrite=false")
         cursor.set_key(key_populate(cursor, 200))
         cursor.set_value('XXXXXXXXXX')
-        self.assertEquals(cursor.update(), wiredtiger.WT_NOTFOUND)
+        self.assertEquals(cursor.update(), archengine.AE_NOTFOUND)
 
         # Update of a non-existent record with overwrite on succeeds.
         cursor = self.session.open_cursor(uri, None)
@@ -137,4 +137,4 @@ class test_overwrite(wttest.WiredTigerTestCase):
 
 
 if __name__ == '__main__':
-    wttest.run()
+    aetest.run()

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Public Domain 2014-2015 MongoDB, Inc.
-# Public Domain 2008-2014 WiredTiger, Inc.
+# Public Domain 2008-2014 ArchEngine, Inc.
 #
 # This is free and unencumbered software released into the public domain.
 #
@@ -30,11 +30,11 @@
 #   Transactions: test long-running snapshots
 
 from suite_subprocess import suite_subprocess
-from wtscenario import multiply_scenarios, number_scenarios
+from aescenario import multiply_scenarios, number_scenarios
 from helper import simple_populate
-import wiredtiger, wttest
+import archengine, aetest
 
-class test_txn06(wttest.WiredTigerTestCase, suite_subprocess):
+class test_txn06(aetest.ArchEngineTestCase, suite_subprocess):
     conn_config = 'verbose=[transaction]'
     tablename = 'test_txn06'
     uri = 'table:' + tablename
@@ -42,7 +42,7 @@ class test_txn06(wttest.WiredTigerTestCase, suite_subprocess):
     nrows = 100000
 
     def setUpConnectionOpen(self, *args):
-        if not wiredtiger.verbose_build():
+        if not archengine.verbose_build():
             self.skipTest('requires a verbose build')
         return super(test_txn06, self).setUpConnectionOpen(*args)
 
@@ -58,4 +58,4 @@ class test_txn06(wttest.WiredTigerTestCase, suite_subprocess):
             c[k] = v
 
 if __name__ == '__main__':
-    wttest.run()
+    aetest.run()

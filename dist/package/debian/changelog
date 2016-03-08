@@ -1,5 +1,5 @@
-wiredtiger (2.1.2-1) UNRELEASED; urgency=low
+archengine (2.1.2-1) UNRELEASED; urgency=low
 
-  * Initial release of WiredTiger
+  * Initial release of ArchEngine
 
- -- Alex <alexg@wiredtiger.com>  Tue, 01 Apr 2014 15:50:02 +1100
+ -- Alex <alexg@archengine.com>  Tue, 01 Apr 2014 15:50:02 +1100

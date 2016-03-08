@@ -1,6 +1,6 @@
 /*-
  * Copyright (c) 2014-2015 MongoDB, Inc.
- * Copyright (c) 2008-2014 WiredTiger, Inc.
+ * Copyright (c) 2008-2014 ArchEngine, Inc.
  *	All rights reserved.
  *
  * See the file LICENSE for redistribution information.
@@ -8,21 +8,21 @@
 
 #include "util.h"
 
-static int list_print(WT_SESSION *, const char *, bool, bool);
-static int list_print_checkpoint(WT_SESSION *, const char *);
+static int list_print(AE_SESSION *, const char *, bool, bool);
+static int list_print_checkpoint(AE_SESSION *, const char *);
 static int usage(void);
 
 int
-util_list(WT_SESSION *session, int argc, char *argv[])
+util_list(AE_SESSION *session, int argc, char *argv[])
 {
-	WT_DECL_RET;
+	AE_DECL_RET;
 	int ch;
 	bool cflag, vflag;
 	char *name;
 
 	cflag = vflag = false;
 	name = NULL;
-	while ((ch = __wt_getopt(progname, argc, argv, "cv")) != EOF)
+	while ((ch = __ae_getopt(progname, argc, argv, "cv")) != EOF)
 		switch (ch) {
 		case 'c':
 			cflag = true;
@@ -34,8 +34,8 @@ util_list(WT_SESSION *session, int argc, char *argv[])
 		default:
 			return (usage());
 		}
-	argc -= __wt_optind;
-	argv += __wt_optind;
+	argc -= __ae_optind;
+	argv += __ae_optind;
 
 	switch (argc) {
 	case 0:
@@ -60,16 +60,16 @@ util_list(WT_SESSION *session, int argc, char *argv[])
  *	List the high-level objects in the database.
  */
 static int
-list_print(WT_SESSION *session, const char *name, bool cflag, bool vflag)
+list_print(AE_SESSION *session, const char *name, bool cflag, bool vflag)
 {
-	WT_CURSOR *cursor;
-	WT_DECL_RET;
+	AE_CURSOR *cursor;
+	AE_DECL_RET;
 	bool found;
 	const char *key, *value;
 
 	/* Open the metadata file. */
 	if ((ret = session->open_cursor(
-	    session, WT_METADATA_URI, NULL, NULL, &cursor)) != 0) {
+	    session, AE_METADATA_URI, NULL, NULL, &cursor)) != 0) {
 		/*
 		 * If there is no metadata (yet), this will return ENOENT.
 		 * Treat that the same as an empty metadata.
@@ -78,7 +78,7 @@ list_print(WT_SESSION *session, const char *name, bool cflag, bool vflag)
 			return (0);
 
 		fprintf(stderr, "%s: %s: session.open_cursor: %s\n",
-		    progname, WT_METADATA_URI, session->strerror(session, ret));
+		    progname, AE_METADATA_URI, session->strerror(session, ret));
 		return (1);
 	}
 
@@ -92,21 +92,21 @@ list_print(WT_SESSION *session, const char *name, bool cflag, bool vflag)
 		 * If a name is specified, only show objects that match.
 		 */
 		if (name != NULL) {
-			if (!WT_PREFIX_MATCH(key, name))
+			if (!AE_PREFIX_MATCH(key, name))
 				continue;
 			found = true;
 		}
 
 		/*
 		 * !!!
-		 * We don't normally say anything about the WiredTiger metadata
+		 * We don't normally say anything about the ArchEngine metadata
 		 * and lookaside tables, they're not application/user "objects"
 		 * in the database.  I'm making an exception for the checkpoint
 		 * and verbose options.
 		 */
 		if (cflag || vflag ||
-		    (strcmp(key, WT_METADATA_URI) != 0 &&
-		    strcmp(key, WT_LAS_URI) != 0))
+		    (strcmp(key, AE_METADATA_URI) != 0 &&
+		    strcmp(key, AE_LAS_URI) != 0))
 			printf("%s\n", key);
 
 		if (!cflag && !vflag)
@@ -120,7 +120,7 @@ list_print(WT_SESSION *session, const char *name, bool cflag, bool vflag)
 			printf("%s\n", value);
 		}
 	}
-	if (ret != WT_NOTFOUND)
+	if (ret != AE_NOTFOUND)
 		return (util_cerr(cursor, "next", ret));
 	if (!found) {
 		fprintf(stderr, "%s: %s: not found\n", progname, name);
@@ -135,10 +135,10 @@ list_print(WT_SESSION *session, const char *name, bool cflag, bool vflag)
  *	List the checkpoint information.
  */
 static int
-list_print_checkpoint(WT_SESSION *session, const char *key)
+list_print_checkpoint(AE_SESSION *session, const char *key)
 {
-	WT_DECL_RET;
-	WT_CKPT *ckpt, *ckptbase;
+	AE_DECL_RET;
+	AE_CKPT *ckpt, *ckptbase;
 	size_t len;
 	time_t t;
 	uint64_t v;
@@ -148,17 +148,17 @@ list_print_checkpoint(WT_SESSION *session, const char *key)
 	 * report an error, and continue our caller's loop.  Otherwise, read the
 	 * list of checkpoints and print each checkpoint's name and time.
 	 */
-	if ((ret = __wt_metadata_get_ckptlist(session, key, &ckptbase)) != 0)
-		return (ret == WT_NOTFOUND ? 0 : ret);
+	if ((ret = __ae_metadata_get_ckptlist(session, key, &ckptbase)) != 0)
+		return (ret == AE_NOTFOUND ? 0 : ret);
 
 	/* Find the longest name, so we can pretty-print. */
 	len = 0;
-	WT_CKPT_FOREACH(ckptbase, ckpt)
+	AE_CKPT_FOREACH(ckptbase, ckpt)
 		if (strlen(ckpt->name) > len)
 			len = strlen(ckpt->name);
 	++len;
 
-	WT_CKPT_FOREACH(ckptbase, ckpt) {
+	AE_CKPT_FOREACH(ckptbase, ckpt) {
 		/*
 		 * Call ctime, not ctime_r; ctime_r has portability problems,
 		 * the Solaris version is different from the POSIX standard.
@@ -167,21 +167,21 @@ list_print_checkpoint(WT_SESSION *session, const char *key)
 		printf("\t%*s: %.24s", (int)len, ckpt->name, ctime(&t));
 
 		v = ckpt->ckpt_size;
-		if (v >= WT_PETABYTE)
-			printf(" (%" PRIu64 " PB)\n", v / WT_PETABYTE);
-		else if (v >= WT_TERABYTE)
-			printf(" (%" PRIu64 " TB)\n", v / WT_TERABYTE);
-		else if (v >= WT_GIGABYTE)
-			printf(" (%" PRIu64 " GB)\n", v / WT_GIGABYTE);
-		else if (v >= WT_MEGABYTE)
-			printf(" (%" PRIu64 " MB)\n", v / WT_MEGABYTE);
-		else if (v >= WT_KILOBYTE)
-			printf(" (%" PRIu64 " KB)\n", v / WT_KILOBYTE);
+		if (v >= AE_PETABYTE)
+			printf(" (%" PRIu64 " PB)\n", v / AE_PETABYTE);
+		else if (v >= AE_TERABYTE)
+			printf(" (%" PRIu64 " TB)\n", v / AE_TERABYTE);
+		else if (v >= AE_GIGABYTE)
+			printf(" (%" PRIu64 " GB)\n", v / AE_GIGABYTE);
+		else if (v >= AE_MEGABYTE)
+			printf(" (%" PRIu64 " MB)\n", v / AE_MEGABYTE);
+		else if (v >= AE_KILOBYTE)
+			printf(" (%" PRIu64 " KB)\n", v / AE_KILOBYTE);
 		else
 			printf(" (%" PRIu64 " B)\n", v);
 	}
 
-	__wt_metadata_free_ckptlist(session, ckptbase);
+	__ae_metadata_free_ckptlist(session, ckptbase);
 	return (0);
 }
 

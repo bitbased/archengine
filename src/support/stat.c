@@ -1,6 +1,6 @@
 /* DO NOT EDIT: automatically built by dist/stat.py. */
 
-#include "wt_internal.h"
+#include "ae_internal.h"
 
 static const char * const __stats_dsrc_desc[] = {
 	"block-manager: file allocation unit size",
@@ -105,32 +105,32 @@ static const char * const __stats_dsrc_desc[] = {
 };
 
 int
-__wt_stat_dsrc_desc(WT_CURSOR_STAT *cst, int slot, const char **p)
+__ae_stat_dsrc_desc(AE_CURSOR_STAT *cst, int slot, const char **p)
 {
-	WT_UNUSED(cst);
+	AE_UNUSED(cst);
 	*p = __stats_dsrc_desc[slot];
 	return (0);
 }
 
 void
-__wt_stat_dsrc_init_single(WT_DSRC_STATS *stats)
+__ae_stat_dsrc_init_single(AE_DSRC_STATS *stats)
 {
 	memset(stats, 0, sizeof(*stats));
 }
 
 void
-__wt_stat_dsrc_init(WT_DATA_HANDLE *handle)
+__ae_stat_dsrc_init(AE_DATA_HANDLE *handle)
 {
 	int i;
 
-	for (i = 0; i < WT_COUNTER_SLOTS; ++i) {
+	for (i = 0; i < AE_COUNTER_SLOTS; ++i) {
 		handle->stats[i] = &handle->stat_array[i];
-		__wt_stat_dsrc_init_single(handle->stats[i]);
+		__ae_stat_dsrc_init_single(handle->stats[i]);
 	}
 }
 
 void
-__wt_stat_dsrc_clear_single(WT_DSRC_STATS *stats)
+__ae_stat_dsrc_clear_single(AE_DSRC_STATS *stats)
 {
 	stats->block_extension = 0;
 	stats->block_alloc = 0;
@@ -234,17 +234,17 @@ __wt_stat_dsrc_clear_single(WT_DSRC_STATS *stats)
 }
 
 void
-__wt_stat_dsrc_clear_all(WT_DSRC_STATS **stats)
+__ae_stat_dsrc_clear_all(AE_DSRC_STATS **stats)
 {
 	u_int i;
 
-	for (i = 0; i < WT_COUNTER_SLOTS; ++i)
-		__wt_stat_dsrc_clear_single(stats[i]);
+	for (i = 0; i < AE_COUNTER_SLOTS; ++i)
+		__ae_stat_dsrc_clear_single(stats[i]);
 }
 
 void
-__wt_stat_dsrc_aggregate_single(
-    WT_DSRC_STATS *from, WT_DSRC_STATS *to)
+__ae_stat_dsrc_aggregate_single(
+    AE_DSRC_STATS *from, AE_DSRC_STATS *to)
 {
 	to->block_extension += from->block_extension;
 	to->block_alloc += from->block_alloc;
@@ -357,147 +357,147 @@ __wt_stat_dsrc_aggregate_single(
 }
 
 void
-__wt_stat_dsrc_aggregate(
-    WT_DSRC_STATS **from, WT_DSRC_STATS *to)
+__ae_stat_dsrc_aggregate(
+    AE_DSRC_STATS **from, AE_DSRC_STATS *to)
 {
 	int64_t v;
 
-	to->block_extension += WT_STAT_READ(from, block_extension);
-	to->block_alloc += WT_STAT_READ(from, block_alloc);
-	to->block_free += WT_STAT_READ(from, block_free);
+	to->block_extension += AE_STAT_READ(from, block_extension);
+	to->block_alloc += AE_STAT_READ(from, block_alloc);
+	to->block_free += AE_STAT_READ(from, block_free);
 	to->block_checkpoint_size +=
-	    WT_STAT_READ(from, block_checkpoint_size);
+	    AE_STAT_READ(from, block_checkpoint_size);
 	to->allocation_size = from[0]->allocation_size;
-	to->block_reuse_bytes += WT_STAT_READ(from, block_reuse_bytes);
+	to->block_reuse_bytes += AE_STAT_READ(from, block_reuse_bytes);
 	to->block_magic = from[0]->block_magic;
 	to->block_major = from[0]->block_major;
-	to->block_size += WT_STAT_READ(from, block_size);
+	to->block_size += AE_STAT_READ(from, block_size);
 	to->block_minor = from[0]->block_minor;
 	to->btree_checkpoint_generation +=
-	    WT_STAT_READ(from, btree_checkpoint_generation);
-	to->btree_column_fix += WT_STAT_READ(from, btree_column_fix);
+	    AE_STAT_READ(from, btree_checkpoint_generation);
+	to->btree_column_fix += AE_STAT_READ(from, btree_column_fix);
 	to->btree_column_internal +=
-	    WT_STAT_READ(from, btree_column_internal);
-	to->btree_column_deleted += WT_STAT_READ(from, btree_column_deleted);
+	    AE_STAT_READ(from, btree_column_internal);
+	to->btree_column_deleted += AE_STAT_READ(from, btree_column_deleted);
 	to->btree_column_variable +=
-	    WT_STAT_READ(from, btree_column_variable);
-	to->btree_column_rle += WT_STAT_READ(from, btree_column_rle);
+	    AE_STAT_READ(from, btree_column_variable);
+	to->btree_column_rle += AE_STAT_READ(from, btree_column_rle);
 	to->btree_fixed_len = from[0]->btree_fixed_len;
-	if ((v = WT_STAT_READ(from, btree_maxintlkey)) >
+	if ((v = AE_STAT_READ(from, btree_maxintlkey)) >
 	    to->btree_maxintlkey)
 		to->btree_maxintlkey = v;
-	if ((v = WT_STAT_READ(from, btree_maxintlpage)) >
+	if ((v = AE_STAT_READ(from, btree_maxintlpage)) >
 	    to->btree_maxintlpage)
 		to->btree_maxintlpage = v;
-	if ((v = WT_STAT_READ(from, btree_maxleafkey)) >
+	if ((v = AE_STAT_READ(from, btree_maxleafkey)) >
 	    to->btree_maxleafkey)
 		to->btree_maxleafkey = v;
-	if ((v = WT_STAT_READ(from, btree_maxleafpage)) >
+	if ((v = AE_STAT_READ(from, btree_maxleafpage)) >
 	    to->btree_maxleafpage)
 		to->btree_maxleafpage = v;
-	if ((v = WT_STAT_READ(from, btree_maxleafvalue)) >
+	if ((v = AE_STAT_READ(from, btree_maxleafvalue)) >
 	    to->btree_maxleafvalue)
 		to->btree_maxleafvalue = v;
-	if ((v = WT_STAT_READ(from, btree_maximum_depth)) >
+	if ((v = AE_STAT_READ(from, btree_maximum_depth)) >
 	    to->btree_maximum_depth)
 		to->btree_maximum_depth = v;
-	to->btree_entries += WT_STAT_READ(from, btree_entries);
-	to->btree_overflow += WT_STAT_READ(from, btree_overflow);
+	to->btree_entries += AE_STAT_READ(from, btree_entries);
+	to->btree_overflow += AE_STAT_READ(from, btree_overflow);
 	to->btree_compact_rewrite +=
-	    WT_STAT_READ(from, btree_compact_rewrite);
-	to->btree_row_internal += WT_STAT_READ(from, btree_row_internal);
-	to->btree_row_leaf += WT_STAT_READ(from, btree_row_leaf);
-	to->cache_bytes_read += WT_STAT_READ(from, cache_bytes_read);
-	to->cache_bytes_write += WT_STAT_READ(from, cache_bytes_write);
+	    AE_STAT_READ(from, btree_compact_rewrite);
+	to->btree_row_internal += AE_STAT_READ(from, btree_row_internal);
+	to->btree_row_leaf += AE_STAT_READ(from, btree_row_leaf);
+	to->cache_bytes_read += AE_STAT_READ(from, cache_bytes_read);
+	to->cache_bytes_write += AE_STAT_READ(from, cache_bytes_write);
 	to->cache_eviction_checkpoint +=
-	    WT_STAT_READ(from, cache_eviction_checkpoint);
-	to->cache_eviction_fail += WT_STAT_READ(from, cache_eviction_fail);
+	    AE_STAT_READ(from, cache_eviction_checkpoint);
+	to->cache_eviction_fail += AE_STAT_READ(from, cache_eviction_fail);
 	to->cache_eviction_hazard +=
-	    WT_STAT_READ(from, cache_eviction_hazard);
+	    AE_STAT_READ(from, cache_eviction_hazard);
 	to->cache_inmem_splittable +=
-	    WT_STAT_READ(from, cache_inmem_splittable);
-	to->cache_inmem_split += WT_STAT_READ(from, cache_inmem_split);
+	    AE_STAT_READ(from, cache_inmem_splittable);
+	to->cache_inmem_split += AE_STAT_READ(from, cache_inmem_split);
 	to->cache_eviction_internal +=
-	    WT_STAT_READ(from, cache_eviction_internal);
+	    AE_STAT_READ(from, cache_eviction_internal);
 	to->cache_eviction_split_internal +=
-	    WT_STAT_READ(from, cache_eviction_split_internal);
+	    AE_STAT_READ(from, cache_eviction_split_internal);
 	to->cache_eviction_split_leaf +=
-	    WT_STAT_READ(from, cache_eviction_split_leaf);
-	to->cache_eviction_dirty += WT_STAT_READ(from, cache_eviction_dirty);
-	to->cache_read_overflow += WT_STAT_READ(from, cache_read_overflow);
-	to->cache_overflow_value += WT_STAT_READ(from, cache_overflow_value);
+	    AE_STAT_READ(from, cache_eviction_split_leaf);
+	to->cache_eviction_dirty += AE_STAT_READ(from, cache_eviction_dirty);
+	to->cache_read_overflow += AE_STAT_READ(from, cache_read_overflow);
+	to->cache_overflow_value += AE_STAT_READ(from, cache_overflow_value);
 	to->cache_eviction_deepen +=
-	    WT_STAT_READ(from, cache_eviction_deepen);
+	    AE_STAT_READ(from, cache_eviction_deepen);
 	to->cache_write_lookaside +=
-	    WT_STAT_READ(from, cache_write_lookaside);
-	to->cache_read += WT_STAT_READ(from, cache_read);
-	to->cache_read_lookaside += WT_STAT_READ(from, cache_read_lookaside);
-	to->cache_write += WT_STAT_READ(from, cache_write);
-	to->cache_write_restore += WT_STAT_READ(from, cache_write_restore);
-	to->cache_eviction_clean += WT_STAT_READ(from, cache_eviction_clean);
-	to->compress_read += WT_STAT_READ(from, compress_read);
-	to->compress_write += WT_STAT_READ(from, compress_write);
-	to->compress_write_fail += WT_STAT_READ(from, compress_write_fail);
+	    AE_STAT_READ(from, cache_write_lookaside);
+	to->cache_read += AE_STAT_READ(from, cache_read);
+	to->cache_read_lookaside += AE_STAT_READ(from, cache_read_lookaside);
+	to->cache_write += AE_STAT_READ(from, cache_write);
+	to->cache_write_restore += AE_STAT_READ(from, cache_write_restore);
+	to->cache_eviction_clean += AE_STAT_READ(from, cache_eviction_clean);
+	to->compress_read += AE_STAT_READ(from, compress_read);
+	to->compress_write += AE_STAT_READ(from, compress_write);
+	to->compress_write_fail += AE_STAT_READ(from, compress_write_fail);
 	to->compress_write_too_small +=
-	    WT_STAT_READ(from, compress_write_too_small);
+	    AE_STAT_READ(from, compress_write_too_small);
 	to->compress_raw_fail_temporary +=
-	    WT_STAT_READ(from, compress_raw_fail_temporary);
-	to->compress_raw_fail += WT_STAT_READ(from, compress_raw_fail);
-	to->compress_raw_ok += WT_STAT_READ(from, compress_raw_ok);
-	to->cursor_insert_bulk += WT_STAT_READ(from, cursor_insert_bulk);
-	to->cursor_create += WT_STAT_READ(from, cursor_create);
-	to->cursor_insert_bytes += WT_STAT_READ(from, cursor_insert_bytes);
-	to->cursor_remove_bytes += WT_STAT_READ(from, cursor_remove_bytes);
-	to->cursor_update_bytes += WT_STAT_READ(from, cursor_update_bytes);
-	to->cursor_insert += WT_STAT_READ(from, cursor_insert);
-	to->cursor_next += WT_STAT_READ(from, cursor_next);
-	to->cursor_prev += WT_STAT_READ(from, cursor_prev);
-	to->cursor_remove += WT_STAT_READ(from, cursor_remove);
-	to->cursor_reset += WT_STAT_READ(from, cursor_reset);
-	to->cursor_restart += WT_STAT_READ(from, cursor_restart);
-	to->cursor_search += WT_STAT_READ(from, cursor_search);
-	to->cursor_search_near += WT_STAT_READ(from, cursor_search_near);
-	to->cursor_truncate += WT_STAT_READ(from, cursor_truncate);
-	to->cursor_update += WT_STAT_READ(from, cursor_update);
-	to->bloom_false_positive += WT_STAT_READ(from, bloom_false_positive);
-	to->bloom_hit += WT_STAT_READ(from, bloom_hit);
-	to->bloom_miss += WT_STAT_READ(from, bloom_miss);
-	to->bloom_page_evict += WT_STAT_READ(from, bloom_page_evict);
-	to->bloom_page_read += WT_STAT_READ(from, bloom_page_read);
-	to->bloom_count += WT_STAT_READ(from, bloom_count);
-	to->lsm_chunk_count += WT_STAT_READ(from, lsm_chunk_count);
-	if ((v = WT_STAT_READ(from, lsm_generation_max)) >
+	    AE_STAT_READ(from, compress_raw_fail_temporary);
+	to->compress_raw_fail += AE_STAT_READ(from, compress_raw_fail);
+	to->compress_raw_ok += AE_STAT_READ(from, compress_raw_ok);
+	to->cursor_insert_bulk += AE_STAT_READ(from, cursor_insert_bulk);
+	to->cursor_create += AE_STAT_READ(from, cursor_create);
+	to->cursor_insert_bytes += AE_STAT_READ(from, cursor_insert_bytes);
+	to->cursor_remove_bytes += AE_STAT_READ(from, cursor_remove_bytes);
+	to->cursor_update_bytes += AE_STAT_READ(from, cursor_update_bytes);
+	to->cursor_insert += AE_STAT_READ(from, cursor_insert);
+	to->cursor_next += AE_STAT_READ(from, cursor_next);
+	to->cursor_prev += AE_STAT_READ(from, cursor_prev);
+	to->cursor_remove += AE_STAT_READ(from, cursor_remove);
+	to->cursor_reset += AE_STAT_READ(from, cursor_reset);
+	to->cursor_restart += AE_STAT_READ(from, cursor_restart);
+	to->cursor_search += AE_STAT_READ(from, cursor_search);
+	to->cursor_search_near += AE_STAT_READ(from, cursor_search_near);
+	to->cursor_truncate += AE_STAT_READ(from, cursor_truncate);
+	to->cursor_update += AE_STAT_READ(from, cursor_update);
+	to->bloom_false_positive += AE_STAT_READ(from, bloom_false_positive);
+	to->bloom_hit += AE_STAT_READ(from, bloom_hit);
+	to->bloom_miss += AE_STAT_READ(from, bloom_miss);
+	to->bloom_page_evict += AE_STAT_READ(from, bloom_page_evict);
+	to->bloom_page_read += AE_STAT_READ(from, bloom_page_read);
+	to->bloom_count += AE_STAT_READ(from, bloom_count);
+	to->lsm_chunk_count += AE_STAT_READ(from, lsm_chunk_count);
+	if ((v = AE_STAT_READ(from, lsm_generation_max)) >
 	    to->lsm_generation_max)
 		to->lsm_generation_max = v;
-	to->lsm_lookup_no_bloom += WT_STAT_READ(from, lsm_lookup_no_bloom);
+	to->lsm_lookup_no_bloom += AE_STAT_READ(from, lsm_lookup_no_bloom);
 	to->lsm_checkpoint_throttle +=
-	    WT_STAT_READ(from, lsm_checkpoint_throttle);
-	to->lsm_merge_throttle += WT_STAT_READ(from, lsm_merge_throttle);
-	to->bloom_size += WT_STAT_READ(from, bloom_size);
-	to->rec_dictionary += WT_STAT_READ(from, rec_dictionary);
-	to->rec_page_delete_fast += WT_STAT_READ(from, rec_page_delete_fast);
+	    AE_STAT_READ(from, lsm_checkpoint_throttle);
+	to->lsm_merge_throttle += AE_STAT_READ(from, lsm_merge_throttle);
+	to->bloom_size += AE_STAT_READ(from, bloom_size);
+	to->rec_dictionary += AE_STAT_READ(from, rec_dictionary);
+	to->rec_page_delete_fast += AE_STAT_READ(from, rec_page_delete_fast);
 	to->rec_suffix_compression +=
-	    WT_STAT_READ(from, rec_suffix_compression);
+	    AE_STAT_READ(from, rec_suffix_compression);
 	to->rec_multiblock_internal +=
-	    WT_STAT_READ(from, rec_multiblock_internal);
+	    AE_STAT_READ(from, rec_multiblock_internal);
 	to->rec_overflow_key_internal +=
-	    WT_STAT_READ(from, rec_overflow_key_internal);
+	    AE_STAT_READ(from, rec_overflow_key_internal);
 	to->rec_prefix_compression +=
-	    WT_STAT_READ(from, rec_prefix_compression);
-	to->rec_multiblock_leaf += WT_STAT_READ(from, rec_multiblock_leaf);
+	    AE_STAT_READ(from, rec_prefix_compression);
+	to->rec_multiblock_leaf += AE_STAT_READ(from, rec_multiblock_leaf);
 	to->rec_overflow_key_leaf +=
-	    WT_STAT_READ(from, rec_overflow_key_leaf);
-	if ((v = WT_STAT_READ(from, rec_multiblock_max)) >
+	    AE_STAT_READ(from, rec_overflow_key_leaf);
+	if ((v = AE_STAT_READ(from, rec_multiblock_max)) >
 	    to->rec_multiblock_max)
 		to->rec_multiblock_max = v;
-	to->rec_overflow_value += WT_STAT_READ(from, rec_overflow_value);
-	to->rec_page_match += WT_STAT_READ(from, rec_page_match);
-	to->rec_pages += WT_STAT_READ(from, rec_pages);
-	to->rec_pages_eviction += WT_STAT_READ(from, rec_pages_eviction);
-	to->rec_page_delete += WT_STAT_READ(from, rec_page_delete);
-	to->session_compact += WT_STAT_READ(from, session_compact);
-	to->session_cursor_open += WT_STAT_READ(from, session_cursor_open);
-	to->txn_update_conflict += WT_STAT_READ(from, txn_update_conflict);
+	to->rec_overflow_value += AE_STAT_READ(from, rec_overflow_value);
+	to->rec_page_match += AE_STAT_READ(from, rec_page_match);
+	to->rec_pages += AE_STAT_READ(from, rec_pages);
+	to->rec_pages_eviction += AE_STAT_READ(from, rec_pages_eviction);
+	to->rec_page_delete += AE_STAT_READ(from, rec_page_delete);
+	to->session_compact += AE_STAT_READ(from, session_compact);
+	to->session_cursor_open += AE_STAT_READ(from, session_cursor_open);
+	to->txn_update_conflict += AE_STAT_READ(from, txn_update_conflict);
 }
 
 static const char * const __stats_connection_desc[] = {
@@ -665,32 +665,32 @@ static const char * const __stats_connection_desc[] = {
 };
 
 int
-__wt_stat_connection_desc(WT_CURSOR_STAT *cst, int slot, const char **p)
+__ae_stat_connection_desc(AE_CURSOR_STAT *cst, int slot, const char **p)
 {
-	WT_UNUSED(cst);
+	AE_UNUSED(cst);
 	*p = __stats_connection_desc[slot];
 	return (0);
 }
 
 void
-__wt_stat_connection_init_single(WT_CONNECTION_STATS *stats)
+__ae_stat_connection_init_single(AE_CONNECTION_STATS *stats)
 {
 	memset(stats, 0, sizeof(*stats));
 }
 
 void
-__wt_stat_connection_init(WT_CONNECTION_IMPL *handle)
+__ae_stat_connection_init(AE_CONNECTION_IMPL *handle)
 {
 	int i;
 
-	for (i = 0; i < WT_COUNTER_SLOTS; ++i) {
+	for (i = 0; i < AE_COUNTER_SLOTS; ++i) {
 		handle->stats[i] = &handle->stat_array[i];
-		__wt_stat_connection_init_single(handle->stats[i]);
+		__ae_stat_connection_init_single(handle->stats[i]);
 	}
 }
 
 void
-__wt_stat_connection_clear_single(WT_CONNECTION_STATS *stats)
+__ae_stat_connection_clear_single(AE_CONNECTION_STATS *stats)
 {
 	stats->async_cur_queue = 0;
 		/* not clearing async_max_queue */
@@ -856,218 +856,218 @@ __wt_stat_connection_clear_single(WT_CONNECTION_STATS *stats)
 }
 
 void
-__wt_stat_connection_clear_all(WT_CONNECTION_STATS **stats)
+__ae_stat_connection_clear_all(AE_CONNECTION_STATS **stats)
 {
 	u_int i;
 
-	for (i = 0; i < WT_COUNTER_SLOTS; ++i)
-		__wt_stat_connection_clear_single(stats[i]);
+	for (i = 0; i < AE_COUNTER_SLOTS; ++i)
+		__ae_stat_connection_clear_single(stats[i]);
 }
 
 void
-__wt_stat_connection_aggregate(
-    WT_CONNECTION_STATS **from, WT_CONNECTION_STATS *to)
+__ae_stat_connection_aggregate(
+    AE_CONNECTION_STATS **from, AE_CONNECTION_STATS *to)
 {
-	to->async_cur_queue += WT_STAT_READ(from, async_cur_queue);
-	to->async_max_queue += WT_STAT_READ(from, async_max_queue);
-	to->async_alloc_race += WT_STAT_READ(from, async_alloc_race);
-	to->async_flush += WT_STAT_READ(from, async_flush);
-	to->async_alloc_view += WT_STAT_READ(from, async_alloc_view);
-	to->async_full += WT_STAT_READ(from, async_full);
-	to->async_nowork += WT_STAT_READ(from, async_nowork);
-	to->async_op_alloc += WT_STAT_READ(from, async_op_alloc);
-	to->async_op_compact += WT_STAT_READ(from, async_op_compact);
-	to->async_op_insert += WT_STAT_READ(from, async_op_insert);
-	to->async_op_remove += WT_STAT_READ(from, async_op_remove);
-	to->async_op_search += WT_STAT_READ(from, async_op_search);
-	to->async_op_update += WT_STAT_READ(from, async_op_update);
-	to->block_preload += WT_STAT_READ(from, block_preload);
-	to->block_read += WT_STAT_READ(from, block_read);
-	to->block_write += WT_STAT_READ(from, block_write);
-	to->block_byte_read += WT_STAT_READ(from, block_byte_read);
-	to->block_byte_write += WT_STAT_READ(from, block_byte_write);
-	to->block_map_read += WT_STAT_READ(from, block_map_read);
-	to->block_byte_map_read += WT_STAT_READ(from, block_byte_map_read);
-	to->cache_bytes_inuse += WT_STAT_READ(from, cache_bytes_inuse);
-	to->cache_bytes_read += WT_STAT_READ(from, cache_bytes_read);
-	to->cache_bytes_write += WT_STAT_READ(from, cache_bytes_write);
+	to->async_cur_queue += AE_STAT_READ(from, async_cur_queue);
+	to->async_max_queue += AE_STAT_READ(from, async_max_queue);
+	to->async_alloc_race += AE_STAT_READ(from, async_alloc_race);
+	to->async_flush += AE_STAT_READ(from, async_flush);
+	to->async_alloc_view += AE_STAT_READ(from, async_alloc_view);
+	to->async_full += AE_STAT_READ(from, async_full);
+	to->async_nowork += AE_STAT_READ(from, async_nowork);
+	to->async_op_alloc += AE_STAT_READ(from, async_op_alloc);
+	to->async_op_compact += AE_STAT_READ(from, async_op_compact);
+	to->async_op_insert += AE_STAT_READ(from, async_op_insert);
+	to->async_op_remove += AE_STAT_READ(from, async_op_remove);
+	to->async_op_search += AE_STAT_READ(from, async_op_search);
+	to->async_op_update += AE_STAT_READ(from, async_op_update);
+	to->block_preload += AE_STAT_READ(from, block_preload);
+	to->block_read += AE_STAT_READ(from, block_read);
+	to->block_write += AE_STAT_READ(from, block_write);
+	to->block_byte_read += AE_STAT_READ(from, block_byte_read);
+	to->block_byte_write += AE_STAT_READ(from, block_byte_write);
+	to->block_map_read += AE_STAT_READ(from, block_map_read);
+	to->block_byte_map_read += AE_STAT_READ(from, block_byte_map_read);
+	to->cache_bytes_inuse += AE_STAT_READ(from, cache_bytes_inuse);
+	to->cache_bytes_read += AE_STAT_READ(from, cache_bytes_read);
+	to->cache_bytes_write += AE_STAT_READ(from, cache_bytes_write);
 	to->cache_eviction_checkpoint +=
-	    WT_STAT_READ(from, cache_eviction_checkpoint);
+	    AE_STAT_READ(from, cache_eviction_checkpoint);
 	to->cache_eviction_queue_empty +=
-	    WT_STAT_READ(from, cache_eviction_queue_empty);
+	    AE_STAT_READ(from, cache_eviction_queue_empty);
 	to->cache_eviction_queue_not_empty +=
-	    WT_STAT_READ(from, cache_eviction_queue_not_empty);
+	    AE_STAT_READ(from, cache_eviction_queue_not_empty);
 	to->cache_eviction_server_evicting +=
-	    WT_STAT_READ(from, cache_eviction_server_evicting);
+	    AE_STAT_READ(from, cache_eviction_server_evicting);
 	to->cache_eviction_server_not_evicting +=
-	    WT_STAT_READ(from, cache_eviction_server_not_evicting);
-	to->cache_eviction_slow += WT_STAT_READ(from, cache_eviction_slow);
+	    AE_STAT_READ(from, cache_eviction_server_not_evicting);
+	to->cache_eviction_slow += AE_STAT_READ(from, cache_eviction_slow);
 	to->cache_eviction_worker_evicting +=
-	    WT_STAT_READ(from, cache_eviction_worker_evicting);
+	    AE_STAT_READ(from, cache_eviction_worker_evicting);
 	to->cache_eviction_force_fail +=
-	    WT_STAT_READ(from, cache_eviction_force_fail);
+	    AE_STAT_READ(from, cache_eviction_force_fail);
 	to->cache_eviction_hazard +=
-	    WT_STAT_READ(from, cache_eviction_hazard);
+	    AE_STAT_READ(from, cache_eviction_hazard);
 	to->cache_inmem_splittable +=
-	    WT_STAT_READ(from, cache_inmem_splittable);
-	to->cache_inmem_split += WT_STAT_READ(from, cache_inmem_split);
+	    AE_STAT_READ(from, cache_inmem_splittable);
+	to->cache_inmem_split += AE_STAT_READ(from, cache_inmem_split);
 	to->cache_eviction_internal +=
-	    WT_STAT_READ(from, cache_eviction_internal);
+	    AE_STAT_READ(from, cache_eviction_internal);
 	to->cache_eviction_split_internal +=
-	    WT_STAT_READ(from, cache_eviction_split_internal);
+	    AE_STAT_READ(from, cache_eviction_split_internal);
 	to->cache_eviction_split_leaf +=
-	    WT_STAT_READ(from, cache_eviction_split_leaf);
+	    AE_STAT_READ(from, cache_eviction_split_leaf);
 	to->cache_lookaside_insert +=
-	    WT_STAT_READ(from, cache_lookaside_insert);
+	    AE_STAT_READ(from, cache_lookaside_insert);
 	to->cache_lookaside_remove +=
-	    WT_STAT_READ(from, cache_lookaside_remove);
-	to->cache_bytes_max += WT_STAT_READ(from, cache_bytes_max);
+	    AE_STAT_READ(from, cache_lookaside_remove);
+	to->cache_bytes_max += AE_STAT_READ(from, cache_bytes_max);
 	to->cache_eviction_maximum_page_size +=
-	    WT_STAT_READ(from, cache_eviction_maximum_page_size);
-	to->cache_eviction_dirty += WT_STAT_READ(from, cache_eviction_dirty);
+	    AE_STAT_READ(from, cache_eviction_maximum_page_size);
+	to->cache_eviction_dirty += AE_STAT_READ(from, cache_eviction_dirty);
 	to->cache_eviction_deepen +=
-	    WT_STAT_READ(from, cache_eviction_deepen);
+	    AE_STAT_READ(from, cache_eviction_deepen);
 	to->cache_write_lookaside +=
-	    WT_STAT_READ(from, cache_write_lookaside);
-	to->cache_pages_inuse += WT_STAT_READ(from, cache_pages_inuse);
-	to->cache_eviction_force += WT_STAT_READ(from, cache_eviction_force);
+	    AE_STAT_READ(from, cache_write_lookaside);
+	to->cache_pages_inuse += AE_STAT_READ(from, cache_pages_inuse);
+	to->cache_eviction_force += AE_STAT_READ(from, cache_eviction_force);
 	to->cache_eviction_force_delete +=
-	    WT_STAT_READ(from, cache_eviction_force_delete);
-	to->cache_eviction_app += WT_STAT_READ(from, cache_eviction_app);
-	to->cache_read += WT_STAT_READ(from, cache_read);
-	to->cache_read_lookaside += WT_STAT_READ(from, cache_read_lookaside);
-	to->cache_eviction_fail += WT_STAT_READ(from, cache_eviction_fail);
-	to->cache_eviction_walk += WT_STAT_READ(from, cache_eviction_walk);
-	to->cache_write += WT_STAT_READ(from, cache_write);
-	to->cache_write_restore += WT_STAT_READ(from, cache_write_restore);
-	to->cache_overhead += WT_STAT_READ(from, cache_overhead);
-	to->cache_bytes_internal += WT_STAT_READ(from, cache_bytes_internal);
-	to->cache_bytes_leaf += WT_STAT_READ(from, cache_bytes_leaf);
-	to->cache_bytes_overflow += WT_STAT_READ(from, cache_bytes_overflow);
-	to->cache_bytes_dirty += WT_STAT_READ(from, cache_bytes_dirty);
-	to->cache_pages_dirty += WT_STAT_READ(from, cache_pages_dirty);
-	to->cache_eviction_clean += WT_STAT_READ(from, cache_eviction_clean);
-	to->file_open += WT_STAT_READ(from, file_open);
-	to->memory_allocation += WT_STAT_READ(from, memory_allocation);
-	to->memory_free += WT_STAT_READ(from, memory_free);
-	to->memory_grow += WT_STAT_READ(from, memory_grow);
-	to->cond_wait += WT_STAT_READ(from, cond_wait);
-	to->rwlock_read += WT_STAT_READ(from, rwlock_read);
-	to->rwlock_write += WT_STAT_READ(from, rwlock_write);
-	to->read_io += WT_STAT_READ(from, read_io);
-	to->write_io += WT_STAT_READ(from, write_io);
-	to->cursor_create += WT_STAT_READ(from, cursor_create);
-	to->cursor_insert += WT_STAT_READ(from, cursor_insert);
-	to->cursor_next += WT_STAT_READ(from, cursor_next);
-	to->cursor_prev += WT_STAT_READ(from, cursor_prev);
-	to->cursor_remove += WT_STAT_READ(from, cursor_remove);
-	to->cursor_reset += WT_STAT_READ(from, cursor_reset);
-	to->cursor_restart += WT_STAT_READ(from, cursor_restart);
-	to->cursor_search += WT_STAT_READ(from, cursor_search);
-	to->cursor_search_near += WT_STAT_READ(from, cursor_search_near);
-	to->cursor_update += WT_STAT_READ(from, cursor_update);
-	to->cursor_truncate += WT_STAT_READ(from, cursor_truncate);
-	to->dh_conn_handle_count += WT_STAT_READ(from, dh_conn_handle_count);
-	to->dh_sweep_ref += WT_STAT_READ(from, dh_sweep_ref);
-	to->dh_sweep_close += WT_STAT_READ(from, dh_sweep_close);
-	to->dh_sweep_remove += WT_STAT_READ(from, dh_sweep_remove);
-	to->dh_sweep_tod += WT_STAT_READ(from, dh_sweep_tod);
-	to->dh_sweeps += WT_STAT_READ(from, dh_sweeps);
-	to->dh_session_handles += WT_STAT_READ(from, dh_session_handles);
-	to->dh_session_sweeps += WT_STAT_READ(from, dh_session_sweeps);
-	to->log_slot_switch_busy += WT_STAT_READ(from, log_slot_switch_busy);
-	to->log_slot_closes += WT_STAT_READ(from, log_slot_closes);
-	to->log_slot_races += WT_STAT_READ(from, log_slot_races);
-	to->log_slot_transitions += WT_STAT_READ(from, log_slot_transitions);
-	to->log_slot_joins += WT_STAT_READ(from, log_slot_joins);
-	to->log_slot_unbuffered += WT_STAT_READ(from, log_slot_unbuffered);
-	to->log_bytes_payload += WT_STAT_READ(from, log_bytes_payload);
-	to->log_bytes_written += WT_STAT_READ(from, log_bytes_written);
-	to->log_zero_fills += WT_STAT_READ(from, log_zero_fills);
-	to->log_flush += WT_STAT_READ(from, log_flush);
-	to->log_compress_writes += WT_STAT_READ(from, log_compress_writes);
+	    AE_STAT_READ(from, cache_eviction_force_delete);
+	to->cache_eviction_app += AE_STAT_READ(from, cache_eviction_app);
+	to->cache_read += AE_STAT_READ(from, cache_read);
+	to->cache_read_lookaside += AE_STAT_READ(from, cache_read_lookaside);
+	to->cache_eviction_fail += AE_STAT_READ(from, cache_eviction_fail);
+	to->cache_eviction_walk += AE_STAT_READ(from, cache_eviction_walk);
+	to->cache_write += AE_STAT_READ(from, cache_write);
+	to->cache_write_restore += AE_STAT_READ(from, cache_write_restore);
+	to->cache_overhead += AE_STAT_READ(from, cache_overhead);
+	to->cache_bytes_internal += AE_STAT_READ(from, cache_bytes_internal);
+	to->cache_bytes_leaf += AE_STAT_READ(from, cache_bytes_leaf);
+	to->cache_bytes_overflow += AE_STAT_READ(from, cache_bytes_overflow);
+	to->cache_bytes_dirty += AE_STAT_READ(from, cache_bytes_dirty);
+	to->cache_pages_dirty += AE_STAT_READ(from, cache_pages_dirty);
+	to->cache_eviction_clean += AE_STAT_READ(from, cache_eviction_clean);
+	to->file_open += AE_STAT_READ(from, file_open);
+	to->memory_allocation += AE_STAT_READ(from, memory_allocation);
+	to->memory_free += AE_STAT_READ(from, memory_free);
+	to->memory_grow += AE_STAT_READ(from, memory_grow);
+	to->cond_wait += AE_STAT_READ(from, cond_wait);
+	to->rwlock_read += AE_STAT_READ(from, rwlock_read);
+	to->rwlock_write += AE_STAT_READ(from, rwlock_write);
+	to->read_io += AE_STAT_READ(from, read_io);
+	to->write_io += AE_STAT_READ(from, write_io);
+	to->cursor_create += AE_STAT_READ(from, cursor_create);
+	to->cursor_insert += AE_STAT_READ(from, cursor_insert);
+	to->cursor_next += AE_STAT_READ(from, cursor_next);
+	to->cursor_prev += AE_STAT_READ(from, cursor_prev);
+	to->cursor_remove += AE_STAT_READ(from, cursor_remove);
+	to->cursor_reset += AE_STAT_READ(from, cursor_reset);
+	to->cursor_restart += AE_STAT_READ(from, cursor_restart);
+	to->cursor_search += AE_STAT_READ(from, cursor_search);
+	to->cursor_search_near += AE_STAT_READ(from, cursor_search_near);
+	to->cursor_update += AE_STAT_READ(from, cursor_update);
+	to->cursor_truncate += AE_STAT_READ(from, cursor_truncate);
+	to->dh_conn_handle_count += AE_STAT_READ(from, dh_conn_handle_count);
+	to->dh_sweep_ref += AE_STAT_READ(from, dh_sweep_ref);
+	to->dh_sweep_close += AE_STAT_READ(from, dh_sweep_close);
+	to->dh_sweep_remove += AE_STAT_READ(from, dh_sweep_remove);
+	to->dh_sweep_tod += AE_STAT_READ(from, dh_sweep_tod);
+	to->dh_sweeps += AE_STAT_READ(from, dh_sweeps);
+	to->dh_session_handles += AE_STAT_READ(from, dh_session_handles);
+	to->dh_session_sweeps += AE_STAT_READ(from, dh_session_sweeps);
+	to->log_slot_switch_busy += AE_STAT_READ(from, log_slot_switch_busy);
+	to->log_slot_closes += AE_STAT_READ(from, log_slot_closes);
+	to->log_slot_races += AE_STAT_READ(from, log_slot_races);
+	to->log_slot_transitions += AE_STAT_READ(from, log_slot_transitions);
+	to->log_slot_joins += AE_STAT_READ(from, log_slot_joins);
+	to->log_slot_unbuffered += AE_STAT_READ(from, log_slot_unbuffered);
+	to->log_bytes_payload += AE_STAT_READ(from, log_bytes_payload);
+	to->log_bytes_written += AE_STAT_READ(from, log_bytes_written);
+	to->log_zero_fills += AE_STAT_READ(from, log_zero_fills);
+	to->log_flush += AE_STAT_READ(from, log_flush);
+	to->log_compress_writes += AE_STAT_READ(from, log_compress_writes);
 	to->log_compress_write_fails +=
-	    WT_STAT_READ(from, log_compress_write_fails);
-	to->log_compress_small += WT_STAT_READ(from, log_compress_small);
+	    AE_STAT_READ(from, log_compress_write_fails);
+	to->log_compress_small += AE_STAT_READ(from, log_compress_small);
 	to->log_release_write_lsn +=
-	    WT_STAT_READ(from, log_release_write_lsn);
-	to->log_scans += WT_STAT_READ(from, log_scans);
-	to->log_scan_rereads += WT_STAT_READ(from, log_scan_rereads);
-	to->log_write_lsn += WT_STAT_READ(from, log_write_lsn);
-	to->log_sync += WT_STAT_READ(from, log_sync);
-	to->log_sync_dir += WT_STAT_READ(from, log_sync_dir);
-	to->log_writes += WT_STAT_READ(from, log_writes);
+	    AE_STAT_READ(from, log_release_write_lsn);
+	to->log_scans += AE_STAT_READ(from, log_scans);
+	to->log_scan_rereads += AE_STAT_READ(from, log_scan_rereads);
+	to->log_write_lsn += AE_STAT_READ(from, log_write_lsn);
+	to->log_sync += AE_STAT_READ(from, log_sync);
+	to->log_sync_dir += AE_STAT_READ(from, log_sync_dir);
+	to->log_writes += AE_STAT_READ(from, log_writes);
 	to->log_slot_consolidated +=
-	    WT_STAT_READ(from, log_slot_consolidated);
-	to->log_max_filesize += WT_STAT_READ(from, log_max_filesize);
-	to->log_prealloc_max += WT_STAT_READ(from, log_prealloc_max);
-	to->log_prealloc_missed += WT_STAT_READ(from, log_prealloc_missed);
-	to->log_prealloc_files += WT_STAT_READ(from, log_prealloc_files);
-	to->log_prealloc_used += WT_STAT_READ(from, log_prealloc_used);
-	to->log_scan_records += WT_STAT_READ(from, log_scan_records);
-	to->log_compress_mem += WT_STAT_READ(from, log_compress_mem);
-	to->log_buffer_size += WT_STAT_READ(from, log_buffer_size);
-	to->log_compress_len += WT_STAT_READ(from, log_compress_len);
-	to->log_slot_coalesced += WT_STAT_READ(from, log_slot_coalesced);
-	to->log_close_yields += WT_STAT_READ(from, log_close_yields);
-	to->lsm_work_queue_app += WT_STAT_READ(from, lsm_work_queue_app);
+	    AE_STAT_READ(from, log_slot_consolidated);
+	to->log_max_filesize += AE_STAT_READ(from, log_max_filesize);
+	to->log_prealloc_max += AE_STAT_READ(from, log_prealloc_max);
+	to->log_prealloc_missed += AE_STAT_READ(from, log_prealloc_missed);
+	to->log_prealloc_files += AE_STAT_READ(from, log_prealloc_files);
+	to->log_prealloc_used += AE_STAT_READ(from, log_prealloc_used);
+	to->log_scan_records += AE_STAT_READ(from, log_scan_records);
+	to->log_compress_mem += AE_STAT_READ(from, log_compress_mem);
+	to->log_buffer_size += AE_STAT_READ(from, log_buffer_size);
+	to->log_compress_len += AE_STAT_READ(from, log_compress_len);
+	to->log_slot_coalesced += AE_STAT_READ(from, log_slot_coalesced);
+	to->log_close_yields += AE_STAT_READ(from, log_close_yields);
+	to->lsm_work_queue_app += AE_STAT_READ(from, lsm_work_queue_app);
 	to->lsm_work_queue_manager +=
-	    WT_STAT_READ(from, lsm_work_queue_manager);
-	to->lsm_rows_merged += WT_STAT_READ(from, lsm_rows_merged);
+	    AE_STAT_READ(from, lsm_work_queue_manager);
+	to->lsm_rows_merged += AE_STAT_READ(from, lsm_rows_merged);
 	to->lsm_checkpoint_throttle +=
-	    WT_STAT_READ(from, lsm_checkpoint_throttle);
-	to->lsm_merge_throttle += WT_STAT_READ(from, lsm_merge_throttle);
+	    AE_STAT_READ(from, lsm_checkpoint_throttle);
+	to->lsm_merge_throttle += AE_STAT_READ(from, lsm_merge_throttle);
 	to->lsm_work_queue_switch +=
-	    WT_STAT_READ(from, lsm_work_queue_switch);
+	    AE_STAT_READ(from, lsm_work_queue_switch);
 	to->lsm_work_units_discarded +=
-	    WT_STAT_READ(from, lsm_work_units_discarded);
-	to->lsm_work_units_done += WT_STAT_READ(from, lsm_work_units_done);
+	    AE_STAT_READ(from, lsm_work_units_discarded);
+	to->lsm_work_units_done += AE_STAT_READ(from, lsm_work_units_done);
 	to->lsm_work_units_created +=
-	    WT_STAT_READ(from, lsm_work_units_created);
-	to->lsm_work_queue_max += WT_STAT_READ(from, lsm_work_queue_max);
-	to->rec_page_delete_fast += WT_STAT_READ(from, rec_page_delete_fast);
-	to->rec_pages += WT_STAT_READ(from, rec_pages);
-	to->rec_pages_eviction += WT_STAT_READ(from, rec_pages_eviction);
-	to->rec_page_delete += WT_STAT_READ(from, rec_page_delete);
+	    AE_STAT_READ(from, lsm_work_units_created);
+	to->lsm_work_queue_max += AE_STAT_READ(from, lsm_work_queue_max);
+	to->rec_page_delete_fast += AE_STAT_READ(from, rec_page_delete_fast);
+	to->rec_pages += AE_STAT_READ(from, rec_pages);
+	to->rec_pages_eviction += AE_STAT_READ(from, rec_pages_eviction);
+	to->rec_page_delete += AE_STAT_READ(from, rec_page_delete);
 	to->rec_split_stashed_bytes +=
-	    WT_STAT_READ(from, rec_split_stashed_bytes);
+	    AE_STAT_READ(from, rec_split_stashed_bytes);
 	to->rec_split_stashed_objects +=
-	    WT_STAT_READ(from, rec_split_stashed_objects);
-	to->session_cursor_open += WT_STAT_READ(from, session_cursor_open);
-	to->session_open += WT_STAT_READ(from, session_open);
-	to->page_busy_blocked += WT_STAT_READ(from, page_busy_blocked);
+	    AE_STAT_READ(from, rec_split_stashed_objects);
+	to->session_cursor_open += AE_STAT_READ(from, session_cursor_open);
+	to->session_open += AE_STAT_READ(from, session_open);
+	to->page_busy_blocked += AE_STAT_READ(from, page_busy_blocked);
 	to->page_forcible_evict_blocked +=
-	    WT_STAT_READ(from, page_forcible_evict_blocked);
-	to->page_locked_blocked += WT_STAT_READ(from, page_locked_blocked);
-	to->page_read_blocked += WT_STAT_READ(from, page_read_blocked);
-	to->page_sleep += WT_STAT_READ(from, page_sleep);
+	    AE_STAT_READ(from, page_forcible_evict_blocked);
+	to->page_locked_blocked += AE_STAT_READ(from, page_locked_blocked);
+	to->page_read_blocked += AE_STAT_READ(from, page_read_blocked);
+	to->page_sleep += AE_STAT_READ(from, page_sleep);
 	to->txn_snapshots_created +=
-	    WT_STAT_READ(from, txn_snapshots_created);
+	    AE_STAT_READ(from, txn_snapshots_created);
 	to->txn_snapshots_dropped +=
-	    WT_STAT_READ(from, txn_snapshots_dropped);
-	to->txn_begin += WT_STAT_READ(from, txn_begin);
+	    AE_STAT_READ(from, txn_snapshots_dropped);
+	to->txn_begin += AE_STAT_READ(from, txn_begin);
 	to->txn_checkpoint_running +=
-	    WT_STAT_READ(from, txn_checkpoint_running);
+	    AE_STAT_READ(from, txn_checkpoint_running);
 	to->txn_checkpoint_generation +=
-	    WT_STAT_READ(from, txn_checkpoint_generation);
+	    AE_STAT_READ(from, txn_checkpoint_generation);
 	to->txn_checkpoint_time_max +=
-	    WT_STAT_READ(from, txn_checkpoint_time_max);
+	    AE_STAT_READ(from, txn_checkpoint_time_max);
 	to->txn_checkpoint_time_min +=
-	    WT_STAT_READ(from, txn_checkpoint_time_min);
+	    AE_STAT_READ(from, txn_checkpoint_time_min);
 	to->txn_checkpoint_time_recent +=
-	    WT_STAT_READ(from, txn_checkpoint_time_recent);
+	    AE_STAT_READ(from, txn_checkpoint_time_recent);
 	to->txn_checkpoint_time_total +=
-	    WT_STAT_READ(from, txn_checkpoint_time_total);
-	to->txn_checkpoint += WT_STAT_READ(from, txn_checkpoint);
-	to->txn_fail_cache += WT_STAT_READ(from, txn_fail_cache);
-	to->txn_pinned_range += WT_STAT_READ(from, txn_pinned_range);
+	    AE_STAT_READ(from, txn_checkpoint_time_total);
+	to->txn_checkpoint += AE_STAT_READ(from, txn_checkpoint);
+	to->txn_fail_cache += AE_STAT_READ(from, txn_fail_cache);
+	to->txn_pinned_range += AE_STAT_READ(from, txn_pinned_range);
 	to->txn_pinned_checkpoint_range +=
-	    WT_STAT_READ(from, txn_pinned_checkpoint_range);
+	    AE_STAT_READ(from, txn_pinned_checkpoint_range);
 	to->txn_pinned_snapshot_range +=
-	    WT_STAT_READ(from, txn_pinned_snapshot_range);
-	to->txn_sync += WT_STAT_READ(from, txn_sync);
-	to->txn_commit += WT_STAT_READ(from, txn_commit);
-	to->txn_rollback += WT_STAT_READ(from, txn_rollback);
+	    AE_STAT_READ(from, txn_pinned_snapshot_range);
+	to->txn_sync += AE_STAT_READ(from, txn_sync);
+	to->txn_commit += AE_STAT_READ(from, txn_commit);
+	to->txn_rollback += AE_STAT_READ(from, txn_rollback);
 }
 
 static const char * const __stats_join_desc[] = {
@@ -1077,21 +1077,21 @@ static const char * const __stats_join_desc[] = {
 };
 
 int
-__wt_stat_join_desc(WT_CURSOR_STAT *cst, int slot, const char **p)
+__ae_stat_join_desc(AE_CURSOR_STAT *cst, int slot, const char **p)
 {
-	WT_UNUSED(cst);
+	AE_UNUSED(cst);
 	*p = __stats_join_desc[slot];
 	return (0);
 }
 
 void
-__wt_stat_join_init_single(WT_JOIN_STATS *stats)
+__ae_stat_join_init_single(AE_JOIN_STATS *stats)
 {
 	memset(stats, 0, sizeof(*stats));
 }
 
 void
-__wt_stat_join_clear_single(WT_JOIN_STATS *stats)
+__ae_stat_join_clear_single(AE_JOIN_STATS *stats)
 {
 	stats->accesses = 0;
 	stats->actual_count = 0;
@@ -1099,19 +1099,19 @@ __wt_stat_join_clear_single(WT_JOIN_STATS *stats)
 }
 
 void
-__wt_stat_join_clear_all(WT_JOIN_STATS **stats)
+__ae_stat_join_clear_all(AE_JOIN_STATS **stats)
 {
 	u_int i;
 
-	for (i = 0; i < WT_COUNTER_SLOTS; ++i)
-		__wt_stat_join_clear_single(stats[i]);
+	for (i = 0; i < AE_COUNTER_SLOTS; ++i)
+		__ae_stat_join_clear_single(stats[i]);
 }
 
 void
-__wt_stat_join_aggregate(
-    WT_JOIN_STATS **from, WT_JOIN_STATS *to)
+__ae_stat_join_aggregate(
+    AE_JOIN_STATS **from, AE_JOIN_STATS *to)
 {
-	to->accesses += WT_STAT_READ(from, accesses);
-	to->actual_count += WT_STAT_READ(from, actual_count);
-	to->bloom_false_positive += WT_STAT_READ(from, bloom_false_positive);
+	to->accesses += AE_STAT_READ(from, accesses);
+	to->actual_count += AE_STAT_READ(from, actual_count);
+	to->bloom_false_positive += AE_STAT_READ(from, bloom_false_positive);
 }

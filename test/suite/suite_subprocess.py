@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Public Domain 2014-2015 MongoDB, Inc.
-# Public Domain 2008-2014 WiredTiger, Inc.
+# Public Domain 2008-2014 ArchEngine, Inc.
 #
 # This is free and unencumbered software released into the public domain.
 #
@@ -27,18 +27,18 @@
 # OTHER DEALINGS IN THE SOFTWARE.
 
 import os, subprocess
-from run import wt_builddir
+from run import ae_builddir
 
 # suite_subprocess.py
 #    Run a subprocess within the test suite
-# Used as a 'mixin' class along with a WiredTigerTestCase class
+# Used as a 'mixin' class along with a ArchEngineTestCase class
 class suite_subprocess:
     subproc = None
 
     def has_error_in_file(self, filename):
         """
         Return whether the file contains 'ERROR'.
-        WT utilities issue a 'WT_ERROR' output string upon error.
+        AE utilities issue a 'AE_ERROR' output string upon error.
         """
         with open(filename, 'r') as f:
             for line in f:
@@ -49,7 +49,7 @@ class suite_subprocess:
     def check_no_error_in_file(self, filename, match='ERROR'):
         """
         Raise an error and show output context if the file contains 'ERROR'.
-        WT utilities issue a 'WT_ERROR' output string upon error.
+        AE utilities issue a 'AE_ERROR' output string upon error.
         """
         lines = []
         hasError = False
@@ -117,22 +117,22 @@ class suite_subprocess:
             print 'ERROR: ' + filename + ' should not be empty (this command expected error output)'
         self.assertNotEqual(filesize, 0, filename + ': expected to not be empty')
 
-    def runWt(self, args, infilename=None, outfilename=None, errfilename=None, reopensession=True):
+    def runAe(self, args, infilename=None, outfilename=None, errfilename=None, reopensession=True):
         """
-        Run the 'wt' process
+        Run the 'ae' process
         """
 
         # we close the connection to guarantee everything is
         # flushed, and that we can open it from another process
         self.close_conn()
 
-        wtoutname = outfilename or "wt.out"
-        wterrname = errfilename or "wt.err"
-        with open(wterrname, "w") as wterr:
-            with open(wtoutname, "w") as wtout:
-                procargs = [os.path.join(wt_builddir, "wt")]
+        aeoutname = outfilename or "ae.out"
+        aeerrname = errfilename or "ae.err"
+        with open(aeerrname, "w") as aeerr:
+            with open(aeoutname, "w") as aeout:
+                procargs = [os.path.join(ae_builddir, "ae")]
                 if self._gdbSubprocess:
-                    procargs = [os.path.join(wt_builddir, "libtool"),
+                    procargs = [os.path.join(ae_builddir, "libtool"),
                                 "--mode=execute", "gdb", "--args"] + procargs
                 procargs.extend(args)
                 if self._gdbSubprocess:
@@ -141,18 +141,18 @@ class suite_subprocess:
                         infilepart = "<" + infilename + " "
                     print str(procargs)
                     print "*********************************************"
-                    print "**** Run 'wt' via: run " + " ".join(procargs[3:]) + infilepart + ">" + wtoutname + " 2>" + wterrname
+                    print "**** Run 'ae' via: run " + " ".join(procargs[3:]) + infilepart + ">" + aeoutname + " 2>" + aeerrname
                     print "*********************************************"
                     subprocess.call(procargs)
                 elif infilename:
-                    with open(infilename, "r") as wtin:
-                        subprocess.call(procargs, stdin=wtin, stdout=wtout, stderr=wterr)
+                    with open(infilename, "r") as aein:
+                        subprocess.call(procargs, stdin=aein, stdout=aeout, stderr=aeerr)
                 else:
-                    subprocess.call(procargs, stdout=wtout, stderr=wterr)
+                    subprocess.call(procargs, stdout=aeout, stderr=aeerr)
         if errfilename == None:
-            self.check_empty_file(wterrname)
+            self.check_empty_file(aeerrname)
         if outfilename == None:
-            self.check_empty_file(wtoutname)
+            self.check_empty_file(aeoutname)
 
         # Reestablish the connection if needed
         if reopensession:

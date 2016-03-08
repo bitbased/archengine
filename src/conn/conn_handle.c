@@ -1,26 +1,26 @@
 /*-
  * Copyright (c) 2014-2015 MongoDB, Inc.
- * Copyright (c) 2008-2014 WiredTiger, Inc.
+ * Copyright (c) 2008-2014 ArchEngine, Inc.
  *	All rights reserved.
  *
  * See the file LICENSE for redistribution information.
  */
 
-#include "wt_internal.h"
+#include "ae_internal.h"
 
 /*
- * __wt_connection_init --
- *	Structure initialization for a just-created WT_CONNECTION_IMPL handle.
+ * __ae_connection_init --
+ *	Structure initialization for a just-created AE_CONNECTION_IMPL handle.
  */
 int
-__wt_connection_init(WT_CONNECTION_IMPL *conn)
+__ae_connection_init(AE_CONNECTION_IMPL *conn)
 {
-	WT_SESSION_IMPL *session;
+	AE_SESSION_IMPL *session;
 	u_int i;
 
 	session = conn->default_session;
 
-	for (i = 0; i < WT_HASH_ARRAY_SIZE; i++) {
+	for (i = 0; i < AE_HASH_ARRAY_SIZE; i++) {
 		TAILQ_INIT(&conn->dhhash[i]);	/* Data handle hash lists */
 		TAILQ_INIT(&conn->fhhash[i]);	/* File handle hash lists */
 	}
@@ -34,7 +34,7 @@ __wt_connection_init(WT_CONNECTION_IMPL *conn)
 	TAILQ_INIT(&conn->encryptqh);		/* Encryptor list */
 	TAILQ_INIT(&conn->extractorqh);		/* Extractor list */
 
-	TAILQ_INIT(&conn->lsmqh);		/* WT_LSM_TREE list */
+	TAILQ_INIT(&conn->lsmqh);		/* AE_LSM_TREE list */
 
 	/* Setup the LSM work queues. */
 	TAILQ_INIT(&conn->lsm_manager.switchqh);
@@ -42,39 +42,39 @@ __wt_connection_init(WT_CONNECTION_IMPL *conn)
 	TAILQ_INIT(&conn->lsm_manager.managerqh);
 
 	/* Configuration. */
-	WT_RET(__wt_conn_config_init(session));
+	AE_RET(__ae_conn_config_init(session));
 
 	/* Statistics. */
-	__wt_stat_connection_init(conn);
+	__ae_stat_connection_init(conn);
 
 	/* Locks. */
-	WT_RET(__wt_spin_init(session, &conn->api_lock, "api"));
-	WT_RET(__wt_spin_init(session, &conn->checkpoint_lock, "checkpoint"));
-	WT_RET(__wt_spin_init(session, &conn->dhandle_lock, "data handle"));
-	WT_RET(__wt_spin_init(session, &conn->encryptor_lock, "encryptor"));
-	WT_RET(__wt_spin_init(session, &conn->fh_lock, "file list"));
-	WT_RET(__wt_rwlock_alloc(session,
+	AE_RET(__ae_spin_init(session, &conn->api_lock, "api"));
+	AE_RET(__ae_spin_init(session, &conn->checkpoint_lock, "checkpoint"));
+	AE_RET(__ae_spin_init(session, &conn->dhandle_lock, "data handle"));
+	AE_RET(__ae_spin_init(session, &conn->encryptor_lock, "encryptor"));
+	AE_RET(__ae_spin_init(session, &conn->fh_lock, "file list"));
+	AE_RET(__ae_rwlock_alloc(session,
 	    &conn->hot_backup_lock, "hot backup"));
-	WT_RET(__wt_spin_init(session, &conn->las_lock, "lookaside table"));
-	WT_RET(__wt_spin_init(session, &conn->reconfig_lock, "reconfigure"));
-	WT_RET(__wt_spin_init(session, &conn->schema_lock, "schema"));
-	WT_RET(__wt_spin_init(session, &conn->table_lock, "table creation"));
-	WT_RET(__wt_spin_init(session, &conn->turtle_lock, "turtle file"));
+	AE_RET(__ae_spin_init(session, &conn->las_lock, "lookaside table"));
+	AE_RET(__ae_spin_init(session, &conn->reconfig_lock, "reconfigure"));
+	AE_RET(__ae_spin_init(session, &conn->schema_lock, "schema"));
+	AE_RET(__ae_spin_init(session, &conn->table_lock, "table creation"));
+	AE_RET(__ae_spin_init(session, &conn->turtle_lock, "turtle file"));
 
-	WT_RET(__wt_calloc_def(session, WT_PAGE_LOCKS, &conn->page_lock));
-	WT_CACHE_LINE_ALIGNMENT_VERIFY(session, conn->page_lock);
-	for (i = 0; i < WT_PAGE_LOCKS; ++i)
-		WT_RET(
-		    __wt_spin_init(session, &conn->page_lock[i], "btree page"));
+	AE_RET(__ae_calloc_def(session, AE_PAGE_LOCKS, &conn->page_lock));
+	AE_CACHE_LINE_ALIGNMENT_VERIFY(session, conn->page_lock);
+	for (i = 0; i < AE_PAGE_LOCKS; ++i)
+		AE_RET(
+		    __ae_spin_init(session, &conn->page_lock[i], "btree page"));
 
 	/* Setup the spin locks for the LSM manager queues. */
-	WT_RET(__wt_spin_init(session,
+	AE_RET(__ae_spin_init(session,
 	    &conn->lsm_manager.app_lock, "LSM application queue lock"));
-	WT_RET(__wt_spin_init(session,
+	AE_RET(__ae_spin_init(session,
 	    &conn->lsm_manager.manager_lock, "LSM manager queue lock"));
-	WT_RET(__wt_spin_init(
+	AE_RET(__ae_spin_init(
 	    session, &conn->lsm_manager.switch_lock, "LSM switch queue lock"));
-	WT_RET(__wt_cond_alloc(
+	AE_RET(__ae_cond_alloc(
 	    session, "LSM worker cond", false, &conn->lsm_manager.work_cond));
 
 	/*
@@ -93,8 +93,8 @@ __wt_connection_init(WT_CONNECTION_IMPL *conn)
 	 * If there's ever a second block manager, we'll want to make this
 	 * more opaque, but for now this is simpler.
 	 */
-	WT_RET(__wt_spin_init(session, &conn->block_lock, "block manager"));
-	for (i = 0; i < WT_HASH_ARRAY_SIZE; i++)
+	AE_RET(__ae_spin_init(session, &conn->block_lock, "block manager"));
+	for (i = 0; i < AE_HASH_ARRAY_SIZE; i++)
 		TAILQ_INIT(&conn->blockhash[i]);/* Block handle hash lists */
 	TAILQ_INIT(&conn->blockqh);		/* Block manager list */
 
@@ -102,14 +102,14 @@ __wt_connection_init(WT_CONNECTION_IMPL *conn)
 }
 
 /*
- * __wt_connection_destroy --
- *	Destroy the connection's underlying WT_CONNECTION_IMPL structure.
+ * __ae_connection_destroy --
+ *	Destroy the connection's underlying AE_CONNECTION_IMPL structure.
  */
 int
-__wt_connection_destroy(WT_CONNECTION_IMPL *conn)
+__ae_connection_destroy(AE_CONNECTION_IMPL *conn)
 {
-	WT_DECL_RET;
-	WT_SESSION_IMPL *session;
+	AE_DECL_RET;
+	AE_SESSION_IMPL *session;
 	u_int i;
 
 	/* Check there's something to destroy. */
@@ -123,40 +123,40 @@ __wt_connection_destroy(WT_CONNECTION_IMPL *conn)
 	 * underlying file-close code uses the mutex to guard lists of
 	 * open files.
 	 */
-	WT_TRET(__wt_close(session, &conn->lock_fh));
+	AE_TRET(__ae_close(session, &conn->lock_fh));
 
 	/* Remove from the list of connections. */
-	__wt_spin_lock(session, &__wt_process.spinlock);
-	TAILQ_REMOVE(&__wt_process.connqh, conn, q);
-	__wt_spin_unlock(session, &__wt_process.spinlock);
+	__ae_spin_lock(session, &__ae_process.spinlock);
+	TAILQ_REMOVE(&__ae_process.connqh, conn, q);
+	__ae_spin_unlock(session, &__ae_process.spinlock);
 
 	/* Configuration */
-	__wt_conn_config_discard(session);		/* configuration */
+	__ae_conn_config_discard(session);		/* configuration */
 
-	__wt_conn_foc_discard(session);			/* free-on-close */
+	__ae_conn_foc_discard(session);			/* free-on-close */
 
-	__wt_spin_destroy(session, &conn->api_lock);
-	__wt_spin_destroy(session, &conn->block_lock);
-	__wt_spin_destroy(session, &conn->checkpoint_lock);
-	__wt_spin_destroy(session, &conn->dhandle_lock);
-	__wt_spin_destroy(session, &conn->encryptor_lock);
-	__wt_spin_destroy(session, &conn->fh_lock);
-	WT_TRET(__wt_rwlock_destroy(session, &conn->hot_backup_lock));
-	__wt_spin_destroy(session, &conn->las_lock);
-	__wt_spin_destroy(session, &conn->reconfig_lock);
-	__wt_spin_destroy(session, &conn->schema_lock);
-	__wt_spin_destroy(session, &conn->table_lock);
-	__wt_spin_destroy(session, &conn->turtle_lock);
-	for (i = 0; i < WT_PAGE_LOCKS; ++i)
-		__wt_spin_destroy(session, &conn->page_lock[i]);
-	__wt_free(session, conn->page_lock);
+	__ae_spin_destroy(session, &conn->api_lock);
+	__ae_spin_destroy(session, &conn->block_lock);
+	__ae_spin_destroy(session, &conn->checkpoint_lock);
+	__ae_spin_destroy(session, &conn->dhandle_lock);
+	__ae_spin_destroy(session, &conn->encryptor_lock);
+	__ae_spin_destroy(session, &conn->fh_lock);
+	AE_TRET(__ae_rwlock_destroy(session, &conn->hot_backup_lock));
+	__ae_spin_destroy(session, &conn->las_lock);
+	__ae_spin_destroy(session, &conn->reconfig_lock);
+	__ae_spin_destroy(session, &conn->schema_lock);
+	__ae_spin_destroy(session, &conn->table_lock);
+	__ae_spin_destroy(session, &conn->turtle_lock);
+	for (i = 0; i < AE_PAGE_LOCKS; ++i)
+		__ae_spin_destroy(session, &conn->page_lock[i]);
+	__ae_free(session, conn->page_lock);
 
 	/* Free allocated memory. */
-	__wt_free(session, conn->cfg);
-	__wt_free(session, conn->home);
-	__wt_free(session, conn->error_prefix);
-	__wt_free(session, conn->sessions);
+	__ae_free(session, conn->cfg);
+	__ae_free(session, conn->home);
+	__ae_free(session, conn->error_prefix);
+	__ae_free(session, conn->sessions);
 
-	__wt_free(NULL, conn);
+	__ae_free(NULL, conn);
 	return (ret);
 }

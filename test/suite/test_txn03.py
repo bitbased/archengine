@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Public Domain 2014-2015 MongoDB, Inc.
-# Public Domain 2008-2014 WiredTiger, Inc.
+# Public Domain 2008-2014 ArchEngine, Inc.
 #
 # This is free and unencumbered software released into the public domain.
 #
@@ -30,10 +30,10 @@
 #   Transactions: using multiple cursor and session handles
 #
 
-import wiredtiger, wttest
-from wtscenario import check_scenarios
+import archengine, aetest
+from aescenario import check_scenarios
 
-class test_txn03(wttest.WiredTigerTestCase):
+class test_txn03(aetest.ArchEngineTestCase):
     tablename = 'test_txn03'
     uri1 = 'table:' + tablename + "_1"
     uri2 = 'table:' + tablename + "_2"
@@ -46,9 +46,9 @@ class test_txn03(wttest.WiredTigerTestCase):
         ('var', dict(create_params = "key_format=S,value_format=S")),
     ])
 
-    # Overrides WiredTigerTestCase
+    # Overrides ArchEngineTestCase
     def setUpConnectionOpen(self, dir):
-        conn = wiredtiger.wiredtiger_open(dir, 'create,' +
+        conn = archengine.archengine_open(dir, 'create,' +
                 ('error_prefix="%s: ",' % self.shortid()))
         self.pr(`conn`)
         return conn
@@ -99,4 +99,4 @@ class test_txn03(wttest.WiredTigerTestCase):
         self.session2.rollback_transaction()
 
 if __name__ == '__main__':
-    wttest.run()
+    aetest.run()

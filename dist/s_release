@@ -1,5 +1,5 @@
 #!/bin/sh
-# Build a WiredTiger release package.
+# Build a ArchEngine release package.
 
 set -e
 
@@ -10,9 +10,9 @@ mkdir -p $RELEASE_DIR
 
 pkgver="$1"
 if test -z "$pkgver" ; then
-	pkgver="$WIREDTIGER_VERSION"
+	pkgver="$ARCHENGINE_VERSION"
 fi
-PKG="wiredtiger-$pkgver"
+PKG="archengine-$pkgver"
 DEST="$RELEASE_DIR/$PKG"
 
 rm -rf $DEST ; mkdir -p $DEST
@@ -30,13 +30,13 @@ else
 fi
 
 echo "Running 'dist/s_all' in the release tree"
-(cd "$DEST/dist" && env WT_RELEASE_BUILD=yes sh s_all -A > /dev/null)
+(cd "$DEST/dist" && env AE_RELEASE_BUILD=yes sh s_all -A > /dev/null)
 
 echo "Running swig to generate the Java and Python API"
 (cd "$DEST/build_posix" &&
     ../configure --enable-java --enable-python &&
-    (cd lang/java && make ../../../lang/java/wiredtiger_wrap.c) &&
-    (cd lang/python && make ../../../lang/python/wiredtiger_wrap.c) &&
+    (cd lang/java && make ../../../lang/java/archengine_wrap.c) &&
+    (cd lang/python && make ../../../lang/python/archengine_wrap.c) &&
     make distclean &&
     find . -type d -a -empty | xargs rmdir &&
     find . -type d -a -empty | xargs rmdir &&

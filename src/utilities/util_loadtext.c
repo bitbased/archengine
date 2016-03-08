@@ -1,6 +1,6 @@
 /*-
  * Copyright (c) 2014-2015 MongoDB, Inc.
- * Copyright (c) 2008-2014 WiredTiger, Inc.
+ * Copyright (c) 2008-2014 ArchEngine, Inc.
  *	All rights reserved.
  *
  * See the file LICENSE for redistribution information.
@@ -8,29 +8,29 @@
 
 #include "util.h"
 
-static int insert(WT_CURSOR *, const char *, bool);
-static int text(WT_SESSION *, const char *);
+static int insert(AE_CURSOR *, const char *, bool);
+static int text(AE_SESSION *, const char *);
 static int usage(void);
 
 int
-util_loadtext(WT_SESSION *session, int argc, char *argv[])
+util_loadtext(AE_SESSION *session, int argc, char *argv[])
 {
 	int ch;
 	const char *uri;
 
-	while ((ch = __wt_getopt(progname, argc, argv, "f:")) != EOF)
+	while ((ch = __ae_getopt(progname, argc, argv, "f:")) != EOF)
 		switch (ch) {
 		case 'f':	/* input file */
-			if (freopen(__wt_optarg, "r", stdin) == NULL)
+			if (freopen(__ae_optarg, "r", stdin) == NULL)
 				return (util_err(
-				    session, errno, "%s: reopen", __wt_optarg));
+				    session, errno, "%s: reopen", __ae_optarg));
 			break;
 		case '?':
 		default:
 			return (usage());
 		}
-	argc -= __wt_optind;
-	argv += __wt_optind;
+	argc -= __ae_optind;
+	argv += __ae_optind;
 
 	/* The remaining argument is the uri. */
 	if (argc != 1)
@@ -46,10 +46,10 @@ util_loadtext(WT_SESSION *session, int argc, char *argv[])
  *	Load flat-text into a file/table.
  */
 static int
-text(WT_SESSION *session, const char *uri)
+text(AE_SESSION *session, const char *uri)
 {
-	WT_CURSOR *cursor;
-	WT_DECL_RET;
+	AE_CURSOR *cursor;
+	AE_DECL_RET;
 	int tret;
 	bool readkey;
 
@@ -101,11 +101,11 @@ text(WT_SESSION *session, const char *uri)
  *	Read and insert data.
  */
 static int
-insert(WT_CURSOR *cursor, const char *name, bool readkey)
+insert(AE_CURSOR *cursor, const char *name, bool readkey)
 {
 	ULINE key, value;
-	WT_DECL_RET;
-	WT_SESSION *session;
+	AE_DECL_RET;
+	AE_SESSION *session;
 	uint64_t insert_count;
 	bool eof;
 

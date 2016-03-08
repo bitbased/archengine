@@ -1,12 +1,12 @@
 /*-
  * Copyright (c) 2014-2015 MongoDB, Inc.
- * Copyright (c) 2008-2014 WiredTiger, Inc.
+ * Copyright (c) 2008-2014 ArchEngine, Inc.
  *	All rights reserved.
  *
  * See the file LICENSE for redistribution information.
  */
 
-#include "wt_internal.h"
+#include "ae_internal.h"
 
 static const u_char hex[] = "0123456789abcdef";
 
@@ -30,16 +30,16 @@ __fill_hex(const uint8_t *src, size_t src_max,
 	}
 	*dest++ = '\0';
 	if (lenp != NULL)
-		*lenp = WT_PTRDIFF(dest, dest_orig);
+		*lenp = AE_PTRDIFF(dest, dest_orig);
 }
 
 /*
- * __wt_raw_to_hex --
+ * __ae_raw_to_hex --
  *	Convert a chunk of data to a nul-terminated printable hex string.
  */
 int
-__wt_raw_to_hex(
-    WT_SESSION_IMPL *session, const uint8_t *from, size_t size, WT_ITEM *to)
+__ae_raw_to_hex(
+    AE_SESSION_IMPL *session, const uint8_t *from, size_t size, AE_ITEM *to)
 {
 	size_t len;
 
@@ -47,20 +47,20 @@ __wt_raw_to_hex(
 	 * Every byte takes up 2 spaces, plus a trailing nul byte.
 	 */
 	len = size * 2 + 1;
-	WT_RET(__wt_buf_init(session, to, len));
+	AE_RET(__ae_buf_init(session, to, len));
 
 	__fill_hex(from, size, to->mem, len, &to->size);
 	return (0);
 }
 
 /*
- * __wt_raw_to_esc_hex --
+ * __ae_raw_to_esc_hex --
  *	Convert a chunk of data to a nul-terminated printable string using
  * escaped hex, as necessary.
  */
 int
-__wt_raw_to_esc_hex(
-    WT_SESSION_IMPL *session, const uint8_t *from, size_t size, WT_ITEM *to)
+__ae_raw_to_esc_hex(
+    AE_SESSION_IMPL *session, const uint8_t *from, size_t size, AE_ITEM *to)
 {
 	size_t i;
 	const uint8_t *p;
@@ -70,7 +70,7 @@ __wt_raw_to_esc_hex(
 	 * In the worst case, every character takes up 3 spaces, plus a
 	 * trailing nul byte.
 	 */
-	WT_RET(__wt_buf_init(session, to, size * 3 + 1));
+	AE_RET(__ae_buf_init(session, to, size * 3 + 1));
 
 	/*
 	 * In the worst case, every character takes up 3 spaces, plus a
@@ -87,16 +87,16 @@ __wt_raw_to_esc_hex(
 			*t++ = hex[*p & 0x0f];
 		}
 	*t++ = '\0';
-	to->size = WT_PTRDIFF(t, to->mem);
+	to->size = AE_PTRDIFF(t, to->mem);
 	return (0);
 }
 
 /*
- * __wt_hex2byte --
+ * __ae_hex2byte --
  *	Convert a pair of hex characters into a byte.
  */
 int
-__wt_hex2byte(const u_char *from, u_char *to)
+__ae_hex2byte(const u_char *from, u_char *to)
 {
 	uint8_t byte;
 
@@ -150,28 +150,28 @@ __wt_hex2byte(const u_char *from, u_char *to)
  *	Hex format error message.
  */
 static int
-__hex_fmterr(WT_SESSION_IMPL *session)
+__hex_fmterr(AE_SESSION_IMPL *session)
 {
-	WT_RET_MSG(session, EINVAL, "Invalid format in hexadecimal string");
+	AE_RET_MSG(session, EINVAL, "Invalid format in hexadecimal string");
 }
 
 /*
- * __wt_hex_to_raw --
+ * __ae_hex_to_raw --
  *	Convert a nul-terminated printable hex string to a chunk of data.
  */
 int
-__wt_hex_to_raw(WT_SESSION_IMPL *session, const char *from, WT_ITEM *to)
+__ae_hex_to_raw(AE_SESSION_IMPL *session, const char *from, AE_ITEM *to)
 {
-	return (__wt_nhex_to_raw(session, from, strlen(from), to));
+	return (__ae_nhex_to_raw(session, from, strlen(from), to));
 }
 
 /*
- * __wt_nhex_to_raw --
+ * __ae_nhex_to_raw --
  *	Convert a printable hex string to a chunk of data.
  */
 int
-__wt_nhex_to_raw(
-    WT_SESSION_IMPL *session, const char *from, size_t size, WT_ITEM *to)
+__ae_nhex_to_raw(
+    AE_SESSION_IMPL *session, const char *from, size_t size, AE_ITEM *to)
 {
 	const u_char *p;
 	u_char *t;
@@ -179,38 +179,38 @@ __wt_nhex_to_raw(
 	if (size % 2 != 0)
 		return (__hex_fmterr(session));
 
-	WT_RET(__wt_buf_init(session, to, size / 2));
+	AE_RET(__ae_buf_init(session, to, size / 2));
 
 	for (p = (u_char *)from, t = to->mem; size > 0; p += 2, size -= 2, ++t)
-		if (__wt_hex2byte(p, t))
+		if (__ae_hex2byte(p, t))
 			return (__hex_fmterr(session));
 
-	to->size = WT_PTRDIFF(t, to->mem);
+	to->size = AE_PTRDIFF(t, to->mem);
 	return (0);
 }
 
 /*
- * __wt_esc_hex_to_raw --
+ * __ae_esc_hex_to_raw --
  *	Convert a printable string, encoded in escaped hex, to a chunk of data.
  */
 int
-__wt_esc_hex_to_raw(WT_SESSION_IMPL *session, const char *from, WT_ITEM *to)
+__ae_esc_hex_to_raw(AE_SESSION_IMPL *session, const char *from, AE_ITEM *to)
 {
 	const u_char *p;
 	u_char *t;
 
-	WT_RET(__wt_buf_init(session, to, strlen(from)));
+	AE_RET(__ae_buf_init(session, to, strlen(from)));
 
 	for (p = (u_char *)from, t = to->mem; *p != '\0'; ++p, ++t) {
 		if ((*t = *p) != '\\')
 			continue;
 		++p;
 		if (p[0] != '\\') {
-			if (p[0] == '\0' || p[1] == '\0' || __wt_hex2byte(p, t))
+			if (p[0] == '\0' || p[1] == '\0' || __ae_hex2byte(p, t))
 				return (__hex_fmterr(session));
 			++p;
 		}
 	}
-	to->size = WT_PTRDIFF(t, to->mem);
+	to->size = AE_PTRDIFF(t, to->mem);
 	return (0);
 }

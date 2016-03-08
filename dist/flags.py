@@ -169,12 +169,12 @@ for f in sorted(flag_cnt.items(), key = lambda k_v : (-k_v[1], k_v[0])):
 #    Assumes tab stops set to 8 characters.
 flag_info = ''
 for f in sorted(flag_cnt.items()):
-    flag_info += "#define\tWT_%s%s%#010x\n" %\
+    flag_info += "#define\tAE_%s%s%#010x\n" %\
         (f[0],\
-        "\t" * max(1, 6 - int((len('WT_') + len(f[0])) / 8)),\
+        "\t" * max(1, 6 - int((len('AE_') + len(f[0])) / 8)),\
         flag_bit[f[0]])
 
-# Update the wiredtiger.in file with the flags information.
+# Update the archengine.in file with the flags information.
 tmp_file = '__tmp'
 tfile = open(tmp_file, 'w')
 skip = 0

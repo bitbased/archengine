@@ -1,6 +1,6 @@
 /*
  * Public Domain 2014-2015 MongoDB, Inc.
- * Public Domain 2008-2014 WiredTiger, Inc.
+ * Public Domain 2008-2014 ArchEngine, Inc.
  *
  * This is free and unencumbered software released into the public domain.
  *
@@ -40,9 +40,9 @@
 #define	snprintf _snprintf
 #endif
 
-#include <wiredtiger.h>
+#include <archengine.h>
 
-static const char *home = "WT_HOME";
+static const char *home = "AE_HOME";
 
 static const char * const uri = "table:test";
 
@@ -52,9 +52,9 @@ static const char * const uri = "table:test";
 int
 main(void)
 {
-	WT_CONNECTION *wt_conn;
-	WT_CURSOR *cursor;
-	WT_SESSION *session;
+	AE_CONNECTION *ae_conn;
+	AE_CURSOR *cursor;
+	AE_SESSION *session;
 	int i, record_count, ret;
 	char cmd_buf[256], k[16], v[16];
 	const char *conf;
@@ -65,13 +65,13 @@ main(void)
 		fprintf(stderr, "%s: failed ret %d\n", cmd_buf, ret);
 		return (ret);
 	}
-	if ((ret = wiredtiger_open(home, NULL, CONN_CONFIG, &wt_conn)) != 0) {
+	if ((ret = archengine_open(home, NULL, CONN_CONFIG, &ae_conn)) != 0) {
 		fprintf(stderr, "Error connecting to %s: %s\n",
-		    home, wiredtiger_strerror(ret));
+		    home, archengine_strerror(ret));
 		return (ret);
 	}
 
-	ret = wt_conn->open_session(wt_conn, NULL, NULL, &session);
+	ret = ae_conn->open_session(ae_conn, NULL, NULL, &session);
 	ret = session->create(session, uri, "key_format=S,value_format=S");
 
 	ret = session->open_cursor(session, uri, NULL, NULL, &cursor);
@@ -123,7 +123,7 @@ main(void)
 	ret = session->transaction_sync(session, "timeout_ms=0");
 	if (ret != 0)
 		fprintf(stderr,
-		    "Unexpected error %d from WT_SESSION::transaction_sync\n",
+		    "Unexpected error %d from AE_SESSION::transaction_sync\n",
 		    ret);
 	/*
 	 * Demonstrate using log_flush to force the log to disk.
@@ -148,6 +148,6 @@ main(void)
 	ret = session->log_flush(session, "sync=off");
 	ret = session->log_flush(session, "sync=on");
 
-	ret = wt_conn->close(wt_conn, NULL);
+	ret = ae_conn->close(ae_conn, NULL);
 	return (ret);
 }

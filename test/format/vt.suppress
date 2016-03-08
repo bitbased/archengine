@@ -5,11 +5,11 @@
    obj:/libexec/ld-elf.so.1
    obj:/libexec/ld-elf.so.1
    fun:dlopen
-   fun:__wt_dlopen
+   fun:__ae_dlopen
    fun:__conn_load_extension
-   fun:wiredtiger_open
-   fun:wts_open
-   fun:wts_startup
+   fun:archengine_open
+   fun:aes_open
+   fun:aes_startup
    fun:main
 }
 {
@@ -20,11 +20,11 @@
    obj:/libexec/ld-elf.so.1
    obj:/libexec/ld-elf.so.1
    fun:dlopen
-   fun:__wt_dlopen
+   fun:__ae_dlopen
    fun:__conn_load_extension
-   fun:wiredtiger_open
-   fun:wts_open
-   fun:wts_startup
+   fun:archengine_open
+   fun:aes_open
+   fun:aes_startup
    fun:main
 }
 {

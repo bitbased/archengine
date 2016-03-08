@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Public Domain 2014-2015 MongoDB, Inc.
-# Public Domain 2008-2014 WiredTiger, Inc.
+# Public Domain 2008-2014 ArchEngine, Inc.
 #
 # This is free and unencumbered software released into the public domain.
 #
@@ -27,11 +27,11 @@
 # OTHER DEALINGS IN THE SOFTWARE.
 
 import os
-import wiredtiger, wttest
+import archengine, aetest
 
 # test_config02.py
-#    The home directory for wiredtiger_open
-class test_config02(wttest.WiredTigerTestCase):
+#    The home directory for archengine_open
+class test_config02(aetest.ArchEngineTestCase):
     table_name1 = 'test_config02'
     nentries = 100
 
@@ -62,31 +62,31 @@ class test_config02(wttest.WiredTigerTestCase):
         cursor.close()
 
     def checkfiles(self, dirname):
-        self.assertTrue(os.path.exists(dirname + os.sep + self.table_name1 + ".wt"))
+        self.assertTrue(os.path.exists(dirname + os.sep + self.table_name1 + ".ae"))
 
     def checknofiles(self, dirname):
         self.assertEqual(len(os.listdir(dirname)), 0)
 
     def common_test(self, homearg, homeenv, configextra):
         """
-        Call wiredtiger_open and run a simple test.
-        homearg is the first arg to wiredtiger_open, it may be null.
-        WIREDTIGER_HOME is set to homeenv, if it is not null.
+        Call archengine_open and run a simple test.
+        homearg is the first arg to archengine_open, it may be null.
+        ARCHENGINE_HOME is set to homeenv, if it is not null.
         configextra are any extra configuration strings needed on the open.
         """
         configarg = 'create'
         if configextra != None:
             configarg += ',' + configextra
         if homeenv == None:
-            os.unsetenv('WIREDTIGER_HOME')
+            os.unsetenv('ARCHENGINE_HOME')
         else:
-            os.putenv('WIREDTIGER_HOME', homeenv)
+            os.putenv('ARCHENGINE_HOME', homeenv)
         try:
-            self.conn = wiredtiger.wiredtiger_open(homearg, configarg)
+            self.conn = archengine.archengine_open(homearg, configarg)
             self.session = self.conn.open_session(None)
             self.populate_and_check()
         finally:
-            os.unsetenv('WIREDTIGER_HOME')
+            os.unsetenv('ARCHENGINE_HOME')
 
     def test_home_nohome(self):
         self.common_test(None, None, None)
@@ -143,8 +143,8 @@ class test_config02(wttest.WiredTigerTestCase):
 
     def test_home_does_not_exist(self):
         dir = 'nondir'
-        self.assertRaisesWithMessage(wiredtiger.WiredTigerError,
-            lambda: wiredtiger.wiredtiger_open(dir, 'create'),
+        self.assertRaisesWithMessage(archengine.ArchEngineError,
+            lambda: archengine.archengine_open(dir, 'create'),
             '/(No such file or directory|The system cannot find the path specified)/')
 
     def test_home_not_writeable(self):
@@ -153,9 +153,9 @@ class test_config02(wttest.WiredTigerTestCase):
         dir = 'subdir'
         os.mkdir(dir)
         os.chmod(dir, 0555)
-        self.assertRaisesWithMessage(wiredtiger.WiredTigerError,
-            lambda: wiredtiger.wiredtiger_open(dir, 'create'),
+        self.assertRaisesWithMessage(archengine.ArchEngineError,
+            lambda: archengine.archengine_open(dir, 'create'),
             '/Permission denied/')
 
 if __name__ == '__main__':
-    wttest.run()
+    aetest.run()

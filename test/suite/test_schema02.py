@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Public Domain 2014-2015 MongoDB, Inc.
-# Public Domain 2008-2014 WiredTiger, Inc.
+# Public Domain 2008-2014 ArchEngine, Inc.
 #
 # This is free and unencumbered software released into the public domain.
 #
@@ -26,12 +26,12 @@
 # ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 # OTHER DEALINGS IN THE SOFTWARE.
 
-import wiredtiger, wttest
-from wtscenario import check_scenarios
+import archengine, aetest
+from aescenario import check_scenarios
 
 # test_schema02.py
 #    Columns, column groups, indexes
-class test_schema02(wttest.WiredTigerTestCase):
+class test_schema02(aetest.ArchEngineTestCase):
     """
     Test basic operations
     """
@@ -43,16 +43,16 @@ class test_schema02(wttest.WiredTigerTestCase):
     ])
 
     def expect_failure_colgroup(self, name, configstr, match):
-        self.assertRaisesWithMessage(wiredtiger.WiredTigerError,
+        self.assertRaisesWithMessage(archengine.ArchEngineError,
             lambda:self.session.create("colgroup:" + name, configstr), match)
 
     def test_colgroup_after_failure(self):
         # bogus formats
-        self.assertRaisesWithMessage(wiredtiger.WiredTigerError,
+        self.assertRaisesWithMessage(archengine.ArchEngineError,
             lambda:self.session.create("table:main",
                                        "key_format=Z,value_format=S"),
             "/Invalid type 'Z' found in format 'Z'/")
-        self.assertRaisesWithMessage(wiredtiger.WiredTigerError,
+        self.assertRaisesWithMessage(archengine.ArchEngineError,
             lambda:self.session.create("table:main",
                                        "key_format=S,value_format=Z"),
             "/Invalid type 'Z' found in format 'Z'/")
@@ -64,7 +64,7 @@ class test_schema02(wttest.WiredTigerTestCase):
 
     def test_colgroup_failures(self):
         # too many columns
-        self.assertRaisesWithMessage(wiredtiger.WiredTigerError,
+        self.assertRaisesWithMessage(archengine.ArchEngineError,
             lambda:self.session.create("table:main", "key_format=S,"
                                        "value_format=,columns=(a,b)"),
             "/Number of columns in '\(a,b\)' does not match "
@@ -277,4 +277,4 @@ class test_schema02(wttest.WiredTigerTestCase):
 
 
 if __name__ == '__main__':
-    wttest.run()
+    aetest.run()

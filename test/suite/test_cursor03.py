@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Public Domain 2014-2015 MongoDB, Inc.
-# Public Domain 2008-2014 WiredTiger, Inc.
+# Public Domain 2008-2014 ArchEngine, Inc.
 #
 # This is free and unencumbered software released into the public domain.
 #
@@ -26,9 +26,9 @@
 # ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 # OTHER DEALINGS IN THE SOFTWARE.
 
-import wiredtiger
+import archengine
 from test_cursor_tracker import TestCursorTracker
-from wtscenario import multiply_scenarios
+from aescenario import multiply_scenarios
 
 # test_cursor03.py
 #    Cursor operations on tables of various sizes, with key/values of various
@@ -117,4 +117,4 @@ class test_cursor03(TestCursorTracker):
         cursor.close()
 
 if __name__ == '__main__':
-    wttest.run()
+    aetest.run()

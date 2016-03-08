@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Public Domain 2014-2015 MongoDB, Inc.
-# Public Domain 2008-2014 WiredTiger, Inc.
+# Public Domain 2008-2014 ArchEngine, Inc.
 #
 # This is free and unencumbered software released into the public domain.
 #
@@ -35,12 +35,12 @@
 
 import fnmatch, os, shutil, time
 from suite_subprocess import suite_subprocess
-from wiredtiger import wiredtiger_open
-from wtscenario import multiply_scenarios, number_scenarios, prune_scenarios
-from helper import copy_wiredtiger_home
-import wttest
+from archengine import archengine_open
+from aescenario import multiply_scenarios, number_scenarios, prune_scenarios
+from helper import copy_archengine_home
+import aetest
 
-class test_backup05(wttest.WiredTigerTestCase, suite_subprocess):
+class test_backup05(aetest.ArchEngineTestCase, suite_subprocess):
     uri = 'table:test_backup05'
     create_params = 'key_format=i,value_format=i'
     freq = 5
@@ -50,7 +50,7 @@ class test_backup05(wttest.WiredTigerTestCase, suite_subprocess):
         for fname in os.listdir(olddir):
             fullname = os.path.join(olddir, fname)
             # Skip lock file on Windows since it is locked
-            if os.path.isfile(fullname) and "WiredTiger.lock" not in fullname:
+            if os.path.isfile(fullname) and "ArchEngine.lock" not in fullname:
                 shutil.copy(fullname, newdir)
 
     def check_manual_backup(self, i, olddir, newdir):
@@ -61,7 +61,7 @@ class test_backup05(wttest.WiredTigerTestCase, suite_subprocess):
         # With the connection still open, copy files to new directory.
         # Half the time use an unaligned copy.
         aligned = (i % (self.freq * 2) != 0) or os.name == "nt"
-        copy_wiredtiger_home(olddir, newdir, aligned)
+        copy_archengine_home(olddir, newdir, aligned)
 
         # Now simulate fsyncUnlock by closing the backup cursor.
         cbkup.close()
@@ -97,4 +97,4 @@ class test_backup05(wttest.WiredTigerTestCase, suite_subprocess):
                 self.session.verify(self.uri)
 
 if __name__ == '__main__':
-    wttest.run()
+    aetest.run()

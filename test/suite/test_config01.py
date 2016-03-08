@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Public Domain 2014-2015 MongoDB, Inc.
-# Public Domain 2008-2014 WiredTiger, Inc.
+# Public Domain 2008-2014 ArchEngine, Inc.
 #
 # This is free and unencumbered software released into the public domain.
 #
@@ -26,24 +26,24 @@
 # ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 # OTHER DEALINGS IN THE SOFTWARE.
 
-import wiredtiger, wtscenario, wttest
+import archengine, aescenario, aetest
 import test_base03
 
 # test_config01.py
-#    Configuration strings for wiredtiger_open
+#    Configuration strings for archengine_open
 class test_config01(test_base03.test_base03):
-    scenarios = wtscenario.wtscenario.session_create_scenario()
+    scenarios = aescenario.aescenario.session_create_scenario()
 
     def config_string(self):
         return self.session_create_scenario.configString()
 
     def setUpConnectionOpen(self, dir):
-        wtopen_args = 'create'
+        aeopen_args = 'create'
         if hasattr(self, 'cache_size'):
-            wtopen_args += ',cache_size=' + str(self.cache_size)
-        conn = wiredtiger.wiredtiger_open(dir, wtopen_args)
+            aeopen_args += ',cache_size=' + str(self.cache_size)
+        conn = archengine.archengine_open(dir, aeopen_args)
         self.pr(`conn`)
         return conn
 
 if __name__ == '__main__':
-    wttest.run()
+    aetest.run()

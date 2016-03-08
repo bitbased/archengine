@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Public Domain 2014-2015 MongoDB, Inc.
-# Public Domain 2008-2014 WiredTiger, Inc.
+# Public Domain 2008-2014 ArchEngine, Inc.
 #
 # This is free and unencumbered software released into the public domain.
 #
@@ -27,15 +27,15 @@
 # OTHER DEALINGS IN THE SOFTWARE.
 
 import os, json
-import wiredtiger, wttest
+import archengine, aetest
 from helper import \
     complex_populate, complex_populate_check_cursor,\
     simple_populate, simple_populate_check_cursor
 from suite_subprocess import suite_subprocess
-from wtscenario import multiply_scenarios, number_scenarios
+from aescenario import multiply_scenarios, number_scenarios
 
 # A 'fake' cursor based on a set of rows.
-# It emulates a WT cursor well enough for the *_check_cursor methods.
+# It emulates a AE cursor well enough for the *_check_cursor methods.
 # They just need an iterable object.
 class FakeCursor:
     def __init__(self, keyfmt, valuefmt, rows):
@@ -64,9 +64,9 @@ class FakeCursor:
             return tup
 
 # test_jsondump.py
-#    Utilities: wt dump
+#    Utilities: ae dump
 # Test the dump utility with the -j option.
-class test_jsondump01(wttest.WiredTigerTestCase, suite_subprocess):
+class test_jsondump01(aetest.ArchEngineTestCase, suite_subprocess):
     name = 'test_jsondump01'
     name2 = 'test_jsondump01b'
     nentries = 2500
@@ -100,7 +100,7 @@ class test_jsondump01(wttest.WiredTigerTestCase, suite_subprocess):
         self.populate(self, uri, 'key_format=' + self.keyfmt, self.nentries)
 
         # Dump the object.
-        self.runWt(['dump', '-j', uri], outfilename='jsondump.out')
+        self.runAe(['dump', '-j', uri], outfilename='jsondump.out')
 
         # Load it using python's built-in JSON
         dumpin = open('jsondump.out')
@@ -117,7 +117,7 @@ class test_jsondump01(wttest.WiredTigerTestCase, suite_subprocess):
             self.assertEqual(d['value0'], '25: abcdefghijklmnopqrstuvwxyz')
 
         # check the contents of the data we read.
-        # we only use a wt cursor to get the key_format/value_format.
+        # we only use a ae cursor to get the key_format/value_format.
         cursor = self.session.open_cursor(uri, None)
         fake = FakeCursor(cursor.key_format, cursor.value_format, data)
         cursor.close()
@@ -131,16 +131,16 @@ class test_jsondump01(wttest.WiredTigerTestCase, suite_subprocess):
         self.populate(self, uri, 'key_format=' + self.keyfmt, self.nentries)
 
         # Dump the object.
-        self.runWt(['dump', '-j', uri], outfilename='jsondump.out')
+        self.runAe(['dump', '-j', uri], outfilename='jsondump.out')
 
         loadcmd = ['load', '-jf', 'jsondump.out', '-r', self.name2]
         if self.keyfmt == 'r':
             loadcmd.append('-a')
-        self.runWt(loadcmd)
+        self.runAe(loadcmd)
 
         # check the contents of the data we read.
         cursor = self.session.open_cursor(uri2, None)
         self.populate_check(self, cursor, self.nentries)
 
 if __name__ == '__main__':
-    wttest.run()
+    aetest.run()

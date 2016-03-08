@@ -1,10 +1,10 @@
-/*! @m_page{{c,java},programming,Writing WiredTiger applications}
+/*! @m_page{{c,java},programming,Writing ArchEngine applications}
 
 This section covers topics of interest for programmers writing
 @m_if{c}
-WiredTiger applications.
+ArchEngine applications.
 @m_else
-WiredTiger applications in Java.
+ArchEngine applications in Java.
 @m_endif
 
 We follow SQL terminology: a database is set of tables managed together.
@@ -48,7 +48,7 @@ each of which is ordered by one or more columns.
 - @subpage_single upgrade
 
 @m_if{c}
-<h2>Extending WiredTiger</h2>
+<h2>Extending ArchEngine</h2>
 - @subpage extensions
 - @subpage custom_collators
 - @subpage custom_extractors
@@ -58,8 +58,8 @@ each of which is ordered by one or more columns.
 
 <h2>Performance monitoring and tuning</h2>
 - @subpage_single tune_statistics
-- @subpage_single wtperf
-- @subpage_single wtstats
+- @subpage_single aeperf
+- @subpage_single aestats
 <p>
 - @subpage_single tune_memory_allocator
 - @subpage_single tune_page_sizes

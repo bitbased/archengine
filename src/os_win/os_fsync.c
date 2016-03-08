@@ -1,65 +1,65 @@
 /*-
  * Copyright (c) 2014-2015 MongoDB, Inc.
- * Copyright (c) 2008-2014 WiredTiger, Inc.
+ * Copyright (c) 2008-2014 ArchEngine, Inc.
  *	All rights reserved.
  *
  * See the file LICENSE for redistribution information.
  */
 
-#include "wt_internal.h"
+#include "ae_internal.h"
 
 /*
- * __wt_directory_sync_fh --
+ * __ae_directory_sync_fh --
  *	Flush a directory file handle.
  */
 int
-__wt_directory_sync_fh(WT_SESSION_IMPL *session, WT_FH *fh)
+__ae_directory_sync_fh(AE_SESSION_IMPL *session, AE_FH *fh)
 {
-	WT_UNUSED(session);
-	WT_UNUSED(fh);
+	AE_UNUSED(session);
+	AE_UNUSED(fh);
 	return (0);
 }
 
 /*
- * __wt_directory_sync --
+ * __ae_directory_sync --
  *	Flush a directory to ensure a file creation is durable.
  */
 int
-__wt_directory_sync(WT_SESSION_IMPL *session, char *path)
+__ae_directory_sync(AE_SESSION_IMPL *session, char *path)
 {
-	WT_UNUSED(session);
-	WT_UNUSED(path);
+	AE_UNUSED(session);
+	AE_UNUSED(path);
 	return (0);
 }
 
 /*
- * __wt_fsync --
+ * __ae_fsync --
  *	Flush a file handle.
  */
 int
-__wt_fsync(WT_SESSION_IMPL *session, WT_FH *fh)
+__ae_fsync(AE_SESSION_IMPL *session, AE_FH *fh)
 {
-	WT_DECL_RET;
+	AE_DECL_RET;
 
-	WT_RET(__wt_verbose(session, WT_VERB_FILEOPS, "%s: FlushFileBuffers",
+	AE_RET(__ae_verbose(session, AE_VERB_FILEOPS, "%s: FlushFileBuffers",
 	    fh->name));
 
 	if ((ret = FlushFileBuffers(fh->filehandle)) == FALSE)
-		WT_RET_MSG(session,
-		    __wt_errno(), "%s FlushFileBuffers error", fh->name);
+		AE_RET_MSG(session,
+		    __ae_errno(), "%s FlushFileBuffers error", fh->name);
 
 	return (0);
 }
 
 /*
- * __wt_fsync_async --
+ * __ae_fsync_async --
  *	Flush a file handle and don't wait for the result.
  */
 int
-__wt_fsync_async(WT_SESSION_IMPL *session, WT_FH *fh)
+__ae_fsync_async(AE_SESSION_IMPL *session, AE_FH *fh)
 {
-	WT_UNUSED(session);
-	WT_UNUSED(fh);
+	AE_UNUSED(session);
+	AE_UNUSED(fh);
 
 	return (0);
 }

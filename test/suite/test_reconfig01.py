@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Public Domain 2014-2015 MongoDB, Inc.
-# Public Domain 2008-2014 WiredTiger, Inc.
+# Public Domain 2008-2014 ArchEngine, Inc.
 #
 # This is free and unencumbered software released into the public domain.
 #
@@ -27,12 +27,12 @@
 # OTHER DEALINGS IN THE SOFTWARE.
 
 import time
-import wiredtiger, wttest
+import archengine, aetest
 from helper import simple_populate
 
 # test_reconfig01.py
 #    Smoke-test the connection reconfiguration operations.
-class test_reconfig01(wttest.WiredTigerTestCase):
+class test_reconfig01(aetest.ArchEngineTestCase):
 
     def test_reconfig_shared_cache(self):
         self.conn.reconfigure("shared_cache=(name=pool,size=300M)")
@@ -104,7 +104,7 @@ class test_reconfig01(wttest.WiredTigerTestCase):
         self.conn.reconfigure("statistics_log=(wait=0)")
         self.conn.reconfigure("statistics_log=(wait=2,timestamp=\"t%b %d\")")
         self.conn.reconfigure("statistics_log=(wait=0)")
-        self.conn.reconfigure("statistics_log=(wait=2,path=\"wts.%d.%H\")")
+        self.conn.reconfigure("statistics_log=(wait=2,path=\"aes.%d.%H\")")
         self.conn.reconfigure("statistics_log=(wait=0)")
         self.conn.reconfigure(
              "statistics_log=(wait=2,sources=[lsm:],timestamp=\"%b\")")
@@ -116,4 +116,4 @@ class test_reconfig01(wttest.WiredTigerTestCase):
             "file_manager=(close_idle_time=4,close_scan_interval=100)")
 
 if __name__ == '__main__':
-    wttest.run()
+    aetest.run()

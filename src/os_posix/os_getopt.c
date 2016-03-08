@@ -1,6 +1,6 @@
 /*-
  * Public Domain 2014-2015 MongoDB, Inc.
- * Public Domain 2008-2014 WiredTiger, Inc.
+ * Public Domain 2008-2014 ArchEngine, Inc.
  *
  * This is free and unencumbered software released into the public domain.
  *
@@ -57,95 +57,95 @@
  * SUCH DAMAGE.
  */
 
-#include "wt_internal.h"
+#include "ae_internal.h"
 
-extern int __wt_opterr, __wt_optind, __wt_optopt, __wt_optreset;
-int	__wt_opterr = 1,	/* if error message should be printed */
-	__wt_optind = 1,	/* index into parent argv vector */
-	__wt_optopt,		/* character checked for validity */
-	__wt_optreset;		/* reset getopt */
+extern int __ae_opterr, __ae_optind, __ae_optopt, __ae_optreset;
+int	__ae_opterr = 1,	/* if error message should be printed */
+	__ae_optind = 1,	/* index into parent argv vector */
+	__ae_optopt,		/* character checked for validity */
+	__ae_optreset;		/* reset getopt */
 
-extern char *__wt_optarg;
-char	*__wt_optarg;		/* argument associated with option */
+extern char *__ae_optarg;
+char	*__ae_optarg;		/* argument associated with option */
 
 #define	BADCH	(int)'?'
 #define	BADARG	(int)':'
 #define	EMSG	""
 
 /*
- * __wt_getopt --
+ * __ae_getopt --
  *	Parse argc/argv argument vector.
  */
 int
-__wt_getopt(
+__ae_getopt(
     const char *progname, int nargc, char * const *nargv, const char *ostr)
 {
 	static const char *place = EMSG;	/* option letter processing */
 	const char *oli;			/* option letter list index */
 
-	if (__wt_optreset || *place == 0) {	/* update scanning pointer */
-		__wt_optreset = 0;
-		place = nargv[__wt_optind];
-		if (__wt_optind >= nargc || *place++ != '-') {
+	if (__ae_optreset || *place == 0) {	/* update scanning pointer */
+		__ae_optreset = 0;
+		place = nargv[__ae_optind];
+		if (__ae_optind >= nargc || *place++ != '-') {
 			/* Argument is absent or is not an option */
 			place = EMSG;
 			return (-1);
 		}
-		__wt_optopt = *place++;
-		if (__wt_optopt == '-' && *place == 0) {
+		__ae_optopt = *place++;
+		if (__ae_optopt == '-' && *place == 0) {
 			/* "--" => end of options */
-			++__wt_optind;
+			++__ae_optind;
 			place = EMSG;
 			return (-1);
 		}
-		if (__wt_optopt == 0) {
+		if (__ae_optopt == 0) {
 			/* Solitary '-', treat as a '-' option
 			   if the program (eg su) is looking for it. */
 			place = EMSG;
 			if (strchr(ostr, '-') == NULL)
 				return (-1);
-			__wt_optopt = '-';
+			__ae_optopt = '-';
 		}
 	} else
-		__wt_optopt = *place++;
+		__ae_optopt = *place++;
 
 	/* See if option letter is one the caller wanted... */
-	if (__wt_optopt == ':' || (oli = strchr(ostr, __wt_optopt)) == NULL) {
+	if (__ae_optopt == ':' || (oli = strchr(ostr, __ae_optopt)) == NULL) {
 		if (*place == 0)
-			++__wt_optind;
-		if (__wt_opterr && *ostr != ':')
+			++__ae_optind;
+		if (__ae_opterr && *ostr != ':')
 			(void)fprintf(stderr,
 			    "%s: illegal option -- %c\n", progname,
-			    __wt_optopt);
+			    __ae_optopt);
 		return (BADCH);
 	}
 
 	/* Does this option need an argument? */
 	if (oli[1] != ':') {
 		/* don't need argument */
-		__wt_optarg = NULL;
+		__ae_optarg = NULL;
 		if (*place == 0)
-			++__wt_optind;
+			++__ae_optind;
 	} else {
 		/* Option-argument is either the rest of this argument or the
 		   entire next argument. */
 		if (*place)
-			__wt_optarg = (char *)place;
-		else if (nargc > ++__wt_optind)
-			__wt_optarg = nargv[__wt_optind];
+			__ae_optarg = (char *)place;
+		else if (nargc > ++__ae_optind)
+			__ae_optarg = nargv[__ae_optind];
 		else {
 			/* option-argument absent */
 			place = EMSG;
 			if (*ostr == ':')
 				return (BADARG);
-			if (__wt_opterr)
+			if (__ae_opterr)
 				(void)fprintf(stderr,
 				    "%s: option requires an argument -- %c\n",
-				    progname, __wt_optopt);
+				    progname, __ae_optopt);
 			return (BADCH);
 		}
 		place = EMSG;
-		++__wt_optind;
+		++__ae_optind;
 	}
-	return (__wt_optopt);			/* return option letter */
+	return (__ae_optopt);			/* return option letter */
 }

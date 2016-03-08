@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Public Domain 2014-2015 MongoDB, Inc.
-# Public Domain 2008-2014 WiredTiger, Inc.
+# Public Domain 2008-2014 ArchEngine, Inc.
 #
 # This is free and unencumbered software released into the public domain.
 #
@@ -26,16 +26,16 @@
 # ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 # OTHER DEALINGS IN THE SOFTWARE.
 
-import itertools, wiredtiger, wttest
+import itertools, archengine, aetest
 from suite_subprocess import suite_subprocess
-from wtscenario import multiply_scenarios, number_scenarios
-from wiredtiger import stat
+from aescenario import multiply_scenarios, number_scenarios
+from archengine import stat
 from helper import complex_populate, complex_populate_lsm, simple_populate
 from helper import complex_value_populate, key_populate, value_populate
 
 # test_stat05.py
 #    Statistics cursor using size only
-class test_stat_cursor_config(wttest.WiredTigerTestCase):
+class test_stat_cursor_config(aetest.ArchEngineTestCase):
     pfx = 'test_stat_cursor_size'
     uri = [
         ('file',  dict(uri='file:' + pfx, pop=simple_populate, cfg='')),
@@ -50,9 +50,9 @@ class test_stat_cursor_config(wttest.WiredTigerTestCase):
 
     scenarios = number_scenarios(uri)
 
-    # Override WiredTigerTestCase to enable statistics
+    # Override ArchEngineTestCase to enable statistics
     def setUpConnectionOpen(self, dir):
-        conn = wiredtiger.wiredtiger_open(dir,
+        conn = archengine.archengine_open(dir,
             'create,' +
             'statistics=(fast),' +
             'error_prefix="%s: "' % self.shortid())
@@ -86,4 +86,4 @@ class test_stat_cursor_config(wttest.WiredTigerTestCase):
         self.openAndWalkStatCursor()
 
 if __name__ == '__main__':
-    wttest.run()
+    aetest.run()

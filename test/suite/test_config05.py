@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Public Domain 2014-2015 MongoDB, Inc.
-# Public Domain 2008-2014 WiredTiger, Inc.
+# Public Domain 2008-2014 ArchEngine, Inc.
 #
 # This is free and unencumbered software released into the public domain.
 #
@@ -26,11 +26,11 @@
 # ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 # OTHER DEALINGS IN THE SOFTWARE.
 
-import wiredtiger, wttest
+import archengine, aetest
 
 # test_config05.py
 #    Test multiple connection opens
-class test_config05(wttest.WiredTigerTestCase):
+class test_config05(aetest.ArchEngineTestCase):
     table_name1 = 'test_config05'
     nentries = 100
 
@@ -75,36 +75,36 @@ class test_config05(wttest.WiredTigerTestCase):
         cursor.close()
 
     def test_one(self):
-        self.conn = wiredtiger.wiredtiger_open('.', 'create')
+        self.conn = archengine.archengine_open('.', 'create')
         self.session = self.conn.open_session(None)
         self.populate(self.session)
         self.verify_entries(self.session)
 
     def test_one_session(self):
-        self.conn = wiredtiger.wiredtiger_open('.', 'create,session_max=1')
+        self.conn = archengine.archengine_open('.', 'create,session_max=1')
         self.session = self.conn.open_session(None)
         self.populate(self.session)
         self.verify_entries(self.session)
 
     def test_too_many_sessions(self):
-        self.conn = wiredtiger.wiredtiger_open('.', 'create,session_max=1')
-        self.assertRaisesWithMessage(wiredtiger.WiredTigerError,
+        self.conn = archengine.archengine_open('.', 'create,session_max=1')
+        self.assertRaisesWithMessage(archengine.ArchEngineError,
             lambda: [self.conn.open_session(None) for i in range(100)],
             '/configured to support/')
 
     def test_exclusive_create(self):
-        self.conn = wiredtiger.wiredtiger_open('.', 'create,exclusive')
+        self.conn = archengine.archengine_open('.', 'create,exclusive')
         self.conn.close()
-        self.assertRaisesWithMessage(wiredtiger.WiredTigerError,
-            lambda: wiredtiger.wiredtiger_open('.', 'exclusive'),
-            '/WiredTiger database already exists/')
+        self.assertRaisesWithMessage(archengine.ArchEngineError,
+            lambda: archengine.archengine_open('.', 'exclusive'),
+            '/ArchEngine database already exists/')
 
     def test_multi_create(self):
-        self.conn = wiredtiger.wiredtiger_open('.', 'create')
+        self.conn = archengine.archengine_open('.', 'create')
         self.session = self.conn.open_session(None)
-        self.assertRaisesWithMessage(wiredtiger.WiredTigerError,
-            lambda: wiredtiger.wiredtiger_open('.', 'create'),
-            '/WiredTiger database is already being managed/')
+        self.assertRaisesWithMessage(archengine.ArchEngineError,
+            lambda: archengine.archengine_open('.', 'create'),
+            '/ArchEngine database is already being managed/')
 
 if __name__ == '__main__':
-    wttest.run()
+    aetest.run()

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Public Domain 2014-2015 MongoDB, Inc.
-# Public Domain 2008-2014 WiredTiger, Inc.
+# Public Domain 2008-2014 ArchEngine, Inc.
 #
 # This is free and unencumbered software released into the public domain.
 #
@@ -31,11 +31,11 @@
 #
 
 import os, run
-import wiredtiger, wttest
-from wtscenario import multiply_scenarios, number_scenarios
+import archengine, aetest
+from aescenario import multiply_scenarios, number_scenarios
 
 # Test basic compression
-class test_compress01(wttest.WiredTigerTestCase):
+class test_compress01(aetest.ArchEngineTestCase):
 
     types = [
         ('file', dict(uri='file:test_compress01')),
@@ -52,23 +52,23 @@ class test_compress01(wttest.WiredTigerTestCase):
     nrecords = 10000
     bigvalue = "abcdefghij" * 1000
 
-    # Override WiredTigerTestCase, we have extensions.
+    # Override ArchEngineTestCase, we have extensions.
     def setUpConnectionOpen(self, dir):
-        conn = wiredtiger.wiredtiger_open( dir, 'create,' +
+        conn = archengine.archengine_open( dir, 'create,' +
             ('error_prefix="%s: ",' % self.shortid()) +
             self.extensionArg(self.compress))
         self.pr(`conn`)
         return conn
 
-    # Return the wiredtiger_open extension argument for a shared library.
+    # Return the archengine_open extension argument for a shared library.
     def extensionArg(self, name):
         if name == None:
             return ''
 
         testdir = os.path.dirname(__file__)
-        extdir = os.path.join(run.wt_builddir, 'ext/compressors')
+        extdir = os.path.join(run.ae_builddir, 'ext/compressors')
         extfile = os.path.join(
-            extdir, name, '.libs', 'libwiredtiger_' + name + '.so')
+            extdir, name, '.libs', 'libarchengine_' + name + '.so')
         if not os.path.exists(extfile):
             self.skipTest('compression extension "' + extfile + '" not built')
         return ',extensions=["' + extfile + '"]'
@@ -108,4 +108,4 @@ class test_compress01(wttest.WiredTigerTestCase):
 
 
 if __name__ == '__main__':
-    wttest.run()
+    aetest.run()

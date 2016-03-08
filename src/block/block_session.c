@@ -1,38 +1,38 @@
 /*-
  * Copyright (c) 2014-2015 MongoDB, Inc.
- * Copyright (c) 2008-2014 WiredTiger, Inc.
+ * Copyright (c) 2008-2014 ArchEngine, Inc.
  *	All rights reserved.
  *
  * See the file LICENSE for redistribution information.
  */
 
-#include "wt_internal.h"
+#include "ae_internal.h"
 
 /*
  * Per session handle cached block manager information.
  */
 typedef struct {
-	WT_EXT  *ext_cache;			/* List of WT_EXT handles */
+	AE_EXT  *ext_cache;			/* List of AE_EXT handles */
 	u_int    ext_cache_cnt;			/* Count */
 
-	WT_SIZE *sz_cache;			/* List of WT_SIZE handles */
+	AE_SIZE *sz_cache;			/* List of AE_SIZE handles */
 	u_int    sz_cache_cnt;			/* Count */
-} WT_BLOCK_MGR_SESSION;
+} AE_BLOCK_MGR_SESSION;
 
 /*
  * __block_ext_alloc --
- *	Allocate a new WT_EXT structure.
+ *	Allocate a new AE_EXT structure.
  */
 static int
-__block_ext_alloc(WT_SESSION_IMPL *session, WT_EXT **extp)
+__block_ext_alloc(AE_SESSION_IMPL *session, AE_EXT **extp)
 {
-	WT_EXT *ext;
+	AE_EXT *ext;
 
 	u_int skipdepth;
 
-	skipdepth = __wt_skip_choose_depth(session);
-	WT_RET(__wt_calloc(session, 1,
-	    sizeof(WT_EXT) + skipdepth * 2 * sizeof(WT_EXT *), &ext));
+	skipdepth = __ae_skip_choose_depth(session);
+	AE_RET(__ae_calloc(session, 1,
+	    sizeof(AE_EXT) + skipdepth * 2 * sizeof(AE_EXT *), &ext));
 	ext->depth = (uint8_t)skipdepth;
 	(*extp) = ext;
 
@@ -40,19 +40,19 @@ __block_ext_alloc(WT_SESSION_IMPL *session, WT_EXT **extp)
 }
 
 /*
- * __wt_block_ext_alloc --
- *	Return a WT_EXT structure for use.
+ * __ae_block_ext_alloc --
+ *	Return a AE_EXT structure for use.
  */
 int
-__wt_block_ext_alloc(WT_SESSION_IMPL *session, WT_EXT **extp)
+__ae_block_ext_alloc(AE_SESSION_IMPL *session, AE_EXT **extp)
 {
-	WT_EXT *ext;
-	WT_BLOCK_MGR_SESSION *bms;
+	AE_EXT *ext;
+	AE_BLOCK_MGR_SESSION *bms;
 	u_int i;
 
 	bms = session->block_manager;
 
-	/* Return a WT_EXT structure for use from a cached list. */
+	/* Return a AE_EXT structure for use from a cached list. */
 	if (bms != NULL && bms->ext_cache != NULL) {
 		ext = bms->ext_cache;
 		bms->ext_cache = ext->next[0];
@@ -77,18 +77,18 @@ __wt_block_ext_alloc(WT_SESSION_IMPL *session, WT_EXT **extp)
 
 /*
  * __block_ext_prealloc --
- *	Pre-allocate WT_EXT structures.
+ *	Pre-allocate AE_EXT structures.
  */
 static int
-__block_ext_prealloc(WT_SESSION_IMPL *session, u_int max)
+__block_ext_prealloc(AE_SESSION_IMPL *session, u_int max)
 {
-	WT_BLOCK_MGR_SESSION *bms;
-	WT_EXT *ext;
+	AE_BLOCK_MGR_SESSION *bms;
+	AE_EXT *ext;
 
 	bms = session->block_manager;
 
 	for (; bms->ext_cache_cnt < max; ++bms->ext_cache_cnt) {
-		WT_RET(__block_ext_alloc(session, &ext));
+		AE_RET(__block_ext_alloc(session, &ext));
 
 		ext->next[0] = bms->ext_cache;
 		bms->ext_cache = ext;
@@ -97,16 +97,16 @@ __block_ext_prealloc(WT_SESSION_IMPL *session, u_int max)
 }
 
 /*
- * __wt_block_ext_free --
- *	Add a WT_EXT structure to the cached list.
+ * __ae_block_ext_free --
+ *	Add a AE_EXT structure to the cached list.
  */
 void
-__wt_block_ext_free(WT_SESSION_IMPL *session, WT_EXT *ext)
+__ae_block_ext_free(AE_SESSION_IMPL *session, AE_EXT *ext)
 {
-	WT_BLOCK_MGR_SESSION *bms;
+	AE_BLOCK_MGR_SESSION *bms;
 
 	if ((bms = session->block_manager) == NULL)
-		__wt_free(session, ext);
+		__ae_free(session, ext);
 	else {
 		ext->next[0] = bms->ext_cache;
 		bms->ext_cache = ext;
@@ -117,13 +117,13 @@ __wt_block_ext_free(WT_SESSION_IMPL *session, WT_EXT *ext)
 
 /*
  * __block_ext_discard --
- *	Discard some or all of the WT_EXT structure cache.
+ *	Discard some or all of the AE_EXT structure cache.
  */
 static int
-__block_ext_discard(WT_SESSION_IMPL *session, u_int max)
+__block_ext_discard(AE_SESSION_IMPL *session, u_int max)
 {
-	WT_BLOCK_MGR_SESSION *bms;
-	WT_EXT *ext, *next;
+	AE_BLOCK_MGR_SESSION *bms;
+	AE_EXT *ext, *next;
 
 	bms = session->block_manager;
 	if (max != 0 && bms->ext_cache_cnt <= max)
@@ -131,7 +131,7 @@ __block_ext_discard(WT_SESSION_IMPL *session, u_int max)
 
 	for (ext = bms->ext_cache; ext != NULL;) {
 		next = ext->next[0];
-		__wt_free(session, ext);
+		__ae_free(session, ext);
 		ext = next;
 
 		--bms->ext_cache_cnt;
@@ -141,33 +141,33 @@ __block_ext_discard(WT_SESSION_IMPL *session, u_int max)
 	bms->ext_cache = ext;
 
 	if (max == 0 && bms->ext_cache_cnt != 0)
-		WT_RET_MSG(session, WT_ERROR,
+		AE_RET_MSG(session, AE_ERROR,
 		    "incorrect count in session handle's block manager cache");
 	return (0);
 }
 
 /*
  * __block_size_alloc --
- *	Allocate a new WT_SIZE structure.
+ *	Allocate a new AE_SIZE structure.
  */
 static int
-__block_size_alloc(WT_SESSION_IMPL *session, WT_SIZE **szp)
+__block_size_alloc(AE_SESSION_IMPL *session, AE_SIZE **szp)
 {
-	return (__wt_calloc_one(session, szp));
+	return (__ae_calloc_one(session, szp));
 }
 
 /*
- * __wt_block_size_alloc --
- *	Return a WT_SIZE structure for use.
+ * __ae_block_size_alloc --
+ *	Return a AE_SIZE structure for use.
  */
 int
-__wt_block_size_alloc(WT_SESSION_IMPL *session, WT_SIZE **szp)
+__ae_block_size_alloc(AE_SESSION_IMPL *session, AE_SIZE **szp)
 {
-	WT_BLOCK_MGR_SESSION *bms;
+	AE_BLOCK_MGR_SESSION *bms;
 
 	bms = session->block_manager;
 
-	/* Return a WT_SIZE structure for use from a cached list. */
+	/* Return a AE_SIZE structure for use from a cached list. */
 	if (bms != NULL && bms->sz_cache != NULL) {
 		(*szp) = bms->sz_cache;
 		bms->sz_cache = bms->sz_cache->next[0];
@@ -186,18 +186,18 @@ __wt_block_size_alloc(WT_SESSION_IMPL *session, WT_SIZE **szp)
 
 /*
  * __block_size_prealloc --
- *	Pre-allocate WT_SIZE structures.
+ *	Pre-allocate AE_SIZE structures.
  */
 static int
-__block_size_prealloc(WT_SESSION_IMPL *session, u_int max)
+__block_size_prealloc(AE_SESSION_IMPL *session, u_int max)
 {
-	WT_BLOCK_MGR_SESSION *bms;
-	WT_SIZE *sz;
+	AE_BLOCK_MGR_SESSION *bms;
+	AE_SIZE *sz;
 
 	bms = session->block_manager;
 
 	for (; bms->sz_cache_cnt < max; ++bms->sz_cache_cnt) {
-		WT_RET(__block_size_alloc(session, &sz));
+		AE_RET(__block_size_alloc(session, &sz));
 
 		sz->next[0] = bms->sz_cache;
 		bms->sz_cache = sz;
@@ -206,16 +206,16 @@ __block_size_prealloc(WT_SESSION_IMPL *session, u_int max)
 }
 
 /*
- * __wt_block_size_free --
- *	Add a WT_SIZE structure to the cached list.
+ * __ae_block_size_free --
+ *	Add a AE_SIZE structure to the cached list.
  */
 void
-__wt_block_size_free(WT_SESSION_IMPL *session, WT_SIZE *sz)
+__ae_block_size_free(AE_SESSION_IMPL *session, AE_SIZE *sz)
 {
-	WT_BLOCK_MGR_SESSION *bms;
+	AE_BLOCK_MGR_SESSION *bms;
 
 	if ((bms = session->block_manager) == NULL)
-		__wt_free(session, sz);
+		__ae_free(session, sz);
 	else {
 		sz->next[0] = bms->sz_cache;
 		bms->sz_cache = sz;
@@ -226,13 +226,13 @@ __wt_block_size_free(WT_SESSION_IMPL *session, WT_SIZE *sz)
 
 /*
  * __block_size_discard --
- *	Discard some or all of the WT_SIZE structure cache.
+ *	Discard some or all of the AE_SIZE structure cache.
  */
 static int
-__block_size_discard(WT_SESSION_IMPL *session, u_int max)
+__block_size_discard(AE_SESSION_IMPL *session, u_int max)
 {
-	WT_BLOCK_MGR_SESSION *bms;
-	WT_SIZE *sz, *nsz;
+	AE_BLOCK_MGR_SESSION *bms;
+	AE_SIZE *sz, *nsz;
 
 	bms = session->block_manager;
 	if (max != 0 && bms->sz_cache_cnt <= max)
@@ -240,7 +240,7 @@ __block_size_discard(WT_SESSION_IMPL *session, u_int max)
 
 	for (sz = bms->sz_cache; sz != NULL;) {
 		nsz = sz->next[0];
-		__wt_free(session, sz);
+		__ae_free(session, sz);
 		sz = nsz;
 
 		--bms->sz_cache_cnt;
@@ -250,7 +250,7 @@ __block_size_discard(WT_SESSION_IMPL *session, u_int max)
 	bms->sz_cache = sz;
 
 	if (max == 0 && bms->sz_cache_cnt != 0)
-		WT_RET_MSG(session, WT_ERROR,
+		AE_RET_MSG(session, AE_ERROR,
 		    "incorrect count in session handle's block manager cache");
 	return (0);
 }
@@ -260,47 +260,47 @@ __block_size_discard(WT_SESSION_IMPL *session, u_int max)
  *	Clean up the session handle's block manager information.
  */
 static int
-__block_manager_session_cleanup(WT_SESSION_IMPL *session)
+__block_manager_session_cleanup(AE_SESSION_IMPL *session)
 {
-	WT_DECL_RET;
+	AE_DECL_RET;
 
 	if (session->block_manager == NULL)
 		return (0);
 
-	WT_TRET(__block_ext_discard(session, 0));
-	WT_TRET(__block_size_discard(session, 0));
+	AE_TRET(__block_ext_discard(session, 0));
+	AE_TRET(__block_size_discard(session, 0));
 
-	__wt_free(session, session->block_manager);
+	__ae_free(session, session->block_manager);
 
 	return (ret);
 }
 
 /*
- * __wt_block_ext_prealloc --
- *	Pre-allocate WT_EXT and WT_SIZE structures.
+ * __ae_block_ext_prealloc --
+ *	Pre-allocate AE_EXT and AE_SIZE structures.
  */
 int
-__wt_block_ext_prealloc(WT_SESSION_IMPL *session, u_int max)
+__ae_block_ext_prealloc(AE_SESSION_IMPL *session, u_int max)
 {
 	if (session->block_manager == NULL) {
-		WT_RET(__wt_calloc(session, 1,
-		    sizeof(WT_BLOCK_MGR_SESSION), &session->block_manager));
+		AE_RET(__ae_calloc(session, 1,
+		    sizeof(AE_BLOCK_MGR_SESSION), &session->block_manager));
 		session->block_manager_cleanup =
 		    __block_manager_session_cleanup;
 	}
-	WT_RET(__block_ext_prealloc(session, max));
-	WT_RET(__block_size_prealloc(session, max));
+	AE_RET(__block_ext_prealloc(session, max));
+	AE_RET(__block_size_prealloc(session, max));
 	return (0);
 }
 
 /*
- * __wt_block_ext_discard --
- *	Discard WT_EXT and WT_SIZE structures after checkpoint runs.
+ * __ae_block_ext_discard --
+ *	Discard AE_EXT and AE_SIZE structures after checkpoint runs.
  */
 int
-__wt_block_ext_discard(WT_SESSION_IMPL *session, u_int max)
+__ae_block_ext_discard(AE_SESSION_IMPL *session, u_int max)
 {
-	WT_RET(__block_ext_discard(session, max));
-	WT_RET(__block_size_discard(session, max));
+	AE_RET(__block_ext_discard(session, max));
+	AE_RET(__block_size_discard(session, max));
 	return (0);
 }

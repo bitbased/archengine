@@ -1,6 +1,6 @@
 /*-
  * Public Domain 2014-2015 MongoDB, Inc.
- * Public Domain 2008-2014 WiredTiger, Inc.
+ * Public Domain 2008-2014 ArchEngine, Inc.
  *
  * This is free and unencumbered software released into the public domain.
  *
@@ -33,8 +33,8 @@ GLOBAL g;
 static void startup(void);
 static void usage(void);
 
-extern int __wt_optind;
-extern char *__wt_optarg;
+extern int __ae_optind;
+extern char *__ae_optarg;
 
 int
 main(int argc, char *argv[])
@@ -65,23 +65,23 @@ main(int argc, char *argv[])
 	/* Set values from the command line. */
 	home = NULL;
 	onerun = 0;
-	while ((ch = __wt_getopt(
+	while ((ch = __ae_getopt(
 	    g.progname, argc, argv, "1C:c:H:h:Llqrt:")) != EOF)
 		switch (ch) {
 		case '1':			/* One run */
 			onerun = 1;
 			break;
-		case 'C':			/* wiredtiger_open config */
-			g.config_open = __wt_optarg;
+		case 'C':			/* archengine_open config */
+			g.config_open = __ae_optarg;
 			break;
 		case 'c':			/* Configuration from a file */
-			config = __wt_optarg;
+			config = __ae_optarg;
 			break;
 		case 'H':
-			g.helium_mount = __wt_optarg;
+			g.helium_mount = __ae_optarg;
 			break;
 		case 'h':
-			home = __wt_optarg;
+			home = __ae_optarg;
 			break;
 		case 'L':			/* Re-direct output to a log */
 			/*
@@ -103,17 +103,17 @@ main(int argc, char *argv[])
 		default:
 			usage();
 		}
-	argc -= __wt_optind;
-	argv += __wt_optind;
+	argc -= __ae_optind;
+	argv += __ae_optind;
 
 	/*
 	 * Initialize the global RNG. Start with the standard seeds, and then
 	 * use seconds since the Epoch modulo a prime to run the RNG for some
 	 * number of steps, so we don't start with the same values every time.
 	 */
-	__wt_random_init(&g.rnd);
+	__ae_random_init(&g.rnd);
 	for (i = (int)time(NULL) % 10007; i > 0; --i)
-		(void)__wt_random(&g.rnd);
+		(void)__ae_random(&g.rnd);
 
 	/* Set up paths. */
 	path_setup(home);
@@ -194,11 +194,11 @@ main(int argc, char *argv[])
 		if (SINGLETHREADED)
 			bdb_open();		/* Initial file config */
 #endif
-		wts_open(g.home, 1, &g.wts_conn);
-		wts_create();
+		aes_open(g.home, 1, &g.aes_conn);
+		aes_create();
 
-		wts_load();			/* Load initial records */
-		wts_verify("post-bulk verify");	/* Verify */
+		aes_load();			/* Load initial records */
+		aes_verify("post-bulk verify");	/* Verify */
 
 		/*
 		 * If we're not doing any operations, scan the bulk-load, copy
@@ -206,14 +206,14 @@ main(int argc, char *argv[])
 		 * operations, with a verify after each set.
 		 */
 		if (g.c_timer == 0 && g.c_ops == 0) {
-			wts_read_scan();		/* Read scan */
-			wts_stats();			/* Statistics */
+			aes_read_scan();		/* Read scan */
+			aes_stats();			/* Statistics */
 		} else
 			for (reps = 1; reps <= FORMAT_OPERATION_REPS; ++reps) {
-				wts_read_scan();	/* Read scan */
+				aes_read_scan();	/* Read scan */
 
 							/* Operations */
-				wts_ops(reps == FORMAT_OPERATION_REPS);
+				aes_ops(reps == FORMAT_OPERATION_REPS);
 
 				/*
 				 * Copy out the run's statistics after the last
@@ -224,10 +224,10 @@ main(int argc, char *argv[])
 				 * discards the statistics, read them first.
 				 */
 				if (reps == FORMAT_OPERATION_REPS)
-					wts_stats();
+					aes_stats();
 
 							/* Verify */
-				wts_verify("post-ops verify");
+				aes_verify("post-ops verify");
 			}
 
 		track("shutting down", 0ULL, NULL);
@@ -235,19 +235,19 @@ main(int argc, char *argv[])
 		if (SINGLETHREADED)
 			bdb_close();
 #endif
-		wts_close();
+		aes_close();
 
 		/*
-		 * If single-threaded, we can dump and compare the WiredTiger
+		 * If single-threaded, we can dump and compare the ArchEngine
 		 * and Berkeley DB data sets.
 		 */
 		if (SINGLETHREADED)
-			wts_dump("standard", 1);
+			aes_dump("standard", 1);
 
 		/*
 		 * Salvage testing.
 		 */
-		wts_salvage();
+		aes_salvage();
 
 		/* Overwrite the progress line with a completion line. */
 		if (g.track)
@@ -323,7 +323,7 @@ die(int e, const char *fmt, ...)
 		vfprintf(stderr, fmt, ap);
 		va_end(ap);
 		if (e != 0)
-			fprintf(stderr, ": %s", wiredtiger_strerror(e));
+			fprintf(stderr, ": %s", archengine_strerror(e));
 		fprintf(stderr, "\n");
 	}
 
@@ -346,13 +346,13 @@ static void
 usage(void)
 {
 	fprintf(stderr,
-	    "usage: %s [-1Llqr] [-C wiredtiger-config]\n    "
+	    "usage: %s [-1Llqr] [-C archengine-config]\n    "
 	    "[-c config-file] [-H mount] [-h home] "
 	    "[name=value ...]\n",
 	    g.progname);
 	fprintf(stderr, "%s",
 	    "\t-1 run once\n"
-	    "\t-C specify wiredtiger_open configuration arguments\n"
+	    "\t-C specify archengine_open configuration arguments\n"
 	    "\t-c read test program configuration from a file\n"
 	    "\t-H mount Helium volume mount point\n"
 	    "\t-h home (default 'RUNDIR')\n"

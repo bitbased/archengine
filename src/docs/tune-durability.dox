@@ -1,6 +1,6 @@
 /*! @class doc_tune_durability_group_commit
 
-WiredTiger automatically groups the flush operations for threads that
+ArchEngine automatically groups the flush operations for threads that
 commit concurrently into single calls.  This usually means
 multi-threaded workloads will achieve higher throughput than
 single-threaded workloads because the operating system can flush data
@@ -12,14 +12,14 @@ required for this feature.
 /*! @class doc_tune_durability_flush_config
 
 By default, log records are written to an in-memory buffer before
-WT_SESSION::commit_transaction returns, giving highest performance but
+AE_SESSION::commit_transaction returns, giving highest performance but
 not ensuring durability.  The durability guarantees can be stricter but
 will impact performance.
 
-If \c transaction_sync=(enabled=false) is configured to ::wiredtiger_open,
+If \c transaction_sync=(enabled=false) is configured to ::archengine_open,
 log records may be buffered in memory, and only flushed to disk by
-checkpoints, when log files switch or calls to WT_SESSION::commit_transaction
-with \c sync=on.  (Note that any call to WT_SESSION::commit_transaction
+checkpoints, when log files switch or calls to AE_SESSION::commit_transaction
+with \c sync=on.  (Note that any call to AE_SESSION::commit_transaction
 with \c sync=on will flush the log records for all committed transactions,
 not just the transaction where the configuration is set.)  This provides the
 minimal guarantees, but will be significantly faster than other configurations.
@@ -55,7 +55,7 @@ most durability guarantees).
 @row{<code>log=(enabled=false)</code>, checkpoint-level durability}
 @row{<code>log=(enabled)\,transaction_sync=(enabled=false)</code>,
 	in-memory buffered logging configured; updates durable after
-	checkpoint or after \c sync is set in WT_SESSION::begin_transaction}
+	checkpoint or after \c sync is set in AE_SESSION::begin_transaction}
 @row{<code>log=(enabled)\,transaction_sync=(enabled=true\,method=none)</code>,
 	logging configured; updates durable after application failure\,
 	but not after system failure}
@@ -68,8 +68,8 @@ most durability guarantees).
 </table>
 
 The durability setting can also be controlled directly on a per-transaction
-basis via the WT_SESSION::commit_transaction method.
-The WT_SESSION::commit_transaction supports several durability modes with
+basis via the AE_SESSION::commit_transaction method.
+The AE_SESSION::commit_transaction supports several durability modes with
 the \c sync configuration that override the connection level settings.
 
 If \c sync=on is configured then this commit operation will wait for its
@@ -81,13 +81,13 @@ records into the in-memory buffer and return immediately.
 
 If \c sync=background is configured then this commit operation will write
 its record to an in-memory buffer, and will return.  Prior to returning it
-will signal an internal WiredTiger worker thread to synchronize this log
+will signal an internal ArchEngine worker thread to synchronize this log
 record.  The caller may then check the status of that background
-synchronization with the WT_SESSION::transaction_sync method.
+synchronization with the AE_SESSION::transaction_sync method.
 
 The durability of the write-ahead log can be controlled independently
-as well via the WT_SESSION::log_flush method.
-The WT_SESSION::log_flush supports several durability modes with
+as well via the AE_SESSION::log_flush method.
+The AE_SESSION::log_flush supports several durability modes with
 the \c sync configuration that immediately act upon the log.
 
 If \c sync=on is configured then this flush will force the current
@@ -102,7 +102,7 @@ file system before returning.
 If \c sync=background is configured then this flush operation will force
 the signalling of a background synchronization operation.
 The caller may then check the status of that background
-synchronization with the WT_SESSION::transaction_sync method.
+synchronization with the AE_SESSION::transaction_sync method.
  */
 
 /*! @page tune_durability Commit-level durability

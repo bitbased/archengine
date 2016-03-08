@@ -1,6 +1,6 @@
 /*-
  * Public Domain 2014-2015 MongoDB, Inc.
- * Public Domain 2008-2014 WiredTiger, Inc.
+ * Public Domain 2008-2014 ArchEngine, Inc.
  *
  * This is free and unencumbered software released into the public domain.
  *
@@ -35,11 +35,11 @@
 static void
 salvage(void)
 {
-	WT_CONNECTION *conn;
-	WT_SESSION *session;
+	AE_CONNECTION *conn;
+	AE_SESSION *session;
 	int ret;
 
-	conn = g.wts_conn;
+	conn = g.aes_conn;
 	track("salvage", 0ULL, NULL);
 
 	if ((ret = conn->open_session(conn, NULL, NULL, &session)) != 0)
@@ -60,7 +60,7 @@ corrupt(void)
 	FILE *fp;
 	struct stat sb;
 	size_t len, nw;
-	wt_off_t offset;
+	ae_off_t offset;
 	int fd, ret;
 	char buf[8 * 1024], copycmd[2 * 1024];
 
@@ -70,31 +70,31 @@ corrupt(void)
 	 * of the file and overlapping the end.
 	 *
 	 * It's a little tricky: if the data source is a file, we're looking
-	 * for "wt", if the data source is a table, we're looking for "wt.wt".
+	 * for "ae", if the data source is a table, we're looking for "ae.ae".
 	 */
-	(void)snprintf(buf, sizeof(buf), "%s/%s", g.home, WT_NAME);
+	(void)snprintf(buf, sizeof(buf), "%s/%s", g.home, AE_NAME);
 	if ((fd = open(buf, O_RDWR)) != -1) {
 #ifdef _WIN32
 		(void)snprintf(copycmd, sizeof(copycmd),
 		    "copy %s\\%s %s\\slvg.copy\\%s.corrupted",
-		    g.home, WT_NAME, g.home, WT_NAME);
+		    g.home, AE_NAME, g.home, AE_NAME);
 #else
 		(void)snprintf(copycmd, sizeof(copycmd),
 		    "cp %s/%s %s/slvg.copy/%s.corrupted",
-		    g.home, WT_NAME, g.home, WT_NAME);
+		    g.home, AE_NAME, g.home, AE_NAME);
 #endif
 		goto found;
 	}
-	(void)snprintf(buf, sizeof(buf), "%s/%s.wt", g.home, WT_NAME);
+	(void)snprintf(buf, sizeof(buf), "%s/%s.ae", g.home, AE_NAME);
 	if ((fd = open(buf, O_RDWR)) != -1) {
 #ifdef _WIN32
 		(void)snprintf(copycmd, sizeof(copycmd),
-		    "copy %s\\%s.wt %s\\slvg.copy\\%s.wt.corrupted",
-		    g.home, WT_NAME, g.home, WT_NAME);
+		    "copy %s\\%s.ae %s\\slvg.copy\\%s.ae.corrupted",
+		    g.home, AE_NAME, g.home, AE_NAME);
 #else
 		(void)snprintf(copycmd, sizeof(copycmd),
-		    "cp %s/%s.wt %s/slvg.copy/%s.wt.corrupted",
-		    g.home, WT_NAME, g.home, WT_NAME);
+		    "cp %s/%s.ae %s/slvg.copy/%s.ae.corrupted",
+		    g.home, AE_NAME, g.home, AE_NAME);
 #endif
 		goto found;
 	}
@@ -137,11 +137,11 @@ found:	if (fstat(fd, &sb) == -1)
 }
 
 /*
- * wts_salvage --
+ * aes_salvage --
  *	Salvage testing.
  */
 void
-wts_salvage(void)
+aes_salvage(void)
 {
 	int ret;
 
@@ -160,10 +160,10 @@ wts_salvage(void)
 		die(ret, "salvage copy step failed");
 
 	/* Salvage, then verify. */
-	wts_open(g.home, 1, &g.wts_conn);
+	aes_open(g.home, 1, &g.aes_conn);
 	salvage();
-	wts_verify("post-salvage verify");
-	wts_close();
+	aes_verify("post-salvage verify");
+	aes_close();
 
 	/*
 	 * If no records were deleted, dump and compare against Berkeley DB.
@@ -172,13 +172,13 @@ wts_salvage(void)
 	 * the split, so we cannot depend on correctness in that case.)
 	 */
 	if (g.c_delete_pct == 0)
-		wts_dump("salvage", SINGLETHREADED);
+		aes_dump("salvage", SINGLETHREADED);
 
 	/* Corrupt the file randomly, salvage, then verify. */
 	if (corrupt()) {
-		wts_open(g.home, 1, &g.wts_conn);
+		aes_open(g.home, 1, &g.aes_conn);
 		salvage();
-		wts_verify("post-corrupt-salvage verify");
-		wts_close();
+		aes_verify("post-corrupt-salvage verify");
+		aes_close();
 	}
 }

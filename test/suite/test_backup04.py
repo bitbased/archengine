@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Public Domain 2014-2015 MongoDB, Inc.
-# Public Domain 2008-2014 WiredTiger, Inc.
+# Public Domain 2008-2014 ArchEngine, Inc.
 #
 # This is free and unencumbered software released into the public domain.
 #
@@ -27,17 +27,17 @@
 # OTHER DEALINGS IN THE SOFTWARE.
 
 import Queue
-import threading, time, wiredtiger, wttest
+import threading, time, archengine, aetest
 import glob, os, shutil
 from suite_subprocess import suite_subprocess
-from wtscenario import check_scenarios
-from wtthread import op_thread
+from aescenario import check_scenarios
+from aethread import op_thread
 from helper import compare_files, key_populate
 
 # test_backup04.py
-#    Utilities: wt backup
+#    Utilities: ae backup
 # Test cursor backup with target URIs
-class test_backup_target(wttest.WiredTigerTestCase, suite_subprocess):
+class test_backup_target(aetest.ArchEngineTestCase, suite_subprocess):
     dir='backup.dir'                    # Backup directory name
     logmax="100K"
 
@@ -50,7 +50,7 @@ class test_backup_target(wttest.WiredTigerTestCase, suite_subprocess):
     # At the same time, we take a full backup during each loop.
     # We run recovery and verify the full backup with the incremental
     # backup after each loop.  We compare two backups instead of the original
-    # because running 'wt' causes all of our original handles to be closed
+    # because running 'ae' causes all of our original handles to be closed
     # and that is not what we want here.
     #
     pfx = 'test_backup'
@@ -60,10 +60,10 @@ class test_backup_target(wttest.WiredTigerTestCase, suite_subprocess):
 
     # Create a large cache, otherwise this test runs quite slowly.
     def setUpConnectionOpen(self, dir):
-        wtopen_args = \
+        aeopen_args = \
             'create,cache_size=1G,log=(archive=false,enabled,file_max=%s)' % \
             self.logmax
-        conn = wiredtiger.wiredtiger_open(dir, wtopen_args)
+        conn = archengine.archengine_open(dir, aeopen_args)
         self.pr(`conn`)
         return conn
 
@@ -81,7 +81,7 @@ class test_backup_target(wttest.WiredTigerTestCase, suite_subprocess):
             cursor[key_populate(cursor, i)] = str(i) + ':' + upd * dsize
         cursor.close()
 
-    # Compare the original and backed-up files using the wt dump command.
+    # Compare the original and backed-up files using the ae dump command.
     def compare(self, uri, dir_full, dir_incr):
         # print "Compare: full URI: " + uri + " with incremental URI "
         if dir_full == None:
@@ -94,14 +94,14 @@ class test_backup_target(wttest.WiredTigerTestCase, suite_subprocess):
         if os.path.exists(incr_name):
             os.remove(incr_name)
         #
-        # We have been copying the logs only, so we need to force 'wt' to
+        # We have been copying the logs only, so we need to force 'ae' to
         # run recovery in order to apply all the logs and check the data.
         #
         if dir_full == None:
-            self.runWt(['-R', 'dump', uri], outfilename=full_name)
+            self.runAe(['-R', 'dump', uri], outfilename=full_name)
         else:
-            self.runWt(['-R', '-h', dir_full, 'dump', uri], outfilename=full_name)
-        self.runWt(['-R', '-h', dir_incr, 'dump', uri], outfilename=incr_name)
+            self.runAe(['-R', '-h', dir_full, 'dump', uri], outfilename=full_name)
+        self.runAe(['-R', '-h', dir_incr, 'dump', uri], outfilename=incr_name)
         self.assertEqual(True,
             compare_files(self, full_name, incr_name))
 
@@ -118,7 +118,7 @@ class test_backup_target(wttest.WiredTigerTestCase, suite_subprocess):
             sz = os.path.getsize(newfile)
             self.pr('Copy from: ' + newfile + ' (' + str(sz) + ') to ' + dir)
             shutil.copy(newfile, dir)
-        self.assertEqual(ret, wiredtiger.WT_NOTFOUND)
+        self.assertEqual(ret, archengine.AE_NOTFOUND)
         cursor.close()
 
     # Take an incremental backup and then truncate/archive the logs.
@@ -133,7 +133,7 @@ class test_backup_target(wttest.WiredTigerTestCase, suite_subprocess):
                 sz = os.path.getsize(newfile)
                 self.pr('Copy from: ' + newfile + ' (' + str(sz) + ') to ' + dir)
                 shutil.copy(newfile, dir)
-            self.assertEqual(ret, wiredtiger.WT_NOTFOUND)
+            self.assertEqual(ret, archengine.AE_NOTFOUND)
             self.session.truncate('log:', cursor, None, None)
             cursor.close()
 
@@ -177,4 +177,4 @@ class test_backup_target(wttest.WiredTigerTestCase, suite_subprocess):
 
 
 if __name__ == '__main__':
-    wttest.run()
+    aetest.run()

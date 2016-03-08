@@ -18,7 +18,7 @@ ext/extractors/csv
 ext/test/kvs_bdb HAVE_BERKELEY_DB
 .
 api/leveldb LEVELDB
-bench/wtperf
+bench/aeperf
 examples/c
 lang/java JAVA
 examples/java JAVA

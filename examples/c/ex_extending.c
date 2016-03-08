@@ -1,6 +1,6 @@
 /*-
  * Public Domain 2014-2015 MongoDB, Inc.
- * Public Domain 2008-2014 WiredTiger, Inc.
+ * Public Domain 2008-2014 ArchEngine, Inc.
  *
  * This is free and unencumbered software released into the public domain.
  *
@@ -26,7 +26,7 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  *
  * ex_extending.c
- *	This is an example demonstrating ways to extend WiredTiger with
+ *	This is an example demonstrating ways to extend ArchEngine with
  *	extractors, collators and loadable modules.
  */
 
@@ -34,7 +34,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <wiredtiger.h>
+#include <archengine.h>
 
 #ifdef _WIN32
 #define	strcasecmp stricmp
@@ -45,8 +45,8 @@ static const char *home;
 /*! [case insensitive comparator] */
 /* A simple case insensitive comparator. */
 static int
-__compare_nocase(WT_COLLATOR *collator, WT_SESSION *session,
-    const WT_ITEM *v1, const WT_ITEM *v2, int *cmp)
+__compare_nocase(AE_COLLATOR *collator, AE_SESSION *session,
+    const AE_ITEM *v1, const AE_ITEM *v2, int *cmp)
 {
 	const char *s1 = (const char *)v1->data;
 	const char *s2 = (const char *)v2->data;
@@ -58,22 +58,22 @@ __compare_nocase(WT_COLLATOR *collator, WT_SESSION *session,
 	return (0);
 }
 
-static WT_COLLATOR nocasecoll = { __compare_nocase, NULL, NULL };
+static AE_COLLATOR nocasecoll = { __compare_nocase, NULL, NULL };
 /*! [case insensitive comparator] */
 
 /*! [n character comparator] */
 /*
  * Comparator that only compares the first N prefix characters of the string.
- * This has associated data, so we need to extend WT_COLLATOR.
+ * This has associated data, so we need to extend AE_COLLATOR.
  */
 typedef struct {
-	WT_COLLATOR iface;
+	AE_COLLATOR iface;
 	uint32_t maxlen;
 } PREFIX_COLLATOR;
 
 static int
-__compare_prefixes(WT_COLLATOR *collator, WT_SESSION *session,
-    const WT_ITEM *v1, const WT_ITEM *v2, int *cmp)
+__compare_prefixes(AE_COLLATOR *collator, AE_SESSION *session,
+    const AE_ITEM *v1, const AE_ITEM *v2, int *cmp)
 {
 	PREFIX_COLLATOR *pcoll = (PREFIX_COLLATOR *)collator;
 	const char *s1 = (const char *)v1->data;
@@ -92,23 +92,23 @@ int
 main(void)
 {
 	int ret;
-	WT_CONNECTION *conn;
-	WT_SESSION *session;
+	AE_CONNECTION *conn;
+	AE_SESSION *session;
 
 	/*
 	 * Create a clean test directory for this run of the test program if the
 	 * environment variable isn't already set (as is done by make check).
 	 */
-	if (getenv("WIREDTIGER_HOME") == NULL) {
-		home = "WT_HOME";
-		ret = system("rm -rf WT_HOME && mkdir WT_HOME");
+	if (getenv("ARCHENGINE_HOME") == NULL) {
+		home = "AE_HOME";
+		ret = system("rm -rf AE_HOME && mkdir AE_HOME");
 	} else
 		home = NULL;
 
 	/* Open a connection to the database, creating it if necessary. */
-	if ((ret = wiredtiger_open(home, NULL, "create", &conn)) != 0)
+	if ((ret = archengine_open(home, NULL, "create", &conn)) != 0)
 		fprintf(stderr, "Error connecting to %s: %s\n",
-		    home, wiredtiger_strerror(ret));
+		    home, archengine_strerror(ret));
 
 	/*! [add collator nocase] */
 	ret = conn->add_collator(conn, "nocase", &nocasecoll, NULL);
@@ -119,7 +119,7 @@ main(void)
 	/* Open a session for the current thread's work. */
 	if ((ret = conn->open_session(conn, NULL, NULL, &session)) != 0)
 		fprintf(stderr, "Error opening a session on %s: %s\n",
-		    home, wiredtiger_strerror(ret));
+		    home, archengine_strerror(ret));
 
 	/* XXX Do some work... */
 
@@ -127,7 +127,7 @@ main(void)
 	if ((ret = conn->close(conn, NULL)) != 0)
 	/*! [add collator prefix10] */
 		fprintf(stderr, "Error closing %s: %s\n",
-		    home, wiredtiger_strerror(ret));
+		    home, archengine_strerror(ret));
 
 	return (ret);
 }

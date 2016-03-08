@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Public Domain 2014-2015 MongoDB, Inc.
-# Public Domain 2008-2014 WiredTiger, Inc.
+# Public Domain 2008-2014 ArchEngine, Inc.
 #
 # This is free and unencumbered software released into the public domain.
 #
@@ -26,59 +26,59 @@
 # ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 # OTHER DEALINGS IN THE SOFTWARE.
 
-import wiredtiger, wtscenario, wttest
+import archengine, aescenario, aetest
 import test_base03
 
 # test_config03.py
-#    More configuration strings for wiredtiger_open, combined probabilistically.
+#    More configuration strings for archengine_open, combined probabilistically.
 class test_config03(test_base03.test_base03):
     K = 1024
     M = 1024 * K
     G = 1024 * M
 
-    cache_size_scenarios = wtscenario.quick_scenarios('s_cache_size',
+    cache_size_scenarios = aescenario.quick_scenarios('s_cache_size',
         [1*M,20*M,100*M,1*G,None], [0.6,0.6,0.6,0.6,0.6])
-    create_scenarios = wtscenario.quick_scenarios('s_create',
+    create_scenarios = aescenario.quick_scenarios('s_create',
         [True,False,None], [1.0,0.2,0.3])
-    error_prefix_scenarios = wtscenario.quick_scenarios('s_error_prefix',
+    error_prefix_scenarios = aescenario.quick_scenarios('s_error_prefix',
         [None,"errpfx:"], [1.0,0.2])
     # eviction_target < eviction_trigger -- checked later
-    eviction_target_scenarios = wtscenario.quick_scenarios('s_eviction_target',
+    eviction_target_scenarios = aescenario.quick_scenarios('s_eviction_target',
         [10, 40, 85, 98], None)
-    eviction_trigger_scenarios = wtscenario.quick_scenarios(
+    eviction_trigger_scenarios = aescenario.quick_scenarios(
         's_eviction_trigger',
         [50, 90, 95, 99], None)
-    hazard_max_scenarios = wtscenario.quick_scenarios('s_hazard_max',
+    hazard_max_scenarios = aescenario.quick_scenarios('s_hazard_max',
         [15, 50, 500], [0.4, 0.8, 0.8])
-    multiprocess_scenarios = wtscenario.quick_scenarios('s_multiprocess',
+    multiprocess_scenarios = aescenario.quick_scenarios('s_multiprocess',
         [True,False], [1.0,1.0])
-    session_max_scenarios = wtscenario.quick_scenarios('s_session_max',
+    session_max_scenarios = aescenario.quick_scenarios('s_session_max',
         [3, 30, 300], None)
-    transactional_scenarios = wtscenario.quick_scenarios('s_transactional',
+    transactional_scenarios = aescenario.quick_scenarios('s_transactional',
         [True,False], [0.2,1.0])
 
     # Note: we are not using any truly verbose scenarios until we have
     # a way to redirect verbose output to a file in Python.
     #
-    #verbose_scenarios = wtscenario.quick_scenarios('s_verbose',
+    #verbose_scenarios = aescenario.quick_scenarios('s_verbose',
     #    ['block', 'evict,evictserver', 'fileops,hazard,mutex',
     #     'read,readserver,reconcile,salvage','verify,write',''], None)
-    verbose_scenarios = wtscenario.quick_scenarios('s_verbose', [None], None)
+    verbose_scenarios = aescenario.quick_scenarios('s_verbose', [None], None)
 
     config_vars = [ 'cache_size', 'create', 'error_prefix', 'eviction_target',
                     'eviction_trigger', 'hazard_max', 'multiprocess',
                     'session_max', 'verbose' ]
 
-    all_scenarios = wtscenario.multiply_scenarios('_',
+    all_scenarios = aescenario.multiply_scenarios('_',
         cache_size_scenarios, create_scenarios, error_prefix_scenarios,
         eviction_target_scenarios, eviction_trigger_scenarios,
         hazard_max_scenarios, multiprocess_scenarios, session_max_scenarios,
         transactional_scenarios, verbose_scenarios)
 
-    scenarios = wtscenario.prune_scenarios(all_scenarios, 1000)
-    scenarios = wtscenario.number_scenarios(scenarios)
+    scenarios = aescenario.prune_scenarios(all_scenarios, 1000)
+    scenarios = aescenario.number_scenarios(scenarios)
 
-    #wttest.WiredTigerTestCase.printVerbose(2, 'test_config03: running ' + \
+    #aetest.ArchEngineTestCase.printVerbose(2, 'test_config03: running ' + \
     #                      str(len(scenarios)) + ' of ' + \
     #                      str(len(all_scenarios)) + ' possible scenarios')
 
@@ -96,7 +96,7 @@ class test_config03(test_base03.test_base03):
                     value = 'false'
                 args += ',' + var + '=' + str(value)
         args += ','
-        self.pr('wiredtiger_open with args: ' + args)
+        self.pr('archengine_open with args: ' + args)
 
         expect_fail = False
         successargs = args
@@ -121,15 +121,15 @@ class test_config03(test_base03.test_base03):
                     '/eviction target must be lower than the eviction trigger/'
 
         if expect_fail:
-            self.verbose(3, 'wiredtiger_open (should fail) with args: ' + args)
-            self.assertRaisesWithMessage(wiredtiger.WiredTigerError,
-                lambda: wiredtiger.wiredtiger_open(dir, args), fail_msg)
+            self.verbose(3, 'archengine_open (should fail) with args: ' + args)
+            self.assertRaisesWithMessage(archengine.ArchEngineError,
+                lambda: archengine.archengine_open(dir, args), fail_msg)
             args = successargs
 
-        self.verbose(3, 'wiredtiger_open with args: ' + args)
-        conn = wiredtiger.wiredtiger_open(dir, args)
+        self.verbose(3, 'archengine_open with args: ' + args)
+        conn = archengine.archengine_open(dir, args)
         self.pr(`conn`)
         return conn
 
 if __name__ == '__main__':
-    wttest.run()
+    aetest.run()

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Public Domain 2014-2015 MongoDB, Inc.
-# Public Domain 2008-2014 WiredTiger, Inc.
+# Public Domain 2008-2014 ArchEngine, Inc.
 #
 # This is free and unencumbered software released into the public domain.
 #
@@ -33,11 +33,11 @@
 
 #import fnmatch, os, shutil, run, time
 from suite_subprocess import suite_subprocess
-from wiredtiger import wiredtiger_open
-from wtscenario import check_scenarios
-import wiredtiger, wttest
+from archengine import archengine_open
+from aescenario import check_scenarios
+import archengine, aetest
 
-class test_txn13(wttest.WiredTigerTestCase, suite_subprocess):
+class test_txn13(aetest.ArchEngineTestCase, suite_subprocess):
     logmax = "100K"
     tablename = 'test_txn13'
     uri = 'table:' + tablename
@@ -50,7 +50,7 @@ class test_txn13(wttest.WiredTigerTestCase, suite_subprocess):
         ('4gb', dict(expect_err=True, valuesize=4194304))
     ])
 
-    # Overrides WiredTigerTestCase
+    # Overrides ArchEngineTestCase
     def setUpConnectionOpen(self, dir):
         self.home = dir
         conn_params = \
@@ -58,13 +58,13 @@ class test_txn13(wttest.WiredTigerTestCase, suite_subprocess):
                 ',create,cache_size=8G,error_prefix="%s: ",' % self.shortid()
         # print "Creating conn at '%s' with config '%s'" % (dir, conn_params)
         try:
-            conn = wiredtiger_open(dir, conn_params)
-        except wiredtiger.WiredTigerError as e:
+            conn = archengine_open(dir, conn_params)
+        except archengine.ArchEngineError as e:
             print "Failed conn at '%s' with config '%s'" % (dir, conn_params)
         self.pr(`conn`)
         return conn
 
-    @wttest.longtest('txn tests with huge values')
+    @aetest.longtest('txn tests with huge values')
     def test_large_values(self):
         # print "Creating %s with config '%s'" % (self.uri, self.create_params)
         # print "Running with %d" % (self.valuesize)
@@ -84,7 +84,7 @@ class test_txn13(wttest.WiredTigerTestCase, suite_subprocess):
         if self.expect_err:
             # EFBIG is expected: File too large
             msg = '/exceeds the maximum/'
-            self.assertRaisesWithMessage(wiredtiger.WiredTigerError,
+            self.assertRaisesWithMessage(archengine.ArchEngineError,
                 lambda:self.session.commit_transaction(), msg)
             gotException = True
         else:
@@ -93,4 +93,4 @@ class test_txn13(wttest.WiredTigerTestCase, suite_subprocess):
         self.assertTrue(gotException == self.expect_err)
 
 if __name__ == '__main__':
-    wttest.run()
+    aetest.run()

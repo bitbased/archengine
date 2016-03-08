@@ -1,6 +1,6 @@
 /*-
  * Copyright (c) 2014-2015 MongoDB, Inc.
- * Copyright (c) 2008-2014 WiredTiger, Inc.
+ * Copyright (c) 2008-2014 ArchEngine, Inc.
  *	All rights reserved.
  *
  * See the file LICENSE for redistribution information.
@@ -19,7 +19,7 @@ static char *cbuf;
  *	Build a list of comma-separated targets.
  */
 static int
-append_target(WT_SESSION *session, const char *target, char **bufp)
+append_target(AE_SESSION *session, const char *target, char **bufp)
 {
 	static bool first = true;
 	static size_t len = 0, remain = 0;
@@ -47,27 +47,27 @@ append_target(WT_SESSION *session, const char *target, char **bufp)
 }
 
 int
-util_backup(WT_SESSION *session, int argc, char *argv[])
+util_backup(AE_SESSION *session, int argc, char *argv[])
 {
-	WT_CURSOR *cursor;
-	WT_DECL_RET;
+	AE_CURSOR *cursor;
+	AE_DECL_RET;
 	int ch;
 	char *config;
 	const char *directory, *name;
 
 	config = NULL;
-	while ((ch = __wt_getopt(progname, argc, argv, "t:")) != EOF)
+	while ((ch = __ae_getopt(progname, argc, argv, "t:")) != EOF)
 		switch (ch) {
 		case 't':
-			if (append_target(session, __wt_optarg, &config))
+			if (append_target(session, __ae_optarg, &config))
 				return (1);
 			break;
 		case '?':
 		default:
 			return (usage());
 		}
-	argc -= __wt_optind;
-	argv += __wt_optind;
+	argc -= __ae_optind;
+	argv += __ae_optind;
 
 	if (argc != 1) {
 		(void)usage();
@@ -88,7 +88,7 @@ util_backup(WT_SESSION *session, int argc, char *argv[])
 	    (ret = cursor->get_key(cursor, &name)) == 0)
 		if ((ret = copy(name, directory)) != 0)
 			goto err;
-	if (ret == WT_NOTFOUND)
+	if (ret == AE_NOTFOUND)
 		ret = 0;
 
 	if (ret != 0) {
@@ -106,7 +106,7 @@ err:	free(config);
 static int
 copy(const char *name, const char *directory)
 {
-	WT_DECL_RET;
+	AE_DECL_RET;
 	ssize_t n;
 	int ifd, ofd;
 

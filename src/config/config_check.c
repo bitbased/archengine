@@ -1,24 +1,24 @@
 /*-
  * Copyright (c) 2014-2015 MongoDB, Inc.
- * Copyright (c) 2008-2014 WiredTiger, Inc.
+ * Copyright (c) 2008-2014 ArchEngine, Inc.
  *	All rights reserved.
  *
  * See the file LICENSE for redistribution information.
  */
 
-#include "wt_internal.h"
+#include "ae_internal.h"
 
 static int config_check(
-    WT_SESSION_IMPL *, const WT_CONFIG_CHECK *, u_int, const char *, size_t);
+    AE_SESSION_IMPL *, const AE_CONFIG_CHECK *, u_int, const char *, size_t);
 
 /*
- * __wt_config_check --
+ * __ae_config_check --
  *	Check the keys in an application-supplied config string match what is
  *	specified in an array of check strings.
  */
 int
-__wt_config_check(WT_SESSION_IMPL *session,
-    const WT_CONFIG_ENTRY *entry, const char *config, size_t config_len)
+__ae_config_check(AE_SESSION_IMPL *session,
+    const AE_CONFIG_ENTRY *entry, const char *config, size_t config_len)
 {
 	/*
 	 * Callers don't check, it's a fast call without a configuration or
@@ -34,8 +34,8 @@ __wt_config_check(WT_SESSION_IMPL *session,
  *	Search a set of checks for a matching name.
  */
 static inline int
-config_check_search(WT_SESSION_IMPL *session,
-    const WT_CONFIG_CHECK *checks, u_int entries,
+config_check_search(AE_SESSION_IMPL *session,
+    const AE_CONFIG_CHECK *checks, u_int entries,
     const char *str, size_t len, int *ip)
 {
 	u_int base, indx, limit;
@@ -48,7 +48,7 @@ config_check_search(WT_SESSION_IMPL *session,
 	 */
 	if (entries == 0) {
 		for (indx = 0; checks[indx].name != NULL; indx++)
-			if (WT_STRING_MATCH(checks[indx].name, str, len)) {
+			if (AE_STRING_MATCH(checks[indx].name, str, len)) {
 				*ip = (int)indx;
 				return (0);
 			}
@@ -66,7 +66,7 @@ config_check_search(WT_SESSION_IMPL *session,
 			}
 		}
 
-	WT_RET_MSG(session, EINVAL,
+	AE_RET_MSG(session, EINVAL,
 	    "unknown configuration key: '%.*s'", (int)len, str);
 }
 
@@ -76,13 +76,13 @@ config_check_search(WT_SESSION_IMPL *session,
  * specified in an array of check strings.
  */
 static int
-config_check(WT_SESSION_IMPL *session,
-    const WT_CONFIG_CHECK *checks, u_int checks_entries,
+config_check(AE_SESSION_IMPL *session,
+    const AE_CONFIG_CHECK *checks, u_int checks_entries,
     const char *config, size_t config_len)
 {
-	WT_CONFIG parser, cparser, sparser;
-	WT_CONFIG_ITEM k, v, ck, cv, dummy;
-	WT_DECL_RET;
+	AE_CONFIG parser, cparser, sparser;
+	AE_CONFIG_ITEM k, v, ck, cv, dummy;
+	AE_DECL_RET;
 	int i;
 	bool badtype, found;
 
@@ -91,23 +91,23 @@ config_check(WT_SESSION_IMPL *session,
 	 * that are not nul-terminated.
 	 */
 	if (config_len == 0)
-		WT_RET(__wt_config_init(session, &parser, config));
+		AE_RET(__ae_config_init(session, &parser, config));
 	else
-		WT_RET(__wt_config_initn(session, &parser, config, config_len));
-	while ((ret = __wt_config_next(&parser, &k, &v)) == 0) {
-		if (k.type != WT_CONFIG_ITEM_STRING &&
-		    k.type != WT_CONFIG_ITEM_ID)
-			WT_RET_MSG(session, EINVAL,
+		AE_RET(__ae_config_initn(session, &parser, config, config_len));
+	while ((ret = __ae_config_next(&parser, &k, &v)) == 0) {
+		if (k.type != AE_CONFIG_ITEM_STRING &&
+		    k.type != AE_CONFIG_ITEM_ID)
+			AE_RET_MSG(session, EINVAL,
 			    "Invalid configuration key found: '%.*s'",
 			    (int)k.len, k.str);
 
 		/* Search for a matching entry. */
-		WT_RET(config_check_search(
+		AE_RET(config_check_search(
 		    session, checks, checks_entries, k.str, k.len, &i));
 
 		if (strcmp(checks[i].type, "boolean") == 0) {
-			badtype = v.type != WT_CONFIG_ITEM_BOOL &&
-			    (v.type != WT_CONFIG_ITEM_NUM ||
+			badtype = v.type != AE_CONFIG_ITEM_BOOL &&
+			    (v.type != AE_CONFIG_ITEM_NUM ||
 			    (v.val != 0 && v.val != 1));
 		} else if (strcmp(checks[i].type, "category") == 0) {
 			/* Deal with categories of the form: XXX=(XXX=blah). */
@@ -121,86 +121,86 @@ config_check(WT_SESSION_IMPL *session,
 		} else if (strcmp(checks[i].type, "format") == 0) {
 			badtype = false;
 		} else if (strcmp(checks[i].type, "int") == 0) {
-			badtype = v.type != WT_CONFIG_ITEM_NUM;
+			badtype = v.type != AE_CONFIG_ITEM_NUM;
 		} else if (strcmp(checks[i].type, "list") == 0) {
-			badtype = v.len > 0 && v.type != WT_CONFIG_ITEM_STRUCT;
+			badtype = v.len > 0 && v.type != AE_CONFIG_ITEM_STRUCT;
 		} else if (strcmp(checks[i].type, "string") == 0) {
 			badtype = false;
 		} else
-			WT_RET_MSG(session, EINVAL,
+			AE_RET_MSG(session, EINVAL,
 			    "unknown configuration type: '%s'",
 			    checks[i].type);
 
 		if (badtype)
-			WT_RET_MSG(session, EINVAL,
+			AE_RET_MSG(session, EINVAL,
 			    "Invalid value for key '%.*s': expected a %s",
 			    (int)k.len, k.str, checks[i].type);
 
 		if (checks[i].checkf != NULL)
-			WT_RET(checks[i].checkf(session, &v));
+			AE_RET(checks[i].checkf(session, &v));
 
 		if (checks[i].checks == NULL)
 			continue;
 
 		/* Setup an iterator for the check string. */
-		WT_RET(__wt_config_init(session, &cparser, checks[i].checks));
-		while ((ret = __wt_config_next(&cparser, &ck, &cv)) == 0) {
-			if (WT_STRING_MATCH("min", ck.str, ck.len)) {
+		AE_RET(__ae_config_init(session, &cparser, checks[i].checks));
+		while ((ret = __ae_config_next(&cparser, &ck, &cv)) == 0) {
+			if (AE_STRING_MATCH("min", ck.str, ck.len)) {
 				if (v.val < cv.val)
-					WT_RET_MSG(session, EINVAL,
+					AE_RET_MSG(session, EINVAL,
 					    "Value too small for key '%.*s' "
 					    "the minimum is %.*s",
 					    (int)k.len, k.str,
 					    (int)cv.len, cv.str);
-			} else if (WT_STRING_MATCH("max", ck.str, ck.len)) {
+			} else if (AE_STRING_MATCH("max", ck.str, ck.len)) {
 				if (v.val > cv.val)
-					WT_RET_MSG(session, EINVAL,
+					AE_RET_MSG(session, EINVAL,
 					    "Value too large for key '%.*s' "
 					    "the maximum is %.*s",
 					    (int)k.len, k.str,
 					    (int)cv.len, cv.str);
-			} else if (WT_STRING_MATCH("choices", ck.str, ck.len)) {
+			} else if (AE_STRING_MATCH("choices", ck.str, ck.len)) {
 				if (v.len == 0)
-					WT_RET_MSG(session, EINVAL,
+					AE_RET_MSG(session, EINVAL,
 					    "Key '%.*s' requires a value",
 					    (int)k.len, k.str);
-				if (v.type == WT_CONFIG_ITEM_STRUCT) {
+				if (v.type == AE_CONFIG_ITEM_STRUCT) {
 					/*
 					 * Handle the 'verbose' case of a list
 					 * containing restricted choices.
 					 */
-					WT_RET(__wt_config_subinit(session,
+					AE_RET(__ae_config_subinit(session,
 					    &sparser, &v));
 					found = true;
 					while (found &&
-					    (ret = __wt_config_next(&sparser,
+					    (ret = __ae_config_next(&sparser,
 					    &v, &dummy)) == 0) {
-						ret = __wt_config_subgetraw(
+						ret = __ae_config_subgetraw(
 						    session, &cv, &v, &dummy);
 						found = ret == 0;
 					}
 				} else  {
-					ret = __wt_config_subgetraw(session,
+					ret = __ae_config_subgetraw(session,
 					    &cv, &v, &dummy);
 					found = ret == 0;
 				}
 
-				if (ret != 0 && ret != WT_NOTFOUND)
+				if (ret != 0 && ret != AE_NOTFOUND)
 					return (ret);
 				if (!found)
-					WT_RET_MSG(session, EINVAL,
+					AE_RET_MSG(session, EINVAL,
 					    "Value '%.*s' not a "
 					    "permitted choice for key '%.*s'",
 					    (int)v.len, v.str,
 					    (int)k.len, k.str);
 			} else
-				WT_RET_MSG(session, EINVAL,
+				AE_RET_MSG(session, EINVAL,
 				    "unexpected configuration description "
 				    "keyword %.*s", (int)ck.len, ck.str);
 		}
 	}
 
-	if (ret == WT_NOTFOUND)
+	if (ret == AE_NOTFOUND)
 		ret = 0;
 
 	return (ret);

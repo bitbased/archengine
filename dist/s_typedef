@@ -1,6 +1,6 @@
 #! /bin/sh
 
-t=__wt.$$
+t=__ae.$$
 trap 'rm -f $t; exit 0' 0 1 2 3 13 15
 
 # Insulate against locale-specific sort order and IFS from the user's env
@@ -12,19 +12,19 @@ export IFS
 
 build() {
 	# Build the standard typedefs.
-	f=../src/include/wt_internal.h
+	f=../src/include/ae_internal.h
 	(sed -e '/Forward type declarations .*: BEGIN/{' \
 	    -e 'n' \
 	    -e 'q' \
 	    -e '}' < $f
 
 	l=`ls ../src/include/*.[hi] ../src/include/*.in |
-	    sed -e '/wiredtiger.*/d' -e '/queue.h/d'`
+	    sed -e '/archengine.*/d' -e '/queue.h/d'`
 	egrep -h \
-	    '^[	 ]*(((struct|union)[	 ].*__wt_.*{)|WT_PACKED_STRUCT_BEGIN)' \
+	    '^[	 ]*(((struct|union)[	 ].*__ae_.*{)|AE_PACKED_STRUCT_BEGIN)' \
 	    $l |
-	    sed -e 's/WT_PACKED_STRUCT_BEGIN(\(.*\))/struct \1 {/' \
-	        -e 's/WT_COMPILER_TYPE_ALIGN(.*)[ ]*//' \
+	    sed -e 's/AE_PACKED_STRUCT_BEGIN(\(.*\))/struct \1 {/' \
+	        -e 's/AE_COMPILER_TYPE_ALIGN(.*)[ ]*//' \
 	        -e 's/^[	 ]*//' -e 's/[	 ]*{.*//' | sort -u | \
 	while read t n; do
 		upper=`echo $n | sed -e 's/^__//' | tr [a-z] [A-Z]`

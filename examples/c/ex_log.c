@@ -1,6 +1,6 @@
 /*-
  * Public Domain 2014-2015 MongoDB, Inc.
- * Public Domain 2008-2014 WiredTiger, Inc.
+ * Public Domain 2008-2014 ArchEngine, Inc.
  *
  * This is free and unencumbered software released into the public domain.
  *
@@ -39,10 +39,10 @@
 #define	snprintf _snprintf
 #endif
 
-#include <wiredtiger.h>
+#include <archengine.h>
 
-static const char *home1 = "WT_HOME_LOG_1";
-static const char *home2 = "WT_HOME_LOG_2";
+static const char *home1 = "AE_HOME_LOG_1";
+static const char *home2 = "AE_HOME_LOG_2";
 
 static const char * const uri = "table:logtest";
 
@@ -50,26 +50,26 @@ static const char * const uri = "table:logtest";
 #define	MAX_KEYS	10
 
 static int
-setup_copy(WT_CONNECTION **wt_connp, WT_SESSION **sessionp)
+setup_copy(AE_CONNECTION **ae_connp, AE_SESSION **sessionp)
 {
 	int ret;
 
-	if ((ret = wiredtiger_open(home2, NULL, CONN_CONFIG, wt_connp)) != 0) {
+	if ((ret = archengine_open(home2, NULL, CONN_CONFIG, ae_connp)) != 0) {
 		fprintf(stderr, "Error connecting to %s: %s\n",
-		    home1, wiredtiger_strerror(ret));
+		    home1, archengine_strerror(ret));
 		return (ret);
 	}
 
-	ret = (*wt_connp)->open_session(*wt_connp, NULL, NULL, sessionp);
+	ret = (*ae_connp)->open_session(*ae_connp, NULL, NULL, sessionp);
 	ret = (*sessionp)->create(*sessionp, uri,
 	    "key_format=S,value_format=S");
 	return (ret);
 }
 
 static int
-compare_tables(WT_SESSION *session, WT_SESSION *sess_copy)
+compare_tables(AE_SESSION *session, AE_SESSION *sess_copy)
 {
-	WT_CURSOR *cursor, *curs_copy;
+	AE_CURSOR *cursor, *curs_copy;
 	int ret;
 	const char *key, *key_copy, *value, *value_copy;
 
@@ -91,15 +91,15 @@ compare_tables(WT_SESSION *session, WT_SESSION *sess_copy)
 			return (1);
 		}
 	}
-	if (ret != WT_NOTFOUND)
+	if (ret != AE_NOTFOUND)
 		fprintf(stderr,
-		    "WT_CURSOR.next: %s\n", session->strerror(session, ret));
+		    "AE_CURSOR.next: %s\n", session->strerror(session, ret));
 	ret = cursor->close(cursor);
 
 	ret = curs_copy->next(curs_copy);
-	if (ret != WT_NOTFOUND)
+	if (ret != AE_NOTFOUND)
 		fprintf(stderr,
-		    "copy: WT_CURSOR.next: %s\n",
+		    "copy: AE_CURSOR.next: %s\n",
 		    session->strerror(session, ret));
 	ret = curs_copy->close(curs_copy);
 
@@ -108,9 +108,9 @@ compare_tables(WT_SESSION *session, WT_SESSION *sess_copy)
 
 /*! [log cursor walk] */
 static void
-print_record(WT_LSN *lsn, uint32_t opcount,
+print_record(AE_LSN *lsn, uint32_t opcount,
    uint32_t rectype, uint32_t optype, uint64_t txnid, uint32_t fileid,
-   WT_ITEM *key, WT_ITEM *value)
+   AE_ITEM *key, AE_ITEM *value)
 {
 	printf(
 	    "LSN [%" PRIu32 "][%" PRIu64 "].%" PRIu32
@@ -119,7 +119,7 @@ print_record(WT_LSN *lsn, uint32_t opcount,
 	    lsn->file, (uint64_t)lsn->offset, opcount,
 	    rectype, optype, txnid, fileid);
 	printf(" key size %zu value size %zu\n", key->size, value->size);
-	if (rectype == WT_LOGREC_MESSAGE)
+	if (rectype == AE_LOGREC_MESSAGE)
 		printf("Application Record: %s\n", (char *)value->data);
 }
 
@@ -128,11 +128,11 @@ print_record(WT_LSN *lsn, uint32_t opcount,
  *	A simple walk of the log.
  */
 static int
-simple_walk_log(WT_SESSION *session, int count_min)
+simple_walk_log(AE_SESSION *session, int count_min)
 {
-	WT_CURSOR *cursor;
-	WT_LSN lsn;
-	WT_ITEM logrec_key, logrec_value;
+	AE_CURSOR *cursor;
+	AE_LSN lsn;
+	AE_ITEM logrec_key, logrec_value;
 	uint64_t txnid;
 	uint32_t fileid, opcount, optype, rectype;
 	int count, ret;
@@ -155,7 +155,7 @@ simple_walk_log(WT_SESSION *session, int count_min)
 		print_record(&lsn, opcount,
 		    rectype, optype, txnid, fileid, &logrec_key, &logrec_value);
 	}
-	if (ret == WT_NOTFOUND)
+	if (ret == AE_NOTFOUND)
 		ret = 0;
 	ret = cursor->close(cursor);
 	if (count < count_min) {
@@ -169,18 +169,18 @@ simple_walk_log(WT_SESSION *session, int count_min)
 /*! [log cursor walk] */
 
 static int
-walk_log(WT_SESSION *session)
+walk_log(AE_SESSION *session)
 {
-	WT_CONNECTION *wt_conn2;
-	WT_CURSOR *cursor, *cursor2;
-	WT_LSN lsn, lsnsave;
-	WT_ITEM logrec_key, logrec_value;
-	WT_SESSION *session2;
+	AE_CONNECTION *ae_conn2;
+	AE_CURSOR *cursor, *cursor2;
+	AE_LSN lsn, lsnsave;
+	AE_ITEM logrec_key, logrec_value;
+	AE_SESSION *session2;
 	uint64_t txnid;
 	uint32_t fileid, opcount, optype, rectype;
 	int first, i, in_txn, ret;
 
-	ret = setup_copy(&wt_conn2, &session2);
+	ret = setup_copy(&ae_conn2, &session2);
 	ret = session->open_cursor(session, "log:", NULL, NULL, &cursor);
 	ret = session2->open_cursor(session2, uri, NULL, "raw=true", &cursor2);
 	i = 0;
@@ -220,7 +220,7 @@ walk_log(WT_SESSION *session)
 		 * Minor cheat: the metadata is fileid 0, skip its records.
 		 */
 		if (fileid != 0 &&
-		    rectype == WT_LOGREC_COMMIT && optype == WT_LOGOP_ROW_PUT) {
+		    rectype == AE_LOGREC_COMMIT && optype == AE_LOGOP_ROW_PUT) {
 			if (!in_txn) {
 				ret = session2->begin_transaction(session2,
 				    NULL);
@@ -241,7 +241,7 @@ walk_log(WT_SESSION *session)
 	if (compare_tables(session, session2))
 		printf("compare failed\n");
 	ret = session2->close(session2, NULL);
-	ret = wt_conn2->close(wt_conn2, NULL);
+	ret = ae_conn2->close(ae_conn2, NULL);
 
 	ret = cursor->reset(cursor);
 	/*! [log cursor set_key] */
@@ -283,9 +283,9 @@ walk_log(WT_SESSION *session)
 int
 main(void)
 {
-	WT_CONNECTION *wt_conn;
-	WT_CURSOR *cursor;
-	WT_SESSION *session;
+	AE_CONNECTION *ae_conn;
+	AE_CURSOR *cursor;
+	AE_SESSION *session;
 	int count_min, i, record_count, ret;
 	char cmd_buf[256], k[16], v[16];
 
@@ -296,13 +296,13 @@ main(void)
 		fprintf(stderr, "%s: failed ret %d\n", cmd_buf, ret);
 		return (ret);
 	}
-	if ((ret = wiredtiger_open(home1, NULL, CONN_CONFIG, &wt_conn)) != 0) {
+	if ((ret = archengine_open(home1, NULL, CONN_CONFIG, &ae_conn)) != 0) {
 		fprintf(stderr, "Error connecting to %s: %s\n",
-		    home1, wiredtiger_strerror(ret));
+		    home1, archengine_strerror(ret));
 		return (ret);
 	}
 
-	ret = wt_conn->open_session(wt_conn, NULL, NULL, &session);
+	ret = ae_conn->open_session(ae_conn, NULL, NULL, &session);
 	ret = session->create(session, uri, "key_format=S,value_format=S");
 	count_min++;
 
@@ -343,16 +343,16 @@ main(void)
 	 * a variety of records such as file sync and checkpoint.  We
 	 * have archiving turned off.
 	 */
-	ret = wt_conn->close(wt_conn, NULL);
-	if ((ret = wiredtiger_open(home1, NULL, CONN_CONFIG, &wt_conn)) != 0) {
+	ret = ae_conn->close(ae_conn, NULL);
+	if ((ret = archengine_open(home1, NULL, CONN_CONFIG, &ae_conn)) != 0) {
 		fprintf(stderr, "Error connecting to %s: %s\n",
-		    home1, wiredtiger_strerror(ret));
+		    home1, archengine_strerror(ret));
 		return (ret);
 	}
 
-	ret = wt_conn->open_session(wt_conn, NULL, NULL, &session);
+	ret = ae_conn->open_session(ae_conn, NULL, NULL, &session);
 	ret = simple_walk_log(session, count_min);
 	ret = walk_log(session);
-	ret = wt_conn->close(wt_conn, NULL);
+	ret = ae_conn->close(ae_conn, NULL);
 	return (ret);
 }

@@ -1,6 +1,6 @@
 /*-
  * Public Domain 2014-2015 MongoDB, Inc.
- * Public Domain 2008-2014 WiredTiger, Inc.
+ * Public Domain 2008-2014 ArchEngine, Inc.
  *
  * This is free and unencumbered software released into the public domain.
  *
@@ -36,8 +36,8 @@ void
 stats(void)
 {
 	FILE *fp;
-	WT_CURSOR *cursor;
-	WT_SESSION *session;
+	AE_CURSOR *cursor;
+	AE_SESSION *session;
 	uint64_t v;
 	int ret;
 	char name[64];
@@ -58,7 +58,7 @@ stats(void)
 	    (ret = cursor->get_value(cursor, &desc, &pval, &v)) == 0)
 		(void)fprintf(fp, "%s=%s\n", desc, pval);
 
-	if (ret != WT_NOTFOUND)
+	if (ret != AE_NOTFOUND)
 		testutil_die(ret, "cursor.next");
 	if ((ret = cursor->close(cursor)) != 0)
 		testutil_die(ret, "cursor.close");
@@ -74,7 +74,7 @@ stats(void)
 		    (ret = cursor->get_value(cursor, &desc, &pval, &v)) == 0)
 			(void)fprintf(fp, "%s=%s\n", desc, pval);
 
-		if (ret != WT_NOTFOUND)
+		if (ret != AE_NOTFOUND)
 			testutil_die(ret, "cursor.next");
 		if ((ret = cursor->close(cursor)) != 0)
 			testutil_die(ret, "cursor.close");

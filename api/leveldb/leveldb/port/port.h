@@ -1,5 +1,5 @@
 /*-
- * Public Domain 2008-2014 WiredTiger, Inc.
+ * Public Domain 2008-2014 ArchEngine, Inc.
  *
  * This is free and unencumbered software released into the public domain.
  *
@@ -29,7 +29,7 @@
 #define _PORT_H_ 1
 /* Stub portability header for imported LevelDB code. */
 
-#include "wiredtiger.h"
+#include "archengine.h"
 
 namespace port {
 	const int kLittleEndian = 1;

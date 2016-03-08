@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Public Domain 2014-2015 MongoDB, Inc.
-# Public Domain 2008-2014 WiredTiger, Inc.
+# Public Domain 2008-2014 ArchEngine, Inc.
 #
 # This is free and unencumbered software released into the public domain.
 #
@@ -32,10 +32,10 @@
 import fnmatch, os, time
 from suite_subprocess import suite_subprocess
 from helper import simple_populate
-from wiredtiger import wiredtiger_open
-import wttest
+from archengine import archengine_open
+import aetest
 
-class test_txn11(wttest.WiredTigerTestCase, suite_subprocess):
+class test_txn11(aetest.ArchEngineTestCase, suite_subprocess):
     archive = 'true'
     conn_config = 'verbose=[transaction]'
     logmax = "100K"
@@ -50,7 +50,7 @@ class test_txn11(wttest.WiredTigerTestCase, suite_subprocess):
             'create,error_prefix="%s: ",' % self.shortid() + \
             'log=(archive=%s,enabled,file_max=%s,prealloc=false),' % (self.archive, self.logmax) + \
             'transaction_sync=(enabled=false),'
-        conn = wiredtiger_open(dir, conn_params)
+        conn = archengine_open(dir, conn_params)
         self.pr(`conn`)
         return conn
 
@@ -80,4 +80,4 @@ class test_txn11(wttest.WiredTigerTestCase, suite_subprocess):
         self.reopen_conn()
 
 if __name__ == '__main__':
-    wttest.run()
+    aetest.run()

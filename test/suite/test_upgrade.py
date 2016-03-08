@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Public Domain 2014-2015 MongoDB, Inc.
-# Public Domain 2008-2014 WiredTiger, Inc.
+# Public Domain 2008-2014 ArchEngine, Inc.
 #
 # This is free and unencumbered software released into the public domain.
 #
@@ -27,13 +27,13 @@
 # OTHER DEALINGS IN THE SOFTWARE.
 
 import os, time
-import wiredtiger, wttest
+import archengine, aetest
 from helper import complex_populate, simple_populate
-from wtscenario import check_scenarios
+from aescenario import check_scenarios
 
 # test_upgrade.py
 #    session level upgrade operation
-class test_upgrade(wttest.WiredTigerTestCase):
+class test_upgrade(aetest.ArchEngineTestCase):
     name = 'test_upgrade'
 
     scenarios = check_scenarios([
@@ -49,7 +49,7 @@ class test_upgrade(wttest.WiredTigerTestCase):
         # Open cursors should cause failure.
         if with_cursor:
             cursor = self.session.open_cursor(uri, None, None)
-            self.assertRaises(wiredtiger.WiredTigerError,
+            self.assertRaises(archengine.ArchEngineError,
                 lambda: self.session.drop(uri, None))
             cursor.close()
 
@@ -69,4 +69,4 @@ class test_upgrade(wttest.WiredTigerTestCase):
 
 
 if __name__ == '__main__':
-    wttest.run()
+    aetest.run()

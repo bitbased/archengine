@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Public Domain 2014-2015 MongoDB, Inc.
-# Public Domain 2008-2014 WiredTiger, Inc.
+# Public Domain 2008-2014 ArchEngine, Inc.
 #
 # This is free and unencumbered software released into the public domain.
 #
@@ -32,11 +32,11 @@
 
 import fnmatch, os, shutil, run, time
 from suite_subprocess import suite_subprocess
-from wiredtiger import wiredtiger_open, stat
-from wtscenario import check_scenarios
-import wttest
+from archengine import archengine_open, stat
+from aescenario import check_scenarios
+import aetest
 
-class test_cursor07(wttest.WiredTigerTestCase, suite_subprocess):
+class test_cursor07(aetest.ArchEngineTestCase, suite_subprocess):
     logmax = "100K"
     tablename = 'test_cursor07'
     uri = 'table:' + tablename
@@ -49,7 +49,7 @@ class test_cursor07(wttest.WiredTigerTestCase, suite_subprocess):
         ('reopen', dict(reopen=True))
     ])
 
-    # Overrides WiredTigerTestCase - add logging
+    # Overrides ArchEngineTestCase - add logging
     def setUpConnectionOpen(self, dir):
         self.home = dir
         self.txn_sync = '(method=dsync,enabled)'
@@ -59,8 +59,8 @@ class test_cursor07(wttest.WiredTigerTestCase, suite_subprocess):
                 'transaction_sync="%s",' % self.txn_sync
         # print "Creating conn at '%s' with config '%s'" % (dir, conn_params)
         try:
-            conn = wiredtiger_open(dir, conn_params)
-        except wiredtiger.WiredTigerError as e:
+            conn = archengine_open(dir, conn_params)
+        except archengine.ArchEngineError as e:
             print "Failed conn at '%s' with config '%s'" % (dir, conn_params)
         self.pr(`conn`)
         self.session2 = conn.open_session()
@@ -101,4 +101,4 @@ class test_cursor07(wttest.WiredTigerTestCase, suite_subprocess):
         self.assertEqual(count, self.nkeys)
 
 if __name__ == '__main__':
-    wttest.run()
+    aetest.run()

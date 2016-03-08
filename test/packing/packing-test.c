@@ -1,6 +1,6 @@
 /*-
  * Public Domain 2014-2015 MongoDB, Inc.
- * Public Domain 2008-2014 WiredTiger, Inc.
+ * Public Domain 2008-2014 ArchEngine, Inc.
  *
  * This is free and unencumbered software released into the public domain.
  *
@@ -28,7 +28,7 @@
 
 #include <assert.h>
 
-#include "wt_internal.h"			/* For __wt_XXX */
+#include "ae_internal.h"			/* For __ae_XXX */
 
 static void
 check(const char *fmt, ...)
@@ -40,13 +40,13 @@ check(const char *fmt, ...)
 	len = 0;			/* -Werror=maybe-uninitialized */
 
 	va_start(ap, fmt);
-	assert(__wt_struct_sizev(NULL, &len, fmt, ap) == 0);
+	assert(__ae_struct_sizev(NULL, &len, fmt, ap) == 0);
 	va_end(ap);
 
 	assert(len < sizeof(buf));
 
 	va_start(ap, fmt);
-	assert(__wt_struct_packv(NULL, buf, sizeof(buf), fmt, ap) == 0);
+	assert(__ae_struct_packv(NULL, buf, sizeof(buf), fmt, ap) == 0);
 	va_end(ap);
 
 	printf("%s ", fmt);
@@ -62,7 +62,7 @@ main(void)
 	check("3i", 0, 101, -99);
 	check("iS", 42, "forty two");
 #if 0
-	/* TODO: need a WT_ITEM */
+	/* TODO: need a AE_ITEM */
 	check("u", r"\x42" * 20)
 	check("uu", r"\x42" * 10, r"\x42" * 10)
 #endif

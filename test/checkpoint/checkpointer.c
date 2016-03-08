@@ -1,6 +1,6 @@
 /*-
  * Public Domain 2014-2015 MongoDB, Inc.
- * Public Domain 2008-2014 WiredTiger, Inc.
+ * Public Domain 2008-2014 ArchEngine, Inc.
  *
  * This is free and unencumbered software released into the public domain.
  *
@@ -30,10 +30,10 @@
 
 static void *checkpointer(void *);
 static int compare_cursors(
-    WT_CURSOR *, const char *, WT_CURSOR *, const char *);
-static int diagnose_key_error(WT_CURSOR *, int, WT_CURSOR *, int);
+    AE_CURSOR *, const char *, AE_CURSOR *, const char *);
+static int diagnose_key_error(AE_CURSOR *, int, AE_CURSOR *, int);
 static int real_checkpointer(void);
-static int verify_checkpoint(WT_SESSION *);
+static int verify_checkpoint(AE_SESSION *);
 
 /*
  * start_checkpoints --
@@ -72,9 +72,9 @@ checkpointer(void *arg)
 {
 	char tid[128];
 
-	WT_UNUSED(arg);
+	AE_UNUSED(arg);
 
-	__wt_thread_id(tid, sizeof(tid));
+	__ae_thread_id(tid, sizeof(tid));
 	printf("checkpointer thread starting: tid: %s\n", tid);
 
 	(void)real_checkpointer();
@@ -89,7 +89,7 @@ checkpointer(void *arg)
 static int
 real_checkpointer(void)
 {
-	WT_SESSION *session;
+	AE_SESSION *session;
 	char *checkpoint_config, _buf[128];
 	int ret;
 
@@ -104,7 +104,7 @@ real_checkpointer(void)
 		return (log_print_err("conn.open_session", ret, 1));
 
 	if (strncmp(g.checkpoint_name,
-	    "WiredTigerCheckpoint", strlen("WiredTigerCheckpoint")) == 0)
+	    "ArchEngineCheckpoint", strlen("ArchEngineCheckpoint")) == 0)
 		checkpoint_config = NULL;
 	else {
 		checkpoint_config = _buf;
@@ -137,9 +137,9 @@ done:	if ((ret = session->close(session, NULL)) != 0)
  *     the tables in parallel. The key/values should match across all tables.
  */
 static int
-verify_checkpoint(WT_SESSION *session)
+verify_checkpoint(AE_SESSION *session)
 {
-	WT_CURSOR **cursors;
+	AE_CURSOR **cursors;
 	const char *type0, *typei;
 	char next_uri[128], ckpt[128];
 	int i, ret, t_ret;
@@ -159,7 +159,7 @@ verify_checkpoint(WT_SESSION *session)
 		 */
 		if (g.cookies[i].type == LSM)
 			continue;
-		snprintf(next_uri, 128, "table:__wt%04d", i);
+		snprintf(next_uri, 128, "table:__ae%04d", i);
 		if ((ret = session->open_cursor(
 		    session, next_uri, NULL, ckpt, &cursors[i])) != 0) {
 			(void)log_print_err(
@@ -178,7 +178,7 @@ verify_checkpoint(WT_SESSION *session)
 		ret = cursors[0]->next(cursors[0]);
 		if (ret == 0)
 			++key_count;
-		else if (ret != WT_NOTFOUND) {
+		else if (ret != AE_NOTFOUND) {
 			(void)log_print_err("cursor->next", ret, 1);
 			goto err;
 		}
@@ -194,14 +194,14 @@ verify_checkpoint(WT_SESSION *session)
 			if (g.cookies[i].type == LSM)
 				continue;
 			t_ret = cursors[i]->next(cursors[i]);
-			if (t_ret != 0 && t_ret != WT_NOTFOUND) {
+			if (t_ret != 0 && t_ret != AE_NOTFOUND) {
 				(void)log_print_err("cursor->next", t_ret, 1);
 				goto err;
 			}
 
-			if (ret == WT_NOTFOUND && t_ret == WT_NOTFOUND)
+			if (ret == AE_NOTFOUND && t_ret == AE_NOTFOUND)
 				continue;
-			else if (ret == WT_NOTFOUND || t_ret == WT_NOTFOUND) {
+			else if (ret == AE_NOTFOUND || t_ret == AE_NOTFOUND) {
 				(void)log_print_err(
 				    "verify_checkpoint tables with different"
 				    " amount of data", EFAULT, 1);
@@ -240,8 +240,8 @@ err:	for (i = 0; i < g.ntables; i++) {
  */
 static int
 compare_cursors(
-    WT_CURSOR *cursor1, const char *type1,
-    WT_CURSOR *cursor2, const char *type2)
+    AE_CURSOR *cursor1, const char *type1,
+    AE_CURSOR *cursor2, const char *type2)
 {
 	uint64_t key1, key2;
 	char *val1, *val2, buf[128];
@@ -283,11 +283,11 @@ compare_cursors(
  */
 static int
 diagnose_key_error(
-    WT_CURSOR *cursor1, int index1,
-    WT_CURSOR *cursor2, int index2)
+    AE_CURSOR *cursor1, int index1,
+    AE_CURSOR *cursor2, int index2)
 {
-	WT_CURSOR *c;
-	WT_SESSION *session;
+	AE_CURSOR *c;
+	AE_SESSION *session;
 	uint64_t key1, key1_orig, key2, key2_orig;
 	char next_uri[128], ckpt[128];
 	int ret;
@@ -338,7 +338,7 @@ diagnose_key_error(
 	 * Now try opening new cursors on the checkpoints and see if we
 	 * get the same missing key via searching.
 	 */
-	snprintf(next_uri, 128, "table:__wt%04d", index1);
+	snprintf(next_uri, 128, "table:__ae%04d", index1);
 	if (session->open_cursor(session, next_uri, NULL, ckpt, &c) != 0)
 		return (1);
 	c->set_key(c, key1_orig);
@@ -350,7 +350,7 @@ diagnose_key_error(
 	if (c->close(c) != 0)
 		return (1);
 
-	snprintf(next_uri, 128, "table:__wt%04d", index2);
+	snprintf(next_uri, 128, "table:__ae%04d", index2);
 	if (session->open_cursor(session, next_uri, NULL, ckpt, &c) != 0)
 		return (1);
 	c->set_key(c, key1_orig);
@@ -367,7 +367,7 @@ live_check:
 	 * Now try opening cursors on the live checkpoint to see if we get the
 	 * same missing key via searching.
 	 */
-	snprintf(next_uri, 128, "table:__wt%04d", index1);
+	snprintf(next_uri, 128, "table:__ae%04d", index1);
 	if (session->open_cursor(session, next_uri, NULL, NULL, &c) != 0)
 		return (1);
 	c->set_key(c, key1_orig);
@@ -376,7 +376,7 @@ live_check:
 	if (c->close(c) != 0)
 		return (1);
 
-	snprintf(next_uri, 128, "table:__wt%04d", index2);
+	snprintf(next_uri, 128, "table:__ae%04d", index2);
 	if (session->open_cursor(session, next_uri, NULL, NULL, &c) != 0)
 		return (1);
 	c->set_key(c, key2_orig);

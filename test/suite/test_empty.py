@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Public Domain 2014-2015 MongoDB, Inc.
-# Public Domain 2008-2014 WiredTiger, Inc.
+# Public Domain 2008-2014 ArchEngine, Inc.
 #
 # This is free and unencumbered software released into the public domain.
 #
@@ -27,13 +27,13 @@
 # OTHER DEALINGS IN THE SOFTWARE.
 
 import os
-import wiredtiger, wttest
+import archengine, aetest
 from helper import key_populate
-from wtscenario import check_scenarios
+from aescenario import check_scenarios
 
 # test_empty.py
 #       Test that empty objects don't write anything other than a single sector.
-class test_empty(wttest.WiredTigerTestCase):
+class test_empty(aetest.ArchEngineTestCase):
     name = 'test_empty'
 
     scenarios = check_scenarios([
@@ -50,7 +50,7 @@ class test_empty(wttest.WiredTigerTestCase):
         self.session.close()
         name = self.name
         if self.type == "table:":
-            name = name + '.wt'
+            name = name + '.ae'
         self.assertEquals(os.stat(name).st_size, 4*1024)
 
     # Open a new sesssion, add a few rows to an object and then remove them,
@@ -81,7 +81,7 @@ class test_empty(wttest.WiredTigerTestCase):
         # The file should not have grown.
         name = self.name
         if self.type == "table:":
-            name = name + '.wt'
+            name = name + '.ae'
         self.assertEquals(os.stat(name).st_size, 4*1024)
 
     # Creating an object, inserting and removing records (that is, building an
@@ -96,4 +96,4 @@ class test_empty(wttest.WiredTigerTestCase):
             self.empty()
 
 if __name__ == '__main__':
-    wttest.run()
+    aetest.run()

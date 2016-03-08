@@ -3,13 +3,13 @@
 @section tuning_cache_size Cache size
 
 The size of the cache is the single most important tuning knob for a
-WiredTiger application.  Ideally the cache should be configured to be
+ArchEngine application.  Ideally the cache should be configured to be
 large enough to hold an application's working set.
 
 The cache size for the database is normally configured by setting the
-\c cache_size configuration string when calling the ::wiredtiger_open
+\c cache_size configuration string when calling the ::archengine_open
 function.  The cache size can be adjusted after the open call with
-WT_CONNECTION::reconfigure.
+AE_CONNECTION::reconfigure.
 
 An example of setting a cache size to 500MB:
 
@@ -22,7 +22,7 @@ the page eviction statistics for the database.
 
 Objects can be created as cache resident - that is their contents will
 remain in cache and never be considered for the purposes of cache
-eviction. Cache residence can be configured with the WT_SESSION::create
+eviction. Cache residence can be configured with the AE_SESSION::create
 "cache_resident" configuration string. LSM tree objects do not support
 the "cache_resident" setting.
 
@@ -46,23 +46,23 @@ An example of configuring a cache-resident object:
 
 @section cache_eviction Eviction tuning
 
-When an application approaches the maximum cache size, WiredTiger begins
+When an application approaches the maximum cache size, ArchEngine begins
 eviction to stop memory use from growing too large, approximating a
 least-recently-used algorithm.
 
-WiredTiger provides several configuration options for tuning how pages
+ArchEngine provides several configuration options for tuning how pages
 are evicted from the cache. Different settings will improve performance
 depending on an application's particular workload.  Customizing the
 eviction configuration settings can reduce latency spikes in
 application threads and can improve throughput in some applications.
 
-WiredTiger eviction tuning options can be configured when first opening
-a database via ::wiredtiger_open, or changed after open with
-WT_CONNECTION::reconfigure.
+ArchEngine eviction tuning options can be configured when first opening
+a database via ::archengine_open, or changed after open with
+AE_CONNECTION::reconfigure.
 
 The \c eviction_trigger configuration value is the occupied percentage
 of the total cache size that causes eviction to start.  By default,
-WiredTiger begins evicting pages when the cache is 95% full. An
+ArchEngine begins evicting pages when the cache is 95% full. An
 application concerned about a latency spike as the cache becomes full
 might want to begin eviction earlier.
 
@@ -81,13 +81,13 @@ is triggered.
 
 @snippet ex_all.c Eviction configuration
 
-By default, WiredTiger cache eviction is handled by a single, separate
+By default, ArchEngine cache eviction is handled by a single, separate
 thread.  In a large, busy cache, a single thread will be insufficient
 (especially when the eviction thread must wait for I/O).  The
 \c eviction=(threads_min) and \c eviction=(threads_max) configuration
 values can be used to configure the minimum and maximum number of
-additional threads WiredTiger will create to keep up with the
-application eviction load.  Finally, if the Wiredtiger eviction threads
+additional threads ArchEngine will create to keep up with the
+application eviction load.  Finally, if the Archengine eviction threads
 are unable to keep up with application demand for cache space,
 application threads will be tasked with eviction as well, potentially
 resulting in latency spikes.

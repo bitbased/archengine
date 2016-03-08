@@ -1,7 +1,7 @@
 #!usr/bin/env python
 #
 # Public Domain 2014-2015 MongoDB, Inc.
-# Public Domain 2008-2014 WiredTiger, Inc.
+# Public Domain 2008-2014 ArchEngine, Inc.
 #
 # This is free and unencumbered software released into the public domain.
 #
@@ -26,12 +26,12 @@
 # ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 # OTHER DEALINGS IN THE SOFTWARE.
 
-import wiredtiger, wttest
+import archengine, aetest
 from helper import simple_populate, key_populate, value_populate
 
 # test_colgap.py
 #    Test variable-length column-store gap performance.
-class test_column_store_gap(wttest.WiredTigerTestCase):
+class test_column_store_gap(aetest.ArchEngineTestCase):
     nentries = 13
 
     # Cursor forward
@@ -120,4 +120,4 @@ class test_column_store_gap(wttest.WiredTigerTestCase):
 
 
 if __name__ == '__main__':
-    wttest.run()
+    aetest.run()

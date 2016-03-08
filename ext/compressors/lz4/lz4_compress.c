@@ -1,6 +1,6 @@
 /*-
  * Public Domain 2014-2015 MongoDB, Inc.
- * Public Domain 2008-2014 WiredTiger, Inc.
+ * Public Domain 2008-2014 ArchEngine, Inc.
  *
  * This is free and unencumbered software released into the public domain.
  *
@@ -31,28 +31,28 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <wiredtiger.h>
-#include <wiredtiger_ext.h>
+#include <archengine.h>
+#include <archengine_ext.h>
 
 /*
  * We need to include the configuration file to detect whether this extension
- * is being built into the WiredTiger library.
+ * is being built into the ArchEngine library.
  */
-#include "wiredtiger_config.h"
+#include "archengine_config.h"
 #ifdef _MSC_VER
 #define	inline __inline
 #endif
 
 /* Local compressor structure. */
 typedef struct {
-	WT_COMPRESSOR compressor;		/* Must come first */
+	AE_COMPRESSOR compressor;		/* Must come first */
 
-	WT_EXTENSION_API *wt_api;		/* Extension API */
+	AE_EXTENSION_API *ae_api;		/* Extension API */
 } LZ4_COMPRESSOR;
 
 /*
  * LZ4 decompression requires the exact compressed byte count returned by the
- * LZ4_compress and LZ4_compress_destSize functions. WiredTiger doesn't track
+ * LZ4_compress and LZ4_compress_destSize functions. ArchEngine doesn't track
  * that value, store it in the destination buffer.
  *
  * Additionally, LZ4_compress_destSize may compress into the middle of a record,
@@ -60,7 +60,7 @@ typedef struct {
  * decompressed, not the number of bytes decompressed; store that value in the
  * destination buffer as well.
  *
- * Use fixed-size, 4B values (WiredTiger never writes buffers larger than 4GB).
+ * Use fixed-size, 4B values (ArchEngine never writes buffers larger than 4GB).
  *
  * The unused field is available for a mode flag if one is needed in the future,
  * we guarantee it's 0.
@@ -78,23 +78,23 @@ typedef struct {
  */
 static int
 lz4_error(
-    WT_COMPRESSOR *compressor, WT_SESSION *session, const char *call, int error)
+    AE_COMPRESSOR *compressor, AE_SESSION *session, const char *call, int error)
 {
-	WT_EXTENSION_API *wt_api;
+	AE_EXTENSION_API *ae_api;
 
-	wt_api = ((LZ4_COMPRESSOR *)compressor)->wt_api;
+	ae_api = ((LZ4_COMPRESSOR *)compressor)->ae_api;
 
-	(void)wt_api->err_printf(wt_api,
+	(void)ae_api->err_printf(ae_api,
 	    session, "lz4 error: %s: %d", call, error);
-	return (WT_ERROR);
+	return (AE_ERROR);
 }
 
 /*
  *  lz4_compress --
- *	WiredTiger LZ4 compression.
+ *	ArchEngine LZ4 compression.
  */
 static int
-lz4_compress(WT_COMPRESSOR *compressor, WT_SESSION *session,
+lz4_compress(AE_COMPRESSOR *compressor, AE_SESSION *session,
     uint8_t *src, size_t src_len,
     uint8_t *dst, size_t dst_len,
     size_t *result_lenp, int *compression_failed)
@@ -132,22 +132,22 @@ lz4_compress(WT_COMPRESSOR *compressor, WT_SESSION *session,
 
 /*
  * lz4_decompress --
- *	WiredTiger LZ4 decompression.
+ *	ArchEngine LZ4 decompression.
  */
 static int
-lz4_decompress(WT_COMPRESSOR *compressor, WT_SESSION *session,
+lz4_decompress(AE_COMPRESSOR *compressor, AE_SESSION *session,
     uint8_t *src, size_t src_len,
     uint8_t *dst, size_t dst_len,
     size_t *result_lenp)
 {
-	WT_EXTENSION_API *wt_api;
+	AE_EXTENSION_API *ae_api;
 	LZ4_PREFIX prefix;
 	int decoded;
 	uint8_t *dst_tmp;
 
 	(void)src_len;					/* Unused parameters */
 
-	wt_api = ((LZ4_COMPRESSOR *)compressor)->wt_api;
+	ae_api = ((LZ4_COMPRESSOR *)compressor)->ae_api;
 
 	/*
 	 * Retrieve the true length of the compressed block and source and the
@@ -169,8 +169,8 @@ lz4_decompress(WT_COMPRESSOR *compressor, WT_SESSION *session,
 	 * we have to allocate a scratch buffer.
 	 */
 	if (dst_len < prefix.uncompressed_len) {
-		if ((dst_tmp = wt_api->scr_alloc(
-		   wt_api, session, (size_t)prefix.uncompressed_len)) == NULL)
+		if ((dst_tmp = ae_api->scr_alloc(
+		   ae_api, session, (size_t)prefix.uncompressed_len)) == NULL)
 			return (ENOMEM);
 
 		decoded = LZ4_decompress_safe(
@@ -179,7 +179,7 @@ lz4_decompress(WT_COMPRESSOR *compressor, WT_SESSION *session,
 
 		if (decoded >= 0)
 			memcpy(dst, dst_tmp, dst_len);
-		wt_api->scr_free(wt_api, session, dst_tmp);
+		ae_api->scr_free(ae_api, session, dst_tmp);
 	} else
 		decoded = LZ4_decompress_safe(
 		    (const char *)src + sizeof(LZ4_PREFIX),
@@ -231,7 +231,7 @@ lz4_find_slot(int target_arg, uint32_t *offsets, uint32_t slots)
  *	Pack records into a specified on-disk page size.
  */
 static int
-lz4_compress_raw(WT_COMPRESSOR *compressor, WT_SESSION *session,
+lz4_compress_raw(AE_COMPRESSOR *compressor, AE_SESSION *session,
     size_t page_max, int split_pct, size_t extra,
     uint8_t *src, uint32_t *offsets, uint32_t slots,
     uint8_t *dst, size_t dst_len, int final,
@@ -283,10 +283,10 @@ lz4_compress_raw(WT_COMPRESSOR *compressor, WT_SESSION *session,
 
 /*
  * lz4_pre_size --
- *	WiredTiger LZ4 destination buffer sizing for compression.
+ *	ArchEngine LZ4 destination buffer sizing for compression.
  */
 static int
-lz4_pre_size(WT_COMPRESSOR *compressor, WT_SESSION *session,
+lz4_pre_size(AE_COMPRESSOR *compressor, AE_SESSION *session,
     uint8_t *src, size_t src_len, size_t *result_lenp)
 {
 	(void)compressor;				/* Unused parameters */
@@ -304,10 +304,10 @@ lz4_pre_size(WT_COMPRESSOR *compressor, WT_SESSION *session,
 
 /*
  * lz4_terminate --
- *	WiredTiger LZ4 compression termination.
+ *	ArchEngine LZ4 compression termination.
  */
 static int
-lz4_terminate(WT_COMPRESSOR *compressor, WT_SESSION *session)
+lz4_terminate(AE_COMPRESSOR *compressor, AE_SESSION *session)
 {
 	(void)session;					/* Unused parameters */
 
@@ -320,7 +320,7 @@ lz4_terminate(WT_COMPRESSOR *compressor, WT_SESSION *session)
  *	Add a LZ4 compressor.
  */
 static int
-lz_add_compressor(WT_CONNECTION *connection, int raw, const char *name)
+lz_add_compressor(AE_CONNECTION *connection, int raw, const char *name)
 {
 	LZ4_COMPRESSOR *lz4_compressor;
 
@@ -337,23 +337,23 @@ lz_add_compressor(WT_CONNECTION *connection, int raw, const char *name)
 	lz4_compressor->compressor.pre_size = lz4_pre_size;
 	lz4_compressor->compressor.terminate = lz4_terminate;
 
-	lz4_compressor->wt_api = connection->get_extension_api(connection);
+	lz4_compressor->ae_api = connection->get_extension_api(connection);
 
 	/* Load the compressor */
 	return (connection->add_compressor(
-	    connection, name, (WT_COMPRESSOR *)lz4_compressor, NULL));
+	    connection, name, (AE_COMPRESSOR *)lz4_compressor, NULL));
 }
 
-int lz4_extension_init(WT_CONNECTION *, WT_CONFIG_ARG *);
+int lz4_extension_init(AE_CONNECTION *, AE_CONFIG_ARG *);
 
 /*
  * lz4_extension_init --
- *	WiredTiger LZ4 compression extension - called directly when LZ4 support
- * is built in, or via wiredtiger_extension_init when LZ4 support is included
+ *	ArchEngine LZ4 compression extension - called directly when LZ4 support
+ * is built in, or via archengine_extension_init when LZ4 support is included
  * via extension loading.
  */
 int
-lz4_extension_init(WT_CONNECTION *connection, WT_CONFIG_ARG *config)
+lz4_extension_init(AE_CONNECTION *connection, AE_CONFIG_ARG *config)
 {
 	int ret;
 
@@ -372,11 +372,11 @@ lz4_extension_init(WT_CONNECTION *connection, WT_CONFIG_ARG *config)
  */
 #ifndef	HAVE_BUILTIN_EXTENSION_LZ4
 /*
- * wiredtiger_extension_init --
- *	WiredTiger LZ4 compression extension.
+ * archengine_extension_init --
+ *	ArchEngine LZ4 compression extension.
  */
 int
-wiredtiger_extension_init(WT_CONNECTION *connection, WT_CONFIG_ARG *config)
+archengine_extension_init(AE_CONNECTION *connection, AE_CONFIG_ARG *config)
 {
 	return (lz4_extension_init(connection, config));
 }

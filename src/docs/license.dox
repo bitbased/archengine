@@ -1,6 +1,6 @@
-/*! @page license WiredTiger licensing
+/*! @page license ArchEngine licensing
 
-The complete WiredTiger software package is Open Source software: you
+The complete ArchEngine software package is Open Source software: you
 are welcome to modify and redistribute it under the terms of
 <a href="http://www.gnu.org/licenses/gpl-2.0-standalone.html">
 <b>version 2</b></a> or
@@ -13,16 +13,16 @@ WARRANTY; without even the implied warranty of MERCHANTABILITY or
 FITNESS FOR A PARTICULAR PURPOSE.  See the
 <b>GNU General Public License</b></a> for details.
 
-For a license to use the WiredTiger software under conditions other than
+For a license to use the ArchEngine software under conditions other than
 those described above, or for technical support for this software, please
 contact MongoDB, Inc. at
-<a mailto="info@wiredtiger.com">info@wiredtiger.com</a>.
+<a mailto="info@archengine.com">info@archengine.com</a>.
 
-@section license_library 3rd party software included in the WiredTiger library
+@section license_library 3rd party software included in the ArchEngine library
 
-Every build of the WiredTiger library binary includes the following 3rd
+Every build of the ArchEngine library binary includes the following 3rd
 party software, distributed under their license terms.  Redistribution
-of the WiredTiger library should comply with these copyrights.
+of the ArchEngine library should comply with these copyrights.
 
 <table>
 @hrow{Distribution Files, Copyright Holder, License}
@@ -33,12 +33,12 @@ of the WiredTiger library should comply with these copyrights.
 @row{\c src/support/hash_fnv.c, Authors, Public Domain}
 </table>
 
-@section license_leveldb 3rd party software optionally included in the WiredTiger library: LevelDB
+@section license_leveldb 3rd party software optionally included in the ArchEngine library: LevelDB
 
 If the \c --enable-leveldb configuration option is specified when
-configuring the WiredTiger build, additional 3rd party software is
-included in the WiredTiger LevelDB library binary, distributed under
-their license terms.  Redistribution of the WiredTiger library built
+configuring the ArchEngine build, additional 3rd party software is
+included in the ArchEngine LevelDB library binary, distributed under
+their license terms.  Redistribution of the ArchEngine library built
 with the \c --enable-leveldb configuration option should comply with
 these copyrights.
 
@@ -50,22 +50,22 @@ these copyrights.
 @row{\c api/leveldb/rocksdb/*, Facebook\, Inc., <a href="http://www.opensource.org/licenses/BSD-3-Clause">BSD-3-Clause License</a>}
 </table>
 
-@section license_distribution 3rd party software included in the WiredTiger distribution
+@section license_distribution 3rd party software included in the ArchEngine distribution
 
-The WiredTiger software distribution includes additional 3rd party software
+The ArchEngine software distribution includes additional 3rd party software
 licensed under a variety of licenses.   <b>This software is NOT included
-in the WiredTiger library binary as built by the distribution.</b> This
-software is used for peripheral tasks, such as building the WiredTiger
-documentation, testing the WiredTiger software or graphically displaying
-WiredTiger run-time output.  If you extract portions of the WiredTiger
+in the ArchEngine library binary as built by the distribution.</b> This
+software is used for peripheral tasks, such as building the ArchEngine
+documentation, testing the ArchEngine software or graphically displaying
+ArchEngine run-time output.  If you extract portions of the ArchEngine
 software distribution for inclusion in other packages, or redistribute
-selected portions of the WiredTiger sources, please review the copyright
-notices and LICENSE files included in the WiredTiger distribution for
+selected portions of the ArchEngine sources, please review the copyright
+notices and LICENSE files included in the ArchEngine distribution for
 the terms and conditions of such redistribution.
 
 @section license_public_domain Public domain software
 
-Many portions of the WiredTiger distribution are public domain software.
+Many portions of the ArchEngine distribution are public domain software.
 Public domain files have notices releasing the software into the public
 domain and may be freely used and redistributed.
 

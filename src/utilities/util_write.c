@@ -1,6 +1,6 @@
 /*-
  * Copyright (c) 2014-2015 MongoDB, Inc.
- * Copyright (c) 2008-2014 WiredTiger, Inc.
+ * Copyright (c) 2008-2014 ArchEngine, Inc.
  *	All rights reserved.
  *
  * See the file LICENSE for redistribution information.
@@ -11,10 +11,10 @@
 static int usage(void);
 
 int
-util_write(WT_SESSION *session, int argc, char *argv[])
+util_write(AE_SESSION *session, int argc, char *argv[])
 {
-	WT_CURSOR *cursor;
-	WT_DECL_RET;
+	AE_CURSOR *cursor;
+	AE_DECL_RET;
 	uint64_t recno;
 	int ch;
 	bool append, overwrite, rkey;
@@ -22,7 +22,7 @@ util_write(WT_SESSION *session, int argc, char *argv[])
 	char config[100];
 
 	append = overwrite = false;
-	while ((ch = __wt_getopt(progname, argc, argv, "ao")) != EOF)
+	while ((ch = __ae_getopt(progname, argc, argv, "ao")) != EOF)
 		switch (ch) {
 		case 'a':
 			append = true;
@@ -34,8 +34,8 @@ util_write(WT_SESSION *session, int argc, char *argv[])
 		default:
 			return (usage());
 		}
-	argc -= __wt_optind;
-	argv += __wt_optind;
+	argc -= __ae_optind;
+	argv += __ae_optind;
 
 	/*
 	 * The remaining arguments are a uri followed by a list of values (if

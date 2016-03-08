@@ -1,6 +1,6 @@
 /*-
  * Public Domain 2014-2015 MongoDB, Inc.
- * Public Domain 2008-2014 WiredTiger, Inc.
+ * Public Domain 2008-2014 ArchEngine, Inc.
  *
  * This is free and unencumbered software released into the public domain.
  *
@@ -26,14 +26,14 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  *
  * ex_config_parse.c
- *	This is an example demonstrating how to parse WiredTiger compatible
+ *	This is an example demonstrating how to parse ArchEngine compatible
  *	configuration strings.
  */
 
 #include <stdio.h>
 #include <string.h>
 
-#include <wiredtiger.h>
+#include <archengine.h>
 
 int
 main(void)
@@ -41,28 +41,28 @@ main(void)
 	int ret;
 
 	/*! [Create a configuration parser] */
-	WT_CONFIG_ITEM k, v;
-	WT_CONFIG_PARSER *parser;
+	AE_CONFIG_ITEM k, v;
+	AE_CONFIG_PARSER *parser;
 	const char *config_string =
 	    "path=/dev/loop,page_size=1024,log=(archive=true,file_max=20MB)";
 
-	if ((ret = wiredtiger_config_parser_open(
+	if ((ret = archengine_config_parser_open(
 	    NULL, config_string, strlen(config_string), &parser)) != 0) {
 		fprintf(stderr, "Error creating configuration parser: %s\n",
-		    wiredtiger_strerror(ret));
+		    archengine_strerror(ret));
 		return (ret);
 	}
 	if ((ret = parser->close(parser)) != 0) {
 		fprintf(stderr, "Error closing configuration parser: %s\n",
-		    wiredtiger_strerror(ret));
+		    archengine_strerror(ret));
 		return (ret);
 	}
 	/*! [Create a configuration parser] */
 
-	if ((ret = wiredtiger_config_parser_open(
+	if ((ret = archengine_config_parser_open(
 	    NULL, config_string, strlen(config_string), &parser)) != 0) {
 		fprintf(stderr, "Error creating configuration parser: %s\n",
-		    wiredtiger_strerror(ret));
+		    archengine_strerror(ret));
 		return (ret);
 	}
 
@@ -74,7 +74,7 @@ main(void)
 	 */
 	if ((ret = parser->get(parser, "page_size", &v)) != 0) {
 		fprintf(stderr,
-		    "page_size configuration: %s", wiredtiger_strerror(ret));
+		    "page_size configuration: %s", archengine_strerror(ret));
 		return (ret);
 	}
 	my_page_size = v.val;
@@ -86,10 +86,10 @@ main(void)
 	}
 
 	{
-	if ((ret = wiredtiger_config_parser_open(
+	if ((ret = archengine_config_parser_open(
 	    NULL, config_string, strlen(config_string), &parser)) != 0) {
 		fprintf(stderr, "Error creating configuration parser: %s\n",
-		    wiredtiger_strerror(ret));
+		    archengine_strerror(ret));
 		return (ret);
 	}
 	/*! [next] */
@@ -98,7 +98,7 @@ main(void)
 	 */
 	while ((ret = parser->next(parser, &k, &v)) == 0) {
 		printf("%.*s:", (int)k.len, k.str);
-		if (v.type == WT_CONFIG_ITEM_NUM)
+		if (v.type == AE_CONFIG_ITEM_NUM)
 			printf("%d\n", (int)v.val);
 		else
 			printf("%.*s\n", (int)v.len, v.str);
@@ -107,10 +107,10 @@ main(void)
 	ret = parser->close(parser);
 	}
 
-	if ((ret = wiredtiger_config_parser_open(
+	if ((ret = archengine_config_parser_open(
 	    NULL, config_string, strlen(config_string), &parser)) != 0) {
 		fprintf(stderr, "Error creating configuration parser: %s\n",
-		    wiredtiger_strerror(ret));
+		    archengine_strerror(ret));
 		return (ret);
 	}
 
@@ -120,35 +120,35 @@ main(void)
 	 * using dot shorthand. Utilize the configuration parsing automatic
 	 * conversion of value strings into an integer.
 	 */
-	v.type = WT_CONFIG_ITEM_NUM;
+	v.type = AE_CONFIG_ITEM_NUM;
 	if ((ret = parser->get(parser, "log.file_max", &v)) != 0) {
 		fprintf(stderr,
-		    "log.file_max configuration: %s", wiredtiger_strerror(ret));
+		    "log.file_max configuration: %s", archengine_strerror(ret));
 		return (ret);
 	}
 	printf("log file max: %d\n", (int)v.val);
 	/*! [nested get] */
 	ret = parser->close(parser);
 
-	if ((ret = wiredtiger_config_parser_open(
+	if ((ret = archengine_config_parser_open(
 	    NULL, config_string, strlen(config_string), &parser)) != 0) {
 		fprintf(stderr, "Error creating configuration parser: %s\n",
-		    wiredtiger_strerror(ret));
+		    archengine_strerror(ret));
 		return (ret);
 	}
 	/*! [nested traverse] */
 	{
-	WT_CONFIG_PARSER *sub_parser;
+	AE_CONFIG_PARSER *sub_parser;
 	while ((ret = parser->next(parser, &k, &v)) == 0) {
-		if (v.type == WT_CONFIG_ITEM_STRUCT) {
+		if (v.type == AE_CONFIG_ITEM_STRUCT) {
 			printf("Found nested configuration: %.*s\n",
 			    (int)k.len, k.str);
-			if ((ret = wiredtiger_config_parser_open(
+			if ((ret = archengine_config_parser_open(
 			    NULL, v.str, v.len, &sub_parser)) != 0) {
 				fprintf(stderr,
 				    "Error creating nested configuration "
 				    "parser: %s\n",
-				    wiredtiger_strerror(ret));
+				    archengine_strerror(ret));
 				ret = parser->close(parser);
 				return (ret);
 			}

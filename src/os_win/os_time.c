@@ -1,24 +1,24 @@
 /*-
  * Copyright (c) 2014-2015 MongoDB, Inc.
- * Copyright (c) 2008-2014 WiredTiger, Inc.
+ * Copyright (c) 2008-2014 ArchEngine, Inc.
  *	All rights reserved.
  *
  * See the file LICENSE for redistribution information.
  */
 
-#include "wt_internal.h"
+#include "ae_internal.h"
 
 /*
- * __wt_epoch --
+ * __ae_epoch --
  *	Return the time since the Epoch.
  */
 int
-__wt_epoch(WT_SESSION_IMPL *session, struct timespec *tsp)
+__ae_epoch(AE_SESSION_IMPL *session, struct timespec *tsp)
 {
 	uint64_t ns100;
 	FILETIME time;
 
-	WT_UNUSED(session);
+	AE_UNUSED(session);
 
 	GetSystemTimeAsFileTime(&time);
 
@@ -41,7 +41,7 @@ localtime_r(const time_t *timer, struct tm *result)
 
 	err = localtime_s(result, timer);
 	if (err != 0) {
-		__wt_err(NULL, err, "localtime_s");
+		__ae_err(NULL, err, "localtime_s");
 		return (NULL);
 	}
 

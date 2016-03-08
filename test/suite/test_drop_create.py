@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Public Domain 2014-2015 MongoDB, Inc.
-# Public Domain 2008-2014 WiredTiger, Inc.
+# Public Domain 2008-2014 ArchEngine, Inc.
 #
 # This is free and unencumbered software released into the public domain.
 #
@@ -26,11 +26,11 @@
 # ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 # OTHER DEALINGS IN THE SOFTWARE.
 
-import wiredtiger, wttest
+import archengine, aetest
 
 # test_drop_create.py
 #    Test dropping and creating
-class test_drop_create(wttest.WiredTigerTestCase):
+class test_drop_create(aetest.ArchEngineTestCase):
     def test_drop_create(self):
         s, self.session = self.session, None
         self.assertEqual(s.close(), 0)
@@ -68,4 +68,4 @@ class test_drop_create(wttest.WiredTigerTestCase):
         self.assertEqual(s2.close(), 0)
 
 if __name__ == '__main__':
-    wttest.run()
+    aetest.run()

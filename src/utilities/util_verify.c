@@ -1,6 +1,6 @@
 /*-
  * Copyright (c) 2014-2015 MongoDB, Inc.
- * Copyright (c) 2008-2014 WiredTiger, Inc.
+ * Copyright (c) 2008-2014 ArchEngine, Inc.
  *	All rights reserved.
  *
  * See the file LICENSE for redistribution information.
@@ -11,9 +11,9 @@
 static int usage(void);
 
 int
-util_verify(WT_SESSION *session, int argc, char *argv[])
+util_verify(AE_SESSION *session, int argc, char *argv[])
 {
-	WT_DECL_RET;
+	AE_DECL_RET;
 	size_t size;
 	int ch;
 	bool dump_address, dump_blocks, dump_pages, dump_shape;
@@ -21,15 +21,15 @@ util_verify(WT_SESSION *session, int argc, char *argv[])
 
 	dump_address = dump_blocks = dump_pages = dump_shape = false;
 	config = dump_offsets = name = NULL;
-	while ((ch = __wt_getopt(progname, argc, argv, "d:")) != EOF)
+	while ((ch = __ae_getopt(progname, argc, argv, "d:")) != EOF)
 		switch (ch) {
 		case 'd':
-			if (strcmp(__wt_optarg, "dump_address") == 0)
+			if (strcmp(__ae_optarg, "dump_address") == 0)
 				dump_address = true;
-			else if (strcmp(__wt_optarg, "dump_blocks") == 0)
+			else if (strcmp(__ae_optarg, "dump_blocks") == 0)
 				dump_blocks = true;
 			else if (
-			    WT_PREFIX_MATCH(__wt_optarg, "dump_offsets=")) {
+			    AE_PREFIX_MATCH(__ae_optarg, "dump_offsets=")) {
 				if (dump_offsets != NULL) {
 					fprintf(stderr,
 					    "%s: only a single 'dump_offsets' "
@@ -37,10 +37,10 @@ util_verify(WT_SESSION *session, int argc, char *argv[])
 					return (usage());
 				}
 				dump_offsets =
-				    __wt_optarg + strlen("dump_offsets=");
-			} else if (strcmp(__wt_optarg, "dump_pages") == 0)
+				    __ae_optarg + strlen("dump_offsets=");
+			} else if (strcmp(__ae_optarg, "dump_pages") == 0)
 				dump_pages = true;
-			else if (strcmp(__wt_optarg, "dump_shape") == 0)
+			else if (strcmp(__ae_optarg, "dump_shape") == 0)
 				dump_shape = true;
 			else
 				return (usage());
@@ -49,8 +49,8 @@ util_verify(WT_SESSION *session, int argc, char *argv[])
 		default:
 			return (usage());
 		}
-	argc -= __wt_optind;
-	argv += __wt_optind;
+	argc -= __ae_optind;
+	argv += __ae_optind;
 
 	/* The remaining argument is the table name. */
 	if (argc != 1)

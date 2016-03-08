@@ -1,20 +1,20 @@
 /*-
  * Copyright (c) 2014-2015 MongoDB, Inc.
- * Copyright (c) 2008-2014 WiredTiger, Inc.
+ * Copyright (c) 2008-2014 ArchEngine, Inc.
  *	All rights reserved.
  *
  * See the file LICENSE for redistribution information.
  */
 
-#include "wt_internal.h"
+#include "ae_internal.h"
 
 /*
- * __wt_read --
+ * __ae_read --
  *	Read a chunk.
  */
 int
-__wt_read(
-    WT_SESSION_IMPL *session, WT_FH *fh, wt_off_t offset, size_t len, void *buf)
+__ae_read(
+    AE_SESSION_IMPL *session, AE_FH *fh, ae_off_t offset, size_t len, void *buf)
 {
 	DWORD chunk;
 	DWORD nr;
@@ -23,14 +23,14 @@ __wt_read(
 
 	nr = 0;
 
-	WT_STAT_FAST_CONN_INCR(session, read_io);
+	AE_STAT_FAST_CONN_INCR(session, read_io);
 
-	WT_RET(__wt_verbose(session, WT_VERB_FILEOPS,
-	    "%s: read %" WT_SIZET_FMT " bytes at offset %" PRIuMAX,
+	AE_RET(__ae_verbose(session, AE_VERB_FILEOPS,
+	    "%s: read %" AE_SIZET_FMT " bytes at offset %" PRIuMAX,
 	    fh->name, len, (uintmax_t)offset));
 
 	/* Assert direct I/O is aligned and a multiple of the alignment. */
-	WT_ASSERT(session,
+	AE_ASSERT(session,
 	    !fh->direct_io ||
 	    S2C(session)->buffer_alignment == 0 ||
 	    (!((uintptr_t)buf &
@@ -40,13 +40,13 @@ __wt_read(
 
 	/* Break reads larger than 1GB into 1GB chunks. */
 	for (addr = buf; len > 0; addr += nr, len -= (size_t)nr, offset += nr) {
-		chunk = (DWORD)WT_MIN(len, WT_GIGABYTE);
+		chunk = (DWORD)AE_MIN(len, AE_GIGABYTE);
 		overlapped.Offset = UINT32_MAX & offset;
 		overlapped.OffsetHigh = UINT32_MAX & (offset >> 32);
 
 		if (!ReadFile(fh->filehandle, addr, chunk, &nr, &overlapped))
-			WT_RET_MSG(session, nr == 0 ? WT_ERROR : __wt_errno(),
-			    "%s read error: failed to read %" WT_SIZET_FMT
+			AE_RET_MSG(session, nr == 0 ? AE_ERROR : __ae_errno(),
+			    "%s read error: failed to read %" AE_SIZET_FMT
 			    " bytes at offset %" PRIuMAX,
 			    fh->name, chunk, (uintmax_t)offset);
 	}
@@ -54,12 +54,12 @@ __wt_read(
 }
 
 /*
- * __wt_write --
+ * __ae_write --
  *	Write a chunk.
  */
 int
-__wt_write(WT_SESSION_IMPL *session,
-    WT_FH *fh, wt_off_t offset, size_t len, const void *buf)
+__ae_write(AE_SESSION_IMPL *session,
+    AE_FH *fh, ae_off_t offset, size_t len, const void *buf)
 {
 	DWORD chunk;
 	DWORD nw;
@@ -68,14 +68,14 @@ __wt_write(WT_SESSION_IMPL *session,
 
 	nw = 0;
 
-	WT_STAT_FAST_CONN_INCR(session, write_io);
+	AE_STAT_FAST_CONN_INCR(session, write_io);
 
-	WT_RET(__wt_verbose(session, WT_VERB_FILEOPS,
-		"%s: write %" WT_SIZET_FMT " bytes at offset %" PRIuMAX,
+	AE_RET(__ae_verbose(session, AE_VERB_FILEOPS,
+		"%s: write %" AE_SIZET_FMT " bytes at offset %" PRIuMAX,
 		fh->name, len, (uintmax_t)offset));
 
 	/* Assert direct I/O is aligned and a multiple of the alignment. */
-	WT_ASSERT(session,
+	AE_ASSERT(session,
 	    !fh->direct_io ||
 	    S2C(session)->buffer_alignment == 0 ||
 	    (!((uintptr_t)buf &
@@ -85,13 +85,13 @@ __wt_write(WT_SESSION_IMPL *session,
 
 	/* Break writes larger than 1GB into 1GB chunks. */
 	for (addr = buf; len > 0; addr += nw, len -= (size_t)nw, offset += nw) {
-		chunk = (DWORD)WT_MIN(len, WT_GIGABYTE);
+		chunk = (DWORD)AE_MIN(len, AE_GIGABYTE);
 		overlapped.Offset = UINT32_MAX & offset;
 		overlapped.OffsetHigh = UINT32_MAX & (offset >> 32);
 
 		if (!WriteFile(fh->filehandle, addr, chunk, &nw, &overlapped))
-			WT_RET_MSG(session, __wt_errno(),
-			    "%s write error: failed to write %" WT_SIZET_FMT
+			AE_RET_MSG(session, __ae_errno(),
+			    "%s write error: failed to write %" AE_SIZET_FMT
 			    " bytes at offset %" PRIuMAX,
 			    fh->name, chunk, (uintmax_t)offset);
 	}

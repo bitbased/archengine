@@ -1,6 +1,6 @@
 /*-
  * Public Domain 2014-2015 MongoDB, Inc.
- * Public Domain 2008-2014 WiredTiger, Inc.
+ * Public Domain 2008-2014 ArchEngine, Inc.
  *
  * This is free and unencumbered software released into the public domain.
  *
@@ -33,22 +33,22 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <wiredtiger.h>
+#include <archengine.h>
 
-int cursor_reset(WT_CURSOR *cursor);
-int cursor_forward_scan(WT_CURSOR *cursor);
-int cursor_reverse_scan(WT_CURSOR *cursor);
-int cursor_search(WT_CURSOR *cursor);
-int cursor_search_near(WT_CURSOR *cursor);
-int cursor_insert(WT_CURSOR *cursor);
-int cursor_update(WT_CURSOR *cursor);
-int cursor_remove(WT_CURSOR *cursor);
+int cursor_reset(AE_CURSOR *cursor);
+int cursor_forward_scan(AE_CURSOR *cursor);
+int cursor_reverse_scan(AE_CURSOR *cursor);
+int cursor_search(AE_CURSOR *cursor);
+int cursor_search_near(AE_CURSOR *cursor);
+int cursor_insert(AE_CURSOR *cursor);
+int cursor_update(AE_CURSOR *cursor);
+int cursor_remove(AE_CURSOR *cursor);
 
 static const char *home;
 
 /*! [cursor next] */
 int
-cursor_forward_scan(WT_CURSOR *cursor)
+cursor_forward_scan(AE_CURSOR *cursor)
 {
 	const char *key, *value;
 	int ret;
@@ -63,7 +63,7 @@ cursor_forward_scan(WT_CURSOR *cursor)
 
 /*! [cursor prev] */
 int
-cursor_reverse_scan(WT_CURSOR *cursor)
+cursor_reverse_scan(AE_CURSOR *cursor)
 {
 	const char *key, *value;
 	int ret;
@@ -78,7 +78,7 @@ cursor_reverse_scan(WT_CURSOR *cursor)
 
 /*! [cursor reset] */
 int
-cursor_reset(WT_CURSOR *cursor)
+cursor_reset(AE_CURSOR *cursor)
 {
 	return (cursor->reset(cursor));
 }
@@ -86,7 +86,7 @@ cursor_reset(WT_CURSOR *cursor)
 
 /*! [cursor search] */
 int
-cursor_search(WT_CURSOR *cursor)
+cursor_search(AE_CURSOR *cursor)
 {
 	const char *value;
 	int ret;
@@ -102,7 +102,7 @@ cursor_search(WT_CURSOR *cursor)
 
 /*! [cursor search near] */
 int
-cursor_search_near(WT_CURSOR *cursor)
+cursor_search_near(AE_CURSOR *cursor)
 {
 	const char *key, *value;
 	int exact, ret;
@@ -130,7 +130,7 @@ cursor_search_near(WT_CURSOR *cursor)
 
 /*! [cursor insert] */
 int
-cursor_insert(WT_CURSOR *cursor)
+cursor_insert(AE_CURSOR *cursor)
 {
 	cursor->set_key(cursor, "foo");
 	cursor->set_value(cursor, "bar");
@@ -141,7 +141,7 @@ cursor_insert(WT_CURSOR *cursor)
 
 /*! [cursor update] */
 int
-cursor_update(WT_CURSOR *cursor)
+cursor_update(AE_CURSOR *cursor)
 {
 	cursor->set_key(cursor, "foo");
 	cursor->set_value(cursor, "newbar");
@@ -152,7 +152,7 @@ cursor_update(WT_CURSOR *cursor)
 
 /*! [cursor remove] */
 int
-cursor_remove(WT_CURSOR *cursor)
+cursor_remove(AE_CURSOR *cursor)
 {
 	cursor->set_key(cursor, "foo");
 	return (cursor->remove(cursor));
@@ -162,31 +162,31 @@ cursor_remove(WT_CURSOR *cursor)
 int
 main(void)
 {
-	WT_CONNECTION *conn;
-	WT_CURSOR *cursor;
-	WT_SESSION *session;
+	AE_CONNECTION *conn;
+	AE_CURSOR *cursor;
+	AE_SESSION *session;
 	int ret;
 
 	/*
 	 * Create a clean test directory for this run of the test program if the
 	 * environment variable isn't already set (as is done by make check).
 	 */
-	if (getenv("WIREDTIGER_HOME") == NULL) {
-		home = "WT_HOME";
-		ret = system("rm -rf WT_HOME && mkdir WT_HOME");
+	if (getenv("ARCHENGINE_HOME") == NULL) {
+		home = "AE_HOME";
+		ret = system("rm -rf AE_HOME && mkdir AE_HOME");
 	} else
 		home = NULL;
 
 	/* Open a connection to the database, creating it if necessary. */
-	if ((ret = wiredtiger_open(
+	if ((ret = archengine_open(
 	    home, NULL, "create,statistics=(fast)", &conn)) != 0)
 		fprintf(stderr, "Error connecting to %s: %s\n",
-		    home, wiredtiger_strerror(ret));
+		    home, archengine_strerror(ret));
 
 	/* Open a session for the current thread's work. */
 	if ((ret = conn->open_session(conn, NULL, NULL, &session)) != 0)
 		fprintf(stderr, "Error opening a session on %s: %s\n",
-		    home, wiredtiger_strerror(ret));
+		    home, archengine_strerror(ret));
 
 	ret = session->create(session, "table:world",
 	    "key_format=r,value_format=5sii,"
@@ -222,7 +222,7 @@ main(void)
 	/* Note: closing the connection implicitly closes open session(s). */
 	if ((ret = conn->close(conn, NULL)) != 0)
 		fprintf(stderr, "Error closing %s: %s\n",
-		    home, wiredtiger_strerror(ret));
+		    home, archengine_strerror(ret));
 
 	return (ret);
 }

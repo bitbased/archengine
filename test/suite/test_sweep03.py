@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Public Domain 2014-2015 MongoDB, Inc.
-# Public Domain 2008-2014 WiredTiger, Inc.
+# Public Domain 2008-2014 ArchEngine, Inc.
 #
 # This is free and unencumbered software released into the public domain.
 #
@@ -32,11 +32,11 @@
 
 import fnmatch, os, shutil, run, time
 from suite_subprocess import suite_subprocess
-from wiredtiger import wiredtiger_open, stat
-from wtscenario import multiply_scenarios, number_scenarios, prune_scenarios
-import wttest
+from archengine import archengine_open, stat
+from aescenario import multiply_scenarios, number_scenarios, prune_scenarios
+import aetest
 
-class test_sweep03(wttest.WiredTigerTestCase, suite_subprocess):
+class test_sweep03(aetest.ArchEngineTestCase, suite_subprocess):
     tablebase = 'test_sweep03'
     uri = 'table:' + tablebase
     numfiles = 400 # Make this more than the default close_handle_minimum
@@ -53,7 +53,7 @@ class test_sweep03(wttest.WiredTigerTestCase, suite_subprocess):
 
     scenarios = types
 
-    # Overrides WiredTigerTestCase
+    # Overrides ArchEngineTestCase
     def setUpConnectionOpen(self, dir):
         self.home = dir
 
@@ -64,8 +64,8 @@ class test_sweep03(wttest.WiredTigerTestCase, suite_subprocess):
                 'statistics=(fast),'
         # print "Creating conn at '%s' with config '%s'" % (dir, conn_params)
         try:
-            conn = wiredtiger_open(dir, conn_params)
-        except wiredtiger.WiredTigerError as e:
+            conn = archengine_open(dir, conn_params)
+        except archengine.ArchEngineError as e:
             print "Failed conn at '%s' with config '%s'" % (dir, conn_params)
         self.pr(`conn`)
         self.session2 = conn.open_session()
@@ -173,4 +173,4 @@ class test_sweep03(wttest.WiredTigerTestCase, suite_subprocess):
         self.assertLess(cache2, cache1)
 
 if __name__ == '__main__':
-    wttest.run()
+    aetest.run()

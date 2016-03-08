@@ -1,6 +1,6 @@
 /*-
  * Public Domain 2014-2015 MongoDB, Inc.
- * Public Domain 2008-2014 WiredTiger, Inc.
+ * Public Domain 2008-2014 ArchEngine, Inc.
  *
  * This is free and unencumbered software released into the public domain.
  *
@@ -26,14 +26,14 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#include "wt_internal.h"
+#include "ae_internal.h"
 
 /*
  * This is an implementation of George Marsaglia's multiply-with-carry pseudo-
  * random number generator.  Computationally fast, with reasonable randomness
  * properties, and a claimed period of > 2^60.
  *
- * Be very careful about races here. Multiple threads can call __wt_random
+ * Be very careful about races here. Multiple threads can call __ae_random
  * concurrently, and it is okay if those concurrent calls get the same return
  * value. What is *not* okay is if reading/writing the shared state races and
  * uses two different values for m_w or m_z. That can result in a stored value
@@ -46,13 +46,13 @@
 #define	M_Z(r)	r.x.z
 
 /*
- * __wt_random_init --
+ * __ae_random_init --
  *	Initialize return of a 32-bit pseudo-random number.
  */
 void
-__wt_random_init(WT_RAND_STATE volatile * rnd_state)
+__ae_random_init(AE_RAND_STATE volatile * rnd_state)
 {
-	WT_RAND_STATE rnd;
+	AE_RAND_STATE rnd;
 
 	M_W(rnd) = 521288629;
 	M_Z(rnd) = 362436069;
@@ -60,13 +60,13 @@ __wt_random_init(WT_RAND_STATE volatile * rnd_state)
 }
 
 /*
- * __wt_random --
+ * __ae_random --
  *	Return a 32-bit pseudo-random number.
  */
 uint32_t
-__wt_random(WT_RAND_STATE volatile * rnd_state)
+__ae_random(AE_RAND_STATE volatile * rnd_state)
 {
-	WT_RAND_STATE rnd;
+	AE_RAND_STATE rnd;
 	uint32_t w, z;
 
 	/*
@@ -85,7 +85,7 @@ __wt_random(WT_RAND_STATE volatile * rnd_state)
 	 * short period.
 	 */
 	if (z == 0 || w == 0) {
-		__wt_random_init(&rnd);
+		__ae_random_init(&rnd);
 		w = M_W(rnd);
 		z = M_Z(rnd);
 	}

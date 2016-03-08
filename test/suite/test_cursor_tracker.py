@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Public Domain 2014-2015 MongoDB, Inc.
-# Public Domain 2008-2014 WiredTiger, Inc.
+# Public Domain 2008-2014 ArchEngine, Inc.
 #
 # This is free and unencumbered software released into the public domain.
 #
@@ -29,7 +29,7 @@
 # test_cursor_tracker.py
 #       Tracker for testing cursor operations.  Keys and values
 #       are generated automatically based somewhat on position,
-#       and are stored simultaneously in the WT table and
+#       and are stored simultaneously in the AE table and
 #       in a compact representation in python data structures
 #       (self.bitlist, self.vers).  A set of convenience functions
 #       allows us to insert/remove/update keys on a cursor,
@@ -50,7 +50,7 @@
 #       [0,0], [0,1], [0,2] are inserted into the table.
 #       The table is then closed (and session closed) to guarantee
 #       that the associated data is written to disk before continuing.
-#       The theory is that since changes in WT are stored in skip lists,
+#       The theory is that since changes in AE are stored in skip lists,
 #       we want the test to be aware of preexisting values (those having
 #       minor number == 0) so we can try all combinations of adding
 #       new skip list entries, and removing/updating both skip list
@@ -74,12 +74,12 @@
 #       we want to do here).
 
 import hashlib
-import wiredtiger, wttest
+import archengine, aetest
 
-class TestCursorTracker(wttest.WiredTigerTestCase):
+class TestCursorTracker(aetest.ArchEngineTestCase):
     table_name1 = 'test_cursor'
     DELETED = 0xffffffffffffffff
-    TRACE_API = False    # a print output for each WT API call
+    TRACE_API = False    # a print output for each AE API call
 
     def config_string(self):
         """
@@ -104,7 +104,7 @@ class TestCursorTracker(wttest.WiredTigerTestCase):
         cursor.close()
 
     def __init__(self, testname):
-        wttest.WiredTigerTestCase.__init__(self, testname)
+        aetest.ArchEngineTestCase.__init__(self, testname)
         self.cur_initial_conditions(None, 0, None, None, None)
 
     # traceapi and friends are used internally in this module
@@ -154,10 +154,10 @@ class TestCursorTracker(wttest.WiredTigerTestCase):
         if tablekind != None:
             cursor = self.session.open_cursor(uri + ':' + tablename, None, 'append')
             for i in range(npairs):
-                wtkey = self.encode_key(i << 32)
-                wtval = self.encode_value(i << 32)
-                self.traceapi('cursor[' + str(wtkey) + '] = ' + str(wtval))
-                cursor[wtkey] = wtval
+                aekey = self.encode_key(i << 32)
+                aeval = self.encode_value(i << 32)
+                self.traceapi('cursor[' + str(aekey) + '] = ' + str(aeval))
+                cursor[aekey] = aeval
             cursor.close()
             self.pr('reopening the connection')
             self.conn.close()
@@ -310,10 +310,10 @@ class TestCursorTracker(wttest.WiredTigerTestCase):
             raise Exception('cur_insert: key already exists: ' + str(major) + ',' + str(minor))
         pos = self.bitspos(bits)
         self.setpos(pos, True)
-        wtkey = self.encode_key(bits)
-        wtval = self.encode_value(bits)
-        self.traceapi('cursor[' + str(wtkey) + '] = ' + str(wtval))
-        cursor[wtkey] = wtval
+        aekey = self.encode_key(bits)
+        aeval = self.encode_value(bits)
+        self.traceapi('cursor[' + str(aekey) + '] = ' + str(aeval))
+        cursor[aekey] = aeval
 
     def cur_remove_here(self, cursor):
         # TODO: handle the exception case
@@ -333,25 +333,25 @@ class TestCursorTracker(wttest.WiredTigerTestCase):
         cursor.remove()
 
     def cur_recno_search(self, cursor, recno):
-        wtkey = long(recno)
-        self.traceapi('cursor.set_key(' + str(wtkey) + ')')
-        cursor.set_key(wtkey)
+        aekey = long(recno)
+        self.traceapi('cursor.set_key(' + str(aekey) + ')')
+        cursor.set_key(aekey)
         if recno > 0 and recno <= len(self.bitlist):
             want = 0
         else:
-            want = wiredtiger.WT_NOTFOUND
+            want = archengine.AE_NOTFOUND
         self.traceapi('cursor.search()')
         self.check_cursor_ret(cursor.search(), want)
 
     def cur_search(self, cursor, major, minor):
         bits = self.triple_to_bits(major, minor, 0)
-        wtkey = self.encode_key(bits)
-        self.traceapi('cursor.set_key(' + str(wtkey) + ')')
-        cursor.set_key(wtkey)
+        aekey = self.encode_key(bits)
+        self.traceapi('cursor.set_key(' + str(aekey) + ')')
+        cursor.set_key(aekey)
         if bits in self.vers:
             want = 0
         else:
-            want = wiredtiger.WT_NOTFOUND
+            want = archengine.AE_NOTFOUND
         self.traceapi('cursor.search()')
         self.check_cursor_ret(cursor.search(), want)
 
@@ -359,7 +359,7 @@ class TestCursorTracker(wttest.WiredTigerTestCase):
         if ret != want:
             if ret == 0:
                 self.fail('cursor did not return NOTFOUND')
-            elif ret == wiredtiger.WT_NOTFOUND:
+            elif ret == archengine.AE_NOTFOUND:
                 self.fail('cursor returns NOTFOUND unexpectedly')
             else:
                 self.fail('unexpected return from cursor: ' + ret)
@@ -378,7 +378,7 @@ class TestCursorTracker(wttest.WiredTigerTestCase):
         if self.setpos(self.curpos + 1, True):
             wantret = 0
         else:
-            wantret = wiredtiger.WT_NOTFOUND
+            wantret = archengine.AE_NOTFOUND
         self.traceapi('cursor.next()')
         self.check_cursor_ret(cursor.next(), wantret)
 
@@ -399,7 +399,7 @@ class TestCursorTracker(wttest.WiredTigerTestCase):
         if self.setpos(pos, False):
             wantret = 0
         else:
-            wantret = wiredtiger.WT_NOTFOUND
+            wantret = archengine.AE_NOTFOUND
         self.traceapi('cursor.prev()')
         self.check_cursor_ret(cursor.prev(), wantret)
 
@@ -412,26 +412,26 @@ class TestCursorTracker(wttest.WiredTigerTestCase):
             raise Exception('cur_check_here: cursor.get_key, get_value are not valid')
         elif self.nopos:
             self.traceapi_before('cursor.get_key()')
-            self.assertRaisesWithMessage(wiredtiger.WiredTigerError,
+            self.assertRaisesWithMessage(archengine.ArchEngineError,
                 cursor.get_key, keymsg)
             self.traceapi_after('<unknown>')
             self.traceapi_before('cursor.get_value()')
-            self.assertRaisesWithMessage(wiredtiger.WiredTigerError,
+            self.assertRaisesWithMessage(archengine.ArchEngineError,
                 cursor.get_value, valuemsg)
             self.traceapi_after('<unknown>')
         else:
             bits = self.curbits
             self.traceapi_before('cursor.get_key()')
-            wtkey = cursor.get_key()
-            self.traceapi_after(str(wtkey))
+            aekey = cursor.get_key()
+            self.traceapi_after(str(aekey))
             if self.isrow:
-                self.cur_check(cursor, wtkey, self.encode_key(bits), True)
+                self.cur_check(cursor, aekey, self.encode_key(bits), True)
             else:
-                self.cur_check(cursor, wtkey, self.bitspos(bits) + 1, True)
+                self.cur_check(cursor, aekey, self.bitspos(bits) + 1, True)
             self.traceapi_before('cursor.get_value()')
-            wtval = cursor.get_value()
-            self.traceapi_after(str(wtval))
-            self.cur_check(cursor, wtval, self.encode_value(bits), False)
+            aeval = cursor.get_value()
+            self.traceapi_after(str(aeval))
+            self.cur_check(cursor, aeval, self.encode_value(bits), False)
 
     def dumpbitlist(self):
         print('bits array:')
@@ -483,4 +483,4 @@ class TestCursorTracker(wttest.WiredTigerTestCase):
             self.fail('mismatched ' + kind + ', want: ' + wantstr + ', got: ' + gotstr)
 
 if __name__ == '__main__':
-    wttest.run()
+    aetest.run()

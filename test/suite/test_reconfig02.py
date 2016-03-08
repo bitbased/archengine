@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Public Domain 2014-2015 MongoDB, Inc.
-# Public Domain 2008-2014 WiredTiger, Inc.
+# Public Domain 2008-2014 ArchEngine, Inc.
 #
 # This is free and unencumbered software released into the public domain.
 #
@@ -27,19 +27,19 @@
 # OTHER DEALINGS IN THE SOFTWARE.
 
 import fnmatch, os, time
-import wiredtiger, wttest
+import archengine, aetest
 from helper import simple_populate
 
 # test_reconfig02.py
 #    Smoke-test the connection reconfiguration operations.
-class test_reconfig02(wttest.WiredTigerTestCase):
+class test_reconfig02(aetest.ArchEngineTestCase):
     init_config = 'log=(archive=false,enabled,file_max=100K,prealloc=false,zero_fill=false)'
     uri = "table:reconfig02"
     entries = 1000
 
     def setUpConnectionOpen(self, dir):
         self.conn_config = self.init_config
-        return wttest.WiredTigerTestCase.setUpConnectionOpen(self, dir)
+        return aetest.ArchEngineTestCase.setUpConnectionOpen(self, dir)
 
     # Call reconfigure for zero filling a file.  There is nothing
     # we can actually look for to confirm it did anything.
@@ -54,7 +54,7 @@ class test_reconfig02(wttest.WiredTigerTestCase):
         gotException = False
         try:
             self.conn.reconfigure("log=(enabled=false)")
-        except wiredtiger.WiredTigerError as e:
+        except archengine.ArchEngineError as e:
             gotException = True
             self.pr('got exception: ' + str(e))
             self.assertTrue(str(e).find(msg) >= 0)
@@ -105,4 +105,4 @@ class test_reconfig02(wttest.WiredTigerTestCase):
             self.assertEqual(False, o in cur_logs)
 
 if __name__ == '__main__':
-    wttest.run()
+    aetest.run()

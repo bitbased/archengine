@@ -1,129 +1,129 @@
 /*-
  * Copyright (c) 2014-2015 MongoDB, Inc.
- * Copyright (c) 2008-2014 WiredTiger, Inc.
+ * Copyright (c) 2008-2014 ArchEngine, Inc.
  *	All rights reserved.
  *
  * See the file LICENSE for redistribution information.
  */
 
-#include "wt_internal.h"
+#include "ae_internal.h"
 
 /*
  * __config_parser_close --
- *      WT_CONFIG_PARSER->close method.
+ *      AE_CONFIG_PARSER->close method.
  */
 static int
-__config_parser_close(WT_CONFIG_PARSER *wt_config_parser)
+__config_parser_close(AE_CONFIG_PARSER *ae_config_parser)
 {
-	WT_CONFIG_PARSER_IMPL *config_parser;
+	AE_CONFIG_PARSER_IMPL *config_parser;
 
-	config_parser = (WT_CONFIG_PARSER_IMPL *)wt_config_parser;
+	config_parser = (AE_CONFIG_PARSER_IMPL *)ae_config_parser;
 
 	if (config_parser == NULL)
 		return (EINVAL);
 
-	__wt_free(config_parser->session, config_parser);
+	__ae_free(config_parser->session, config_parser);
 	return (0);
 }
 
 /*
  * __config_parser_get --
- *      WT_CONFIG_PARSER->search method.
+ *      AE_CONFIG_PARSER->search method.
  */
 static int
-__config_parser_get(WT_CONFIG_PARSER *wt_config_parser,
-     const char *key, WT_CONFIG_ITEM *cval)
+__config_parser_get(AE_CONFIG_PARSER *ae_config_parser,
+     const char *key, AE_CONFIG_ITEM *cval)
 {
-	WT_CONFIG_PARSER_IMPL *config_parser;
+	AE_CONFIG_PARSER_IMPL *config_parser;
 
-	config_parser = (WT_CONFIG_PARSER_IMPL *)wt_config_parser;
+	config_parser = (AE_CONFIG_PARSER_IMPL *)ae_config_parser;
 
 	if (config_parser == NULL)
 		return (EINVAL);
 
-	return (__wt_config_subgets(config_parser->session,
+	return (__ae_config_subgets(config_parser->session,
 	    &config_parser->config_item, key, cval));
 }
 
 /*
  * __config_parser_next --
- *	WT_CONFIG_PARSER->next method.
+ *	AE_CONFIG_PARSER->next method.
  */
 static int
-__config_parser_next(WT_CONFIG_PARSER *wt_config_parser,
-     WT_CONFIG_ITEM *key, WT_CONFIG_ITEM *cval)
+__config_parser_next(AE_CONFIG_PARSER *ae_config_parser,
+     AE_CONFIG_ITEM *key, AE_CONFIG_ITEM *cval)
 {
-	WT_CONFIG_PARSER_IMPL *config_parser;
+	AE_CONFIG_PARSER_IMPL *config_parser;
 
-	config_parser = (WT_CONFIG_PARSER_IMPL *)wt_config_parser;
+	config_parser = (AE_CONFIG_PARSER_IMPL *)ae_config_parser;
 
 	if (config_parser == NULL)
 		return (EINVAL);
 
-	return (__wt_config_next(&config_parser->config, key, cval));
+	return (__ae_config_next(&config_parser->config, key, cval));
 }
 
 /*
- * wiredtiger_config_parser_open --
+ * archengine_config_parser_open --
  *	Create a configuration parser.
  */
 int
-wiredtiger_config_parser_open(WT_SESSION *wt_session,
-    const char *config, size_t len, WT_CONFIG_PARSER **config_parserp)
+archengine_config_parser_open(AE_SESSION *ae_session,
+    const char *config, size_t len, AE_CONFIG_PARSER **config_parserp)
 {
-	static const WT_CONFIG_PARSER stds = {
+	static const AE_CONFIG_PARSER stds = {
 		__config_parser_close,
 		__config_parser_next,
 		__config_parser_get
 	};
-	WT_CONFIG_ITEM config_item =
-	    { config, len, 0, WT_CONFIG_ITEM_STRING };
-	WT_CONFIG_PARSER_IMPL *config_parser;
-	WT_DECL_RET;
-	WT_SESSION_IMPL *session;
+	AE_CONFIG_ITEM config_item =
+	    { config, len, 0, AE_CONFIG_ITEM_STRING };
+	AE_CONFIG_PARSER_IMPL *config_parser;
+	AE_DECL_RET;
+	AE_SESSION_IMPL *session;
 
 	*config_parserp = NULL;
-	session = (WT_SESSION_IMPL *)wt_session;
+	session = (AE_SESSION_IMPL *)ae_session;
 
-	WT_RET(__wt_calloc_one(session, &config_parser));
+	AE_RET(__ae_calloc_one(session, &config_parser));
 	config_parser->iface = stds;
 	config_parser->session = session;
 
 	/*
-	 * Setup a WT_CONFIG_ITEM to be used for get calls and a WT_CONFIG
+	 * Setup a AE_CONFIG_ITEM to be used for get calls and a AE_CONFIG
 	 * structure for iterations through the configuration string.
 	 */
 	memcpy(&config_parser->config_item, &config_item, sizeof(config_item));
-	WT_ERR(__wt_config_initn(session, &config_parser->config, config, len));
+	AE_ERR(__ae_config_initn(session, &config_parser->config, config, len));
 
 	if (ret == 0)
-		*config_parserp = (WT_CONFIG_PARSER *)config_parser;
+		*config_parserp = (AE_CONFIG_PARSER *)config_parser;
 	else
-err:		__wt_free(session, config_parser);
+err:		__ae_free(session, config_parser);
 
 	return (ret);
 }
 
 /*
- * wiredtiger_config_validate --
+ * archengine_config_validate --
  *	Validate a configuration string.
  */
 int
-wiredtiger_config_validate(WT_SESSION *wt_session,
-    WT_EVENT_HANDLER *handler, const char *name, const char *config)
+archengine_config_validate(AE_SESSION *ae_session,
+    AE_EVENT_HANDLER *handler, const char *name, const char *config)
 {
-	WT_CONNECTION_IMPL *conn, dummy_conn;
-	WT_SESSION_IMPL *session;
-	const WT_CONFIG_ENTRY *ep, **epp;
+	AE_CONNECTION_IMPL *conn, dummy_conn;
+	AE_SESSION_IMPL *session;
+	const AE_CONFIG_ENTRY *ep, **epp;
 
-	session = (WT_SESSION_IMPL *)wt_session;
+	session = (AE_SESSION_IMPL *)ae_session;
 
 	/* 
 	 * It's a logic error to specify both a session and an event handler.
 	 */
 	if (session != NULL && handler != NULL)
-		WT_RET_MSG(session, EINVAL,
-		    "wiredtiger_config_validate error handler ignored when "
+		AE_RET_MSG(session, EINVAL,
+		    "archengine_config_validate error handler ignored when "
 		    "a session also specified");
 
 	/*
@@ -132,20 +132,20 @@ wiredtiger_config_validate(WT_SESSION *wt_session,
 	 */
 	conn = NULL;
 	if (session == NULL && handler != NULL) {
-		WT_CLEAR(dummy_conn);
+		AE_CLEAR(dummy_conn);
 		conn = &dummy_conn;
 		session = conn->default_session = &conn->dummy_session;
 		session->iface.connection = &conn->iface;
-		session->name = "wiredtiger_config_validate";
-		__wt_event_handler_set(session, handler);
+		session->name = "archengine_config_validate";
+		__ae_event_handler_set(session, handler);
 	}
 	if (session != NULL)
 		conn = S2C(session);
 
 	if (name == NULL)
-		WT_RET_MSG(session, EINVAL, "no name specified");
+		AE_RET_MSG(session, EINVAL, "no name specified");
 	if (config == NULL)
-		WT_RET_MSG(session, EINVAL, "no configuration specified");
+		AE_RET_MSG(session, EINVAL, "no configuration specified");
 
 	/*
 	 * If we don't have a real connection, look for a matching name in the
@@ -153,7 +153,7 @@ wiredtiger_config_validate(WT_SESSION *wt_session,
 	 * configuration information the application has added).
 	 */
 	if (session == NULL || conn == NULL || conn->config_entries == NULL)
-		ep = __wt_conn_config_match(name);
+		ep = __ae_conn_config_match(name);
 	else {
 		ep = NULL;
 		for (epp = conn->config_entries;
@@ -164,11 +164,11 @@ wiredtiger_config_validate(WT_SESSION *wt_session,
 			}
 	}
 	if (ep == NULL)
-		WT_RET_MSG(session, EINVAL,
+		AE_RET_MSG(session, EINVAL,
 		    "unknown or unsupported configuration API: %s",
 		    name);
 
-	return (__wt_config_check(session, ep, config, 0));
+	return (__ae_config_check(session, ep, config, 0));
 }
 
 /*
@@ -176,16 +176,16 @@ wiredtiger_config_validate(WT_SESSION *wt_session,
  *	Add a new entry into the connection's free-on-close list.
  */
 static int
-__conn_foc_add(WT_SESSION_IMPL *session, const void *p)
+__conn_foc_add(AE_SESSION_IMPL *session, const void *p)
 {
-	WT_CONNECTION_IMPL *conn;
+	AE_CONNECTION_IMPL *conn;
 
 	conn = S2C(session);
 
 	/*
 	 * Our caller is expected to be holding any locks we need.
 	 */
-	WT_RET(__wt_realloc_def(
+	AE_RET(__ae_realloc_def(
 	    session, &conn->foc_size, conn->foc_cnt + 1, &conn->foc));
 
 	conn->foc[conn->foc_cnt++] = (void *)p;
@@ -193,13 +193,13 @@ __conn_foc_add(WT_SESSION_IMPL *session, const void *p)
 }
 
 /*
- * __wt_conn_foc_discard --
+ * __ae_conn_foc_discard --
  *	Discard any memory the connection accumulated.
  */
 void
-__wt_conn_foc_discard(WT_SESSION_IMPL *session)
+__ae_conn_foc_discard(AE_SESSION_IMPL *session)
 {
-	WT_CONNECTION_IMPL *conn;
+	AE_CONNECTION_IMPL *conn;
 	size_t i;
 
 	conn = S2C(session);
@@ -209,25 +209,25 @@ __wt_conn_foc_discard(WT_SESSION_IMPL *session)
 	 * free the list itself.
 	 */
 	for (i = 0; i < conn->foc_cnt; ++i)
-		__wt_free(session, conn->foc[i]);
-	__wt_free(session, conn->foc);
+		__ae_free(session, conn->foc[i]);
+	__ae_free(session, conn->foc);
 }
 
 /*
- * __wt_configure_method --
- *	WT_CONNECTION.configure_method.
+ * __ae_configure_method --
+ *	AE_CONNECTION.configure_method.
  */
 int
-__wt_configure_method(WT_SESSION_IMPL *session,
+__ae_configure_method(AE_SESSION_IMPL *session,
     const char *method, const char *uri,
     const char *config, const char *type, const char *check)
 {
-	const WT_CONFIG_CHECK *cp;
-	WT_CONFIG_CHECK *checks, *newcheck;
-	const WT_CONFIG_ENTRY **epp;
-	WT_CONFIG_ENTRY *entry;
-	WT_CONNECTION_IMPL *conn;
-	WT_DECL_RET;
+	const AE_CONFIG_CHECK *cp;
+	AE_CONFIG_CHECK *checks, *newcheck;
+	const AE_CONFIG_ENTRY **epp;
+	AE_CONFIG_ENTRY *entry;
+	AE_CONNECTION_IMPL *conn;
+	AE_DECL_RET;
 	size_t cnt;
 	char *newcheck_name, *p;
 
@@ -243,7 +243,7 @@ __wt_configure_method(WT_SESSION_IMPL *session,
 	 * configuration arrays for each data source, and that's when the uri
 	 * will matter.
 	 */
-	WT_UNUSED(uri);
+	AE_UNUSED(uri);
 
 	conn = S2C(session);
 	checks = newcheck = NULL;
@@ -252,12 +252,12 @@ __wt_configure_method(WT_SESSION_IMPL *session,
 
 	/* Argument checking; we only support a limited number of types. */
 	if (config == NULL)
-		WT_RET_MSG(session, EINVAL, "no configuration specified");
+		AE_RET_MSG(session, EINVAL, "no configuration specified");
 	if (type == NULL)
-		WT_RET_MSG(session, EINVAL, "no configuration type specified");
+		AE_RET_MSG(session, EINVAL, "no configuration type specified");
 	if (strcmp(type, "boolean") != 0 && strcmp(type, "int") != 0 &&
 	    strcmp(type, "list") != 0 && strcmp(type, "string") != 0)
-		WT_RET_MSG(session, EINVAL,
+		AE_RET_MSG(session, EINVAL,
 		    "type must be one of \"boolean\", \"int\", \"list\" or "
 		    "\"string\"");
 
@@ -270,8 +270,8 @@ __wt_configure_method(WT_SESSION_IMPL *session,
 		if (strcmp((*epp)->method, method) == 0)
 			break;
 	if (*epp == NULL || (*epp)->method == NULL)
-		WT_RET_MSG(session,
-		    WT_NOTFOUND, "no method matching %s found", method);
+		AE_RET_MSG(session,
+		    AE_NOTFOUND, "no method matching %s found", method);
 
 	/*
 	 * Technically possible for threads to race, lock the connection while
@@ -279,7 +279,7 @@ __wt_configure_method(WT_SESSION_IMPL *session,
 	 * for an extended period of time, but configuration changes should be
 	 * rare and only happen during startup.
 	 */
-	__wt_spin_lock(session, &conn->api_lock);
+	__ae_spin_lock(session, &conn->api_lock);
 
 	/*
 	 * Allocate new configuration entry and fill it in.
@@ -287,9 +287,9 @@ __wt_configure_method(WT_SESSION_IMPL *session,
 	 * The new base value is the previous base value, a separator and the
 	 * new configuration string.
 	 */
-	WT_ERR(__wt_calloc_one(session, &entry));
+	AE_ERR(__ae_calloc_one(session, &entry));
 	entry->method = (*epp)->method;
-	WT_ERR(__wt_calloc_def(session,
+	AE_ERR(__ae_calloc_def(session,
 	    strlen((*epp)->base) + strlen(",") + strlen(config) + 1, &p));
 	(void)strcpy(p, (*epp)->base);
 	(void)strcat(p, ",");
@@ -301,7 +301,7 @@ __wt_configure_method(WT_SESSION_IMPL *session,
 	 * example, (kvs_parallelism=64").  The default value isn't part of the
 	 * name, build a new one.
 	 */
-	WT_ERR(__wt_strdup(session, config, &newcheck_name));
+	AE_ERR(__ae_strdup(session, config, &newcheck_name));
 	if ((p = strchr(newcheck_name, '=')) != NULL)
 		*p = '\0';
 
@@ -313,7 +313,7 @@ __wt_configure_method(WT_SESSION_IMPL *session,
 	if ((*epp)->checks != NULL)
 		for (cp = (*epp)->checks; cp->name != NULL; ++cp)
 			++cnt;
-	WT_ERR(__wt_calloc_def(session, cnt + 2, &checks));
+	AE_ERR(__ae_calloc_def(session, cnt + 2, &checks));
 	cnt = 0;
 	if ((*epp)->checks != NULL)
 		for (cp = (*epp)->checks; cp->name != NULL; ++cp)
@@ -321,8 +321,8 @@ __wt_configure_method(WT_SESSION_IMPL *session,
 				checks[cnt++] = *cp;
 	newcheck = &checks[cnt];
 	newcheck->name = newcheck_name;
-	WT_ERR(__wt_strdup(session, type, &newcheck->type));
-	WT_ERR(__wt_strdup(session, check, &newcheck->checks));
+	AE_ERR(__ae_strdup(session, type, &newcheck->type));
+	AE_ERR(__ae_strdup(session, check, &newcheck->checks));
 	entry->checks = checks;
 	entry->checks_entries = 0;
 
@@ -330,7 +330,7 @@ __wt_configure_method(WT_SESSION_IMPL *session,
 	 * Confirm the configuration string passes the new set of
 	 * checks.
 	 */
-	WT_ERR(__wt_config_check(session, entry, config, 0));
+	AE_ERR(__ae_config_check(session, entry, config, 0));
 
 	/*
 	 * The next time this configuration is updated, we don't want to figure
@@ -361,21 +361,21 @@ __wt_configure_method(WT_SESSION_IMPL *session,
 	 * not want to acquire locks every time we access configuration strings,
 	 * since that's done on every API call.
 	 */
-	WT_PUBLISH(*epp, entry);
+	AE_PUBLISH(*epp, entry);
 
 	if (0) {
 err:		if (entry != NULL) {
-			__wt_free(session, entry->base);
-			__wt_free(session, entry);
+			__ae_free(session, entry->base);
+			__ae_free(session, entry);
 		}
-		__wt_free(session, checks);
+		__ae_free(session, checks);
 		if (newcheck != NULL) {
-			__wt_free(session, newcheck->type);
-			__wt_free(session, newcheck->checks);
+			__ae_free(session, newcheck->type);
+			__ae_free(session, newcheck->checks);
 		}
-		__wt_free(session, newcheck_name);
+		__ae_free(session, newcheck_name);
 	}
 
-	__wt_spin_unlock(session, &conn->api_lock);
+	__ae_spin_unlock(session, &conn->api_lock);
 	return (ret);
 }

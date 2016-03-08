@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Public Domain 2014-2015 MongoDB, Inc.
-# Public Domain 2008-2014 WiredTiger, Inc.
+# Public Domain 2008-2014 ArchEngine, Inc.
 #
 # This is free and unencumbered software released into the public domain.
 #
@@ -28,11 +28,11 @@
 
 import os, struct
 from suite_subprocess import suite_subprocess
-import wiredtiger, wttest
+import archengine, aetest
 
 # test_verify.py
-#    Utilities: wt verify
-class test_verify(wttest.WiredTigerTestCase, suite_subprocess):
+#    Utilities: ae verify
+class test_verify(aetest.ArchEngineTestCase, suite_subprocess):
     tablename = 'test_verify.a'
     nentries = 1000
 
@@ -70,11 +70,11 @@ class test_verify(wttest.WiredTigerTestCase, suite_subprocess):
         As a side effect, the connection is closed.
         """
         # we close the connection to guarantee everything is
-        # flushed and closed from the WT point of view.
+        # flushed and closed from the AE point of view.
         if self.conn != None:
             self.conn.close()
             self.conn = None
-        filename = tablename + ".wt"
+        filename = tablename + ".ae"
 
         filesize = os.path.getsize(filename)
         position = (filesize * pct) / 100
@@ -86,21 +86,21 @@ class test_verify(wttest.WiredTigerTestCase, suite_subprocess):
 
     def test_verify_process_empty(self):
         """
-        Test verify in a 'wt' process, using an empty table
+        Test verify in a 'ae' process, using an empty table
         """
         params = 'key_format=S,value_format=S'
         self.session.create('table:' + self.tablename, params)
         # Run verify with an empty table
-        self.runWt(["verify", "table:" + self.tablename])
+        self.runAe(["verify", "table:" + self.tablename])
 
     def test_verify_process(self):
         """
-        Test verify in a 'wt' process, using a populated table.
+        Test verify in a 'ae' process, using a populated table.
         """
         params = 'key_format=S,value_format=S'
         self.session.create('table:' + self.tablename, params)
         self.populate(self.tablename)
-        self.runWt(["verify", "table:" + self.tablename])
+        self.runAe(["verify", "table:" + self.tablename])
 
     def test_verify_api_empty(self):
         """
@@ -136,13 +136,13 @@ class test_verify(wttest.WiredTigerTestCase, suite_subprocess):
         # open_and_position closed the session/connection, reopen them now.
         self.conn = self.setUpConnectionOpen(".")
         self.session = self.setUpSessionOpen(self.conn)
-        self.assertRaisesWithMessage(wiredtiger.WiredTigerError,
+        self.assertRaisesWithMessage(archengine.ArchEngineError,
             lambda: self.session.verify('table:' + self.tablename, None),
-            "/WT_SESSION.verify/")
+            "/AE_SESSION.verify/")
 
     def test_verify_process_75pct_null(self):
         """
-        Test verify in a 'wt' process on a table that is purposely damaged,
+        Test verify in a 'ae' process on a table that is purposely damaged,
         with nulls at a position about 75% through.
         """
         params = 'key_format=S,value_format=S'
@@ -151,12 +151,12 @@ class test_verify(wttest.WiredTigerTestCase, suite_subprocess):
         with self.open_and_position(self.tablename, 75) as f:
             for i in range(0, 4096):
                 f.write(struct.pack('B', 0))
-        self.runWt(["verify", "table:" + self.tablename], errfilename="verifyerr.out")
+        self.runAe(["verify", "table:" + self.tablename], errfilename="verifyerr.out")
         self.check_non_empty_file("verifyerr.out")
 
     def test_verify_process_25pct_junk(self):
         """
-        Test verify in a 'wt' process on a table that is purposely damaged,
+        Test verify in a 'ae' process on a table that is purposely damaged,
         with junk at a position about 25% through.
         """
         params = 'key_format=S,value_format=S'
@@ -165,12 +165,12 @@ class test_verify(wttest.WiredTigerTestCase, suite_subprocess):
         with self.open_and_position(self.tablename, 25) as f:
             for i in range(0, 100):
                 f.write('\x01\xff\x80')
-        self.runWt(["verify", "table:" + self.tablename], errfilename="verifyerr.out")
+        self.runAe(["verify", "table:" + self.tablename], errfilename="verifyerr.out")
         self.check_non_empty_file("verifyerr.out")
 
     def test_verify_process_truncated(self):
         """
-        Test verify in a 'wt' process on a table that is purposely damaged,
+        Test verify in a 'ae' process on a table that is purposely damaged,
         truncated about 75% through.
         """
         params = 'key_format=S,value_format=S'
@@ -178,21 +178,21 @@ class test_verify(wttest.WiredTigerTestCase, suite_subprocess):
         self.populate(self.tablename)
         with self.open_and_position(self.tablename, 75) as f:
             f.truncate(0)
-        self.runWt(["verify", "table:" + self.tablename], errfilename="verifyerr.out")
+        self.runAe(["verify", "table:" + self.tablename], errfilename="verifyerr.out")
         self.check_non_empty_file("verifyerr.out")
 
     def test_verify_process_zero_length(self):
         """
-        Test verify in a 'wt' process on a zero-length table.
+        Test verify in a 'ae' process on a zero-length table.
         """
         params = 'key_format=S,value_format=S'
         self.session.create('table:' + self.tablename, params)
         self.populate(self.tablename)
         with self.open_and_position(self.tablename, 0) as f:
             f.truncate(0)
-        self.runWt(["verify", "table:" + self.tablename], errfilename="verifyerr.out")
+        self.runAe(["verify", "table:" + self.tablename], errfilename="verifyerr.out")
         self.check_non_empty_file("verifyerr.out")
 
 
 if __name__ == '__main__':
-    wttest.run()
+    aetest.run()

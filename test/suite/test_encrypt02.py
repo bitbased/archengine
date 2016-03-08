@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Public Domain 2014-2015 MongoDB, Inc.
-# Public Domain 2008-2014 WiredTiger, Inc.
+# Public Domain 2008-2014 ArchEngine, Inc.
 #
 # This is free and unencumbered software released into the public domain.
 #
@@ -31,12 +31,12 @@
 #
 
 import os, run, random
-import wiredtiger, wttest
+import archengine, aetest
 from suite_subprocess import suite_subprocess
-from wtscenario import multiply_scenarios, number_scenarios
+from aescenario import multiply_scenarios, number_scenarios
 
 # Test basic encryption
-class test_encrypt02(wttest.WiredTigerTestCase, suite_subprocess):
+class test_encrypt02(aetest.ArchEngineTestCase, suite_subprocess):
     uri = 'file:test_encrypt02'
     encrypt_type = [
         ('noarg', dict( encrypt='rotn', encrypt_args='name=rotn',
@@ -53,16 +53,16 @@ class test_encrypt02(wttest.WiredTigerTestCase, suite_subprocess):
     nrecords = 5000
     bigvalue = "abcdefghij" * 1001    # len(bigvalue) = 10010
 
-    # Return the wiredtiger_open extension argument for a shared library.
+    # Return the archengine_open extension argument for a shared library.
     def extensionArg(self, exts):
         extfiles = []
         for ext in exts:
             (dirname, name) = ext
             if name != None and name != 'none':
                 testdir = os.path.dirname(__file__)
-                extdir = os.path.join(run.wt_builddir, 'ext', dirname)
+                extdir = os.path.join(run.ae_builddir, 'ext', dirname)
                 extfile = os.path.join(
-                    extdir, name, '.libs', 'libwiredtiger_' + name + '.so')
+                    extdir, name, '.libs', 'libarchengine_' + name + '.so')
                 if not os.path.exists(extfile):
                     self.skipTest('extension "' + extfile + '" not built')
                 if not extfile in extfiles:
@@ -72,7 +72,7 @@ class test_encrypt02(wttest.WiredTigerTestCase, suite_subprocess):
         else:
             return ',extensions=["' + '","'.join(extfiles) + '"]'
 
-    # Override WiredTigerTestCase, we have extensions.
+    # Override ArchEngineTestCase, we have extensions.
     def setUpConnectionOpen(self, dir):
         secretarg = ''
         if self.secret_arg != None:
@@ -81,7 +81,7 @@ class test_encrypt02(wttest.WiredTigerTestCase, suite_subprocess):
         extarg = self.extensionArg([('encryptors', self.encrypt)])
         connarg = 'create,error_prefix="{0}: ",{1},{2}'.format(
             self.shortid(), encarg, extarg)
-        conn = wiredtiger.wiredtiger_open(dir, connarg)
+        conn = archengine.archengine_open(dir, connarg)
         self.pr(`conn`)
         return conn
 
@@ -118,12 +118,12 @@ class test_encrypt02(wttest.WiredTigerTestCase, suite_subprocess):
             self.assertEquals(cursor.get_value(), val)
         cursor.close()
 
-        wtargs = []
+        aeargs = []
         if self.secret_arg != None:
-            wtargs += ['-E', self.secret_arg]
-        wtargs += ['dump', self.uri]
-        self.runWt(wtargs, outfilename='dump.out')
+            aeargs += ['-E', self.secret_arg]
+        aeargs += ['dump', self.uri]
+        self.runAe(aeargs, outfilename='dump.out')
         self.check_non_empty_file('dump.out')
 
 if __name__ == '__main__':
-    wttest.run()
+    aetest.run()

@@ -1,6 +1,6 @@
 /*-
  * Public Domain 2014-2015 MongoDB, Inc.
- * Public Domain 2008-2014 WiredTiger, Inc.
+ * Public Domain 2008-2014 ArchEngine, Inc.
  *
  * This is free and unencumbered software released into the public domain.
  *
@@ -38,18 +38,18 @@
  * little endian.
  */
 
-#include "wt_internal.h"
+#include "ae_internal.h"
 
 /*
  * This file contains two implementations for computing CRC: one that uses
  * hardware CRC instructions, available on newer x86_64/amd64, and one that uses
- * a fast software algorithm.  __wt_cksum() provides a common entry point that
+ * a fast software algorithm.  __ae_cksum() provides a common entry point that
  * indirects to one of these two methods.
  */
-static uint32_t (*__wt_cksum_func)(const void *chunk, size_t len);
+static uint32_t (*__ae_cksum_func)(const void *chunk, size_t len);
 
 /*
- * The CRC slicing tables are used by __wt_cksum_sw.
+ * The CRC slicing tables are used by __ae_cksum_sw.
  */
 static const uint32_t g_crc_slicing[8][256] = {
 #ifdef WORDS_BIGENDIAN
@@ -1104,11 +1104,11 @@ static const uint32_t g_crc_slicing[8][256] = {
 };
 
 /*
- * __wt_cksum_sw --
+ * __ae_cksum_sw --
  *	Return a checksum for a chunk of memory, computed in software.
  */
 static uint32_t
-__wt_cksum_sw(const void *chunk, size_t len)
+__ae_cksum_sw(const void *chunk, size_t len)
 {
 	uint32_t crc, next;
 	size_t nqwords;
@@ -1174,12 +1174,12 @@ __wt_cksum_sw(const void *chunk, size_t len)
 
 #if (defined(__amd64) || defined(__x86_64))
 /*
- * __wt_cksum_hw --
+ * __ae_cksum_hw --
  *	Return a checksum for a chunk of memory, computed in hardware
  *	using 8 byte steps.
  */
 static uint32_t
-__wt_cksum_hw(const void *chunk, size_t len)
+__ae_cksum_hw(const void *chunk, size_t len)
 {
 	uint32_t crc;
 	size_t nqwords;
@@ -1222,12 +1222,12 @@ __wt_cksum_hw(const void *chunk, size_t len)
 
 #if defined(_M_AMD64)
 /*
- * __wt_cksum_hw --
+ * __ae_cksum_hw --
  *	Return a checksum for a chunk of memory, computed in hardware
  *	using 8 byte steps.
  */
 static uint32_t
-__wt_cksum_hw(const void *chunk, size_t len)
+__ae_cksum_hw(const void *chunk, size_t len)
 {
 	uint32_t crc;
 	size_t nqwords;
@@ -1261,22 +1261,22 @@ __wt_cksum_hw(const void *chunk, size_t len)
 #endif
 
 /*
- * __wt_cksum --
+ * __ae_cksum --
  *	Return a checksum for a chunk of memory using the fastest method
  * available.
  */
 uint32_t
-__wt_cksum(const void *chunk, size_t len)
+__ae_cksum(const void *chunk, size_t len)
 {
-	return (*__wt_cksum_func)(chunk, len);
+	return (*__ae_cksum_func)(chunk, len);
 }
 
 /*
- * __wt_cksum_init --
+ * __ae_cksum_init --
  *	Detect CRC hardware and set the checksum function.
  */
 void
-__wt_cksum_init(void)
+__ae_cksum_init(void)
 {
 #define	CPUID_ECX_HAS_SSE42	(1 << 20)
 
@@ -1289,9 +1289,9 @@ __wt_cksum_init(void)
 			      : "a" (1));
 
 	if (ecx & CPUID_ECX_HAS_SSE42)
-		__wt_cksum_func = __wt_cksum_hw;
+		__ae_cksum_func = __ae_cksum_hw;
 	else
-		__wt_cksum_func = __wt_cksum_sw;
+		__ae_cksum_func = __ae_cksum_sw;
 
 #elif defined(_M_AMD64)
 	int cpuInfo[4];
@@ -1299,10 +1299,10 @@ __wt_cksum_init(void)
 	__cpuid(cpuInfo, 1);
 
 	if (cpuInfo[2] & CPUID_ECX_HAS_SSE42)
-		__wt_cksum_func = __wt_cksum_hw;
+		__ae_cksum_func = __ae_cksum_hw;
 	else
-		__wt_cksum_func = __wt_cksum_sw;
+		__ae_cksum_func = __ae_cksum_sw;
 #else
-	__wt_cksum_func = __wt_cksum_sw;
+	__ae_cksum_func = __ae_cksum_sw;
 #endif
 }

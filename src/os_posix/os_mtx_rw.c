@@ -1,6 +1,6 @@
 /*-
  * Public Domain 2014-2015 MongoDB, Inc.
- * Public Domain 2008-2014 WiredTiger, Inc.
+ * Public Domain 2008-2014 ArchEngine, Inc.
  *
  * This is free and unencumbered software released into the public domain.
  *
@@ -112,21 +112,21 @@
  * is 8 bytes, the structure has no room to grow.
  */
 
-#include "wt_internal.h"
+#include "ae_internal.h"
 
 /*
- * __wt_rwlock_alloc --
+ * __ae_rwlock_alloc --
  *	Allocate and initialize a read/write lock.
  */
 int
-__wt_rwlock_alloc(
-    WT_SESSION_IMPL *session, WT_RWLOCK **rwlockp, const char *name)
+__ae_rwlock_alloc(
+    AE_SESSION_IMPL *session, AE_RWLOCK **rwlockp, const char *name)
 {
-	WT_RWLOCK *rwlock;
+	AE_RWLOCK *rwlock;
 
-	WT_RET(__wt_verbose(session, WT_VERB_MUTEX, "rwlock: alloc %s", name));
+	AE_RET(__ae_verbose(session, AE_VERB_MUTEX, "rwlock: alloc %s", name));
 
-	WT_RET(__wt_calloc_one(session, &rwlock));
+	AE_RET(__ae_calloc_one(session, &rwlock));
 
 	rwlock->name = name;
 
@@ -135,17 +135,17 @@ __wt_rwlock_alloc(
 }
 
 /*
- * __wt_try_readlock --
+ * __ae_try_readlock --
  *	Try to get a shared lock, fail immediately if unavailable.
  */
 int
-__wt_try_readlock(WT_SESSION_IMPL *session, WT_RWLOCK *rwlock)
+__ae_try_readlock(AE_SESSION_IMPL *session, AE_RWLOCK *rwlock)
 {
-	wt_rwlock_t *l, new, old;
+	ae_rwlock_t *l, new, old;
 
-	WT_RET(__wt_verbose(
-	    session, WT_VERB_MUTEX, "rwlock: try_readlock %s", rwlock->name));
-	WT_STAT_FAST_CONN_INCR(session, rwlock_read);
+	AE_RET(__ae_verbose(
+	    session, AE_VERB_MUTEX, "rwlock: try_readlock %s", rwlock->name));
+	AE_STAT_FAST_CONN_INCR(session, rwlock_read);
 
 	l = &rwlock->rwlock;
 	new = old = *l;
@@ -165,23 +165,23 @@ __wt_try_readlock(WT_SESSION_IMPL *session, WT_RWLOCK *rwlock)
 	 * incrementing the reader value to match it.
 	 */
 	new.s.readers = new.s.users = old.s.users + 1;
-	return (__wt_atomic_cas64(&l->u, old.u, new.u) ? 0 : EBUSY);
+	return (__ae_atomic_cas64(&l->u, old.u, new.u) ? 0 : EBUSY);
 }
 
 /*
- * __wt_readlock --
+ * __ae_readlock --
  *	Get a shared lock.
  */
 int
-__wt_readlock(WT_SESSION_IMPL *session, WT_RWLOCK *rwlock)
+__ae_readlock(AE_SESSION_IMPL *session, AE_RWLOCK *rwlock)
 {
-	wt_rwlock_t *l;
+	ae_rwlock_t *l;
 	uint16_t ticket;
 	int pause_cnt;
 
-	WT_RET(__wt_verbose(
-	    session, WT_VERB_MUTEX, "rwlock: readlock %s", rwlock->name));
-	WT_STAT_FAST_CONN_INCR(session, rwlock_read);
+	AE_RET(__ae_verbose(
+	    session, AE_VERB_MUTEX, "rwlock: readlock %s", rwlock->name));
+	AE_STAT_FAST_CONN_INCR(session, rwlock_read);
 
 	l = &rwlock->rwlock;
 
@@ -190,7 +190,7 @@ __wt_readlock(WT_SESSION_IMPL *session, WT_RWLOCK *rwlock)
 	 * value will wrap and two lockers will simultaneously be granted the
 	 * lock.
 	 */
-	ticket = __wt_atomic_fetch_add16(&l->s.users, 1);
+	ticket = __ae_atomic_fetch_add16(&l->s.users, 1);
 	for (pause_cnt = 0; ticket != l->s.readers;) {
 		/*
 		 * We failed to get the lock; pause before retrying and if we've
@@ -201,10 +201,10 @@ __wt_readlock(WT_SESSION_IMPL *session, WT_RWLOCK *rwlock)
 		 * Don't sleep long when waiting on a read lock, hopefully we're
 		 * waiting on another read thread to increment the reader count.
 		 */
-		if (++pause_cnt < WT_THOUSAND)
-			WT_PAUSE();
+		if (++pause_cnt < AE_THOUSAND)
+			AE_PAUSE();
 		else
-			__wt_sleep(0, 10);
+			__ae_sleep(0, 10);
 	}
 
 	/*
@@ -217,16 +217,16 @@ __wt_readlock(WT_SESSION_IMPL *session, WT_RWLOCK *rwlock)
 }
 
 /*
- * __wt_readunlock --
+ * __ae_readunlock --
  *	Release a shared lock.
  */
 int
-__wt_readunlock(WT_SESSION_IMPL *session, WT_RWLOCK *rwlock)
+__ae_readunlock(AE_SESSION_IMPL *session, AE_RWLOCK *rwlock)
 {
-	wt_rwlock_t *l;
+	ae_rwlock_t *l;
 
-	WT_RET(__wt_verbose(
-	    session, WT_VERB_MUTEX, "rwlock: read unlock %s", rwlock->name));
+	AE_RET(__ae_verbose(
+	    session, AE_VERB_MUTEX, "rwlock: read unlock %s", rwlock->name));
 
 	l = &rwlock->rwlock;
 
@@ -234,23 +234,23 @@ __wt_readunlock(WT_SESSION_IMPL *session, WT_RWLOCK *rwlock)
 	 * Increment the writers value (other readers are doing the same, make
 	 * sure we don't race).
 	 */
-	(void)__wt_atomic_add16(&l->s.writers, 1);
+	(void)__ae_atomic_add16(&l->s.writers, 1);
 
 	return (0);
 }
 
 /*
- * __wt_try_writelock --
+ * __ae_try_writelock --
  *	Try to get an exclusive lock, fail immediately if unavailable.
  */
 int
-__wt_try_writelock(WT_SESSION_IMPL *session, WT_RWLOCK *rwlock)
+__ae_try_writelock(AE_SESSION_IMPL *session, AE_RWLOCK *rwlock)
 {
-	wt_rwlock_t *l, new, old;
+	ae_rwlock_t *l, new, old;
 
-	WT_RET(__wt_verbose(
-	    session, WT_VERB_MUTEX, "rwlock: try_writelock %s", rwlock->name));
-	WT_STAT_FAST_CONN_INCR(session, rwlock_write);
+	AE_RET(__ae_verbose(
+	    session, AE_VERB_MUTEX, "rwlock: try_writelock %s", rwlock->name));
+	AE_STAT_FAST_CONN_INCR(session, rwlock_write);
 
 	l = &rwlock->rwlock;
 	old = new = *l;
@@ -267,23 +267,23 @@ __wt_try_writelock(WT_SESSION_IMPL *session, WT_RWLOCK *rwlock)
 
 	/* The replacement lock value is a result of allocating a new ticket. */
 	++new.s.users;
-	return (__wt_atomic_cas64(&l->u, old.u, new.u) ? 0 : EBUSY);
+	return (__ae_atomic_cas64(&l->u, old.u, new.u) ? 0 : EBUSY);
 }
 
 /*
- * __wt_writelock --
+ * __ae_writelock --
  *	Wait to get an exclusive lock.
  */
 int
-__wt_writelock(WT_SESSION_IMPL *session, WT_RWLOCK *rwlock)
+__ae_writelock(AE_SESSION_IMPL *session, AE_RWLOCK *rwlock)
 {
-	wt_rwlock_t *l;
+	ae_rwlock_t *l;
 	uint16_t ticket;
 	int pause_cnt;
 
-	WT_RET(__wt_verbose(
-	    session, WT_VERB_MUTEX, "rwlock: writelock %s", rwlock->name));
-	WT_STAT_FAST_CONN_INCR(session, rwlock_write);
+	AE_RET(__ae_verbose(
+	    session, AE_VERB_MUTEX, "rwlock: writelock %s", rwlock->name));
+	AE_STAT_FAST_CONN_INCR(session, rwlock_write);
 
 	l = &rwlock->rwlock;
 
@@ -292,7 +292,7 @@ __wt_writelock(WT_SESSION_IMPL *session, WT_RWLOCK *rwlock)
 	 * value will wrap and two lockers will simultaneously be granted the
 	 * lock.
 	 */
-	ticket = __wt_atomic_fetch_add16(&l->s.users, 1);
+	ticket = __ae_atomic_fetch_add16(&l->s.users, 1);
 	for (pause_cnt = 0; ticket != l->s.writers;) {
 		/*
 		 * We failed to get the lock; pause before retrying and if we've
@@ -300,26 +300,26 @@ __wt_writelock(WT_SESSION_IMPL *session, WT_RWLOCK *rwlock)
 		 * situation happens if there are more threads than cores in the
 		 * system and we're thrashing on shared resources.
 		 */
-		if (++pause_cnt < WT_THOUSAND)
-			WT_PAUSE();
+		if (++pause_cnt < AE_THOUSAND)
+			AE_PAUSE();
 		else
-			__wt_sleep(0, 10);
+			__ae_sleep(0, 10);
 	}
 
 	return (0);
 }
 
 /*
- * __wt_writeunlock --
+ * __ae_writeunlock --
  *	Release an exclusive lock.
  */
 int
-__wt_writeunlock(WT_SESSION_IMPL *session, WT_RWLOCK *rwlock)
+__ae_writeunlock(AE_SESSION_IMPL *session, AE_RWLOCK *rwlock)
 {
-	wt_rwlock_t *l, copy;
+	ae_rwlock_t *l, copy;
 
-	WT_RET(__wt_verbose(
-	    session, WT_VERB_MUTEX, "rwlock: writeunlock %s", rwlock->name));
+	AE_RET(__ae_verbose(
+	    session, AE_VERB_MUTEX, "rwlock: writeunlock %s", rwlock->name));
 
 	l = &rwlock->rwlock;
 
@@ -335,7 +335,7 @@ __wt_writeunlock(WT_SESSION_IMPL *session, WT_RWLOCK *rwlock)
 	 * instructions and rework the code in a way that avoids the update as
 	 * a unit.
 	 */
-	WT_BARRIER();
+	AE_BARRIER();
 
 	++copy.s.writers;
 	++copy.s.readers;
@@ -346,22 +346,22 @@ __wt_writeunlock(WT_SESSION_IMPL *session, WT_RWLOCK *rwlock)
 }
 
 /*
- * __wt_rwlock_destroy --
+ * __ae_rwlock_destroy --
  *	Destroy a read/write lock.
  */
 int
-__wt_rwlock_destroy(WT_SESSION_IMPL *session, WT_RWLOCK **rwlockp)
+__ae_rwlock_destroy(AE_SESSION_IMPL *session, AE_RWLOCK **rwlockp)
 {
-	WT_RWLOCK *rwlock;
+	AE_RWLOCK *rwlock;
 
 	rwlock = *rwlockp;		/* Clear our caller's reference. */
 	if (rwlock == NULL)
 		return (0);
 	*rwlockp = NULL;
 
-	WT_RET(__wt_verbose(
-	    session, WT_VERB_MUTEX, "rwlock: destroy %s", rwlock->name));
+	AE_RET(__ae_verbose(
+	    session, AE_VERB_MUTEX, "rwlock: destroy %s", rwlock->name));
 
-	__wt_free(session, rwlock);
+	__ae_free(session, rwlock);
 	return (0);
 }

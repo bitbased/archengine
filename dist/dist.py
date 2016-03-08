@@ -1,7 +1,7 @@
 import filecmp, glob, os, re, shutil
 
 # source_files --
-#    Return a list of the WiredTiger source file names.
+#    Return a list of the ArchEngine source file names.
 def source_files(skip_includes=False):
     if not skip_includes:
         for line in glob.iglob('../src/include/*.[hi]'):
@@ -19,7 +19,7 @@ def source_files(skip_includes=False):
             yield os.path.join('..', line.rstrip())
 
 # source_dirs --
-#    Return a list of the WiredTiger source directory names.
+#    Return a list of the ArchEngine source directory names.
 def source_dirs():
     dirs = set()
     for f in source_files():

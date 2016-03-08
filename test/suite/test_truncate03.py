@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Public Domain 2014-2015 MongoDB, Inc.
-# Public Domain 2008-2014 WiredTiger, Inc.
+# Public Domain 2008-2014 ArchEngine, Inc.
 #
 # This is free and unencumbered software released into the public domain.
 #
@@ -29,11 +29,11 @@
 # test_truncate03.py
 #       session level operations on tables
 
-import wiredtiger, wttest
+import archengine, aetest
 from helper import key_populate, simple_populate, value_populate
 
 # A standalone test case that exercises address-deleted cells.
-class test_truncate_address_deleted(wttest.WiredTigerTestCase):
+class test_truncate_address_deleted(aetest.ArchEngineTestCase):
     uri = 'file:test_truncate'
 
     # Use a small page size and lots of keys because we want to create lots
@@ -137,4 +137,4 @@ class test_truncate_address_deleted(wttest.WiredTigerTestCase):
 
 
 if __name__ == '__main__':
-    wttest.run()
+    aetest.run()

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Public Domain 2014-2015 MongoDB, Inc.
-# Public Domain 2008-2014 WiredTiger, Inc.
+# Public Domain 2008-2014 ArchEngine, Inc.
 #
 # This is free and unencumbered software released into the public domain.
 #
@@ -28,8 +28,8 @@
 
 import os
 import suite_random
-import wiredtiger, wtscenario, wttest
-from wtscenario import check_scenarios
+import archengine, aescenario, aetest
+from aescenario import check_scenarios
 
 try:
     # Windows does not getrlimit/setrlimit so we must catch the resource
@@ -192,7 +192,7 @@ class idxconfig:
             colpos += 1
         return keys
 
-class test_schema03(wttest.WiredTigerTestCase):
+class test_schema03(aetest.ArchEngineTestCase):
     """
     Test schemas - a 'predictably random' assortment of columns,
     column groups and indices are created within tables, and are
@@ -258,29 +258,29 @@ class test_schema03(wttest.WiredTigerTestCase):
                          ('all', dict(s_restart=['table','colgroup0','index0','colgroup1','index1','populate0','index2','populate1'],P=1.0)),
     ])
 
-    ntable_scenarios = wtscenario.quick_scenarios('s_ntable',
+    ntable_scenarios = aescenario.quick_scenarios('s_ntable',
         [1,2,5,8], [1.0,0.4,0.5,0.5])
-    ncolgroup_scenarios = wtscenario.quick_scenarios('s_colgroup',
+    ncolgroup_scenarios = aescenario.quick_scenarios('s_colgroup',
         [[1,0],[0,1],[2,4],[8,5]], [1.0,0.2,0.3,1.0])
-    nindex_scenarios = wtscenario.quick_scenarios('s_index',
+    nindex_scenarios = aescenario.quick_scenarios('s_index',
         [[1,1,1],[3,2,1],[5,1,3]], [1.0,0.5,1.0])
-    idx_args_scenarios = wtscenario.quick_scenarios('s_index_args',
+    idx_args_scenarios = aescenario.quick_scenarios('s_index_args',
         ['', ',type=file', ',type=lsm'], [0.5, 0.3, 0.2])
-    table_args_scenarios = wtscenario.quick_scenarios('s_extra_table_args',
+    table_args_scenarios = aescenario.quick_scenarios('s_extra_table_args',
         ['', ',type=file', ',type=lsm'], [0.5, 0.3, 0.2])
 
-    all_scenarios = wtscenario.multiply_scenarios('_', restart_scenarios, ntable_scenarios, ncolgroup_scenarios, nindex_scenarios, idx_args_scenarios, table_args_scenarios)
+    all_scenarios = aescenario.multiply_scenarios('_', restart_scenarios, ntable_scenarios, ncolgroup_scenarios, nindex_scenarios, idx_args_scenarios, table_args_scenarios)
 
     # Prune the scenarios according to the probabilities given above.
-    scenarios = wtscenario.prune_scenarios(all_scenarios, 30)
-    scenarios = wtscenario.number_scenarios(scenarios)
+    scenarios = aescenario.prune_scenarios(all_scenarios, 30)
+    scenarios = aescenario.number_scenarios(scenarios)
 
     # Note: the set can be reduced here for debugging, e.g.
     # scenarios = scenarios[40:44]
     #   or
     # scenarios = [ scenarios[0], scenarios[30], scenarios[40] ]
 
-    #wttest.WiredTigerTestCase.printVerbose(2, 'test_schema03: running ' + \
+    #aetest.ArchEngineTestCase.printVerbose(2, 'test_schema03: running ' + \
     #                      str(len(scenarios)) + ' of ' + \
     #                      str(len(all_scenarios)) + ' possible scenarios')
 
@@ -298,7 +298,7 @@ class test_schema03(wttest.WiredTigerTestCase):
         super(test_schema03, self).setUp()
 
     def setUpConnectionOpen(self, dir):
-        conn = wiredtiger.wiredtiger_open(dir,
+        conn = archengine.archengine_open(dir,
             'create,cache_size=100m,session_max=1000')
         self.pr(`conn`)
         return conn
@@ -560,4 +560,4 @@ class test_schema03(wttest.WiredTigerTestCase):
             cursor.close()
             self.show_python("cursor.close()")
 if __name__ == '__main__':
-    wttest.run()
+    aetest.run()

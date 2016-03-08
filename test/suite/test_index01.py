@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Public Domain 2014-2015 MongoDB, Inc.
-# Public Domain 2008-2014 WiredTiger, Inc.
+# Public Domain 2008-2014 ArchEngine, Inc.
 #
 # This is free and unencumbered software released into the public domain.
 #
@@ -26,11 +26,11 @@
 # ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 # OTHER DEALINGS IN THE SOFTWARE.
 
-import wiredtiger, wttest
+import archengine, aetest
 
 # test_index01.py
 #    basic tests for indices
-class test_index01(wttest.WiredTigerTestCase):
+class test_index01(aetest.ArchEngineTestCase):
     '''Test basic operations for indices'''
 
     basename = 'test_index01'
@@ -41,7 +41,7 @@ class test_index01(wttest.WiredTigerTestCase):
 
     def reopen(self):
         self.conn.close()
-        self.conn = wiredtiger.wiredtiger_open('.', None)
+        self.conn = archengine.archengine_open('.', None)
         self.session = self.conn.open_session()
 
     def create_table(self):
@@ -97,7 +97,7 @@ class test_index01(wttest.WiredTigerTestCase):
         cursor = self.cursor(config='overwrite=false')
         cursor.set_key(*cols[:2])
         cursor.set_value(*cols[2:])
-        self.assertRaises(wiredtiger.WiredTigerError, lambda: cursor.insert())
+        self.assertRaises(archengine.ArchEngineError, lambda: cursor.insert())
         cursor.close()
 
     def insert_overwrite(self, *cols):
@@ -121,7 +121,7 @@ class test_index01(wttest.WiredTigerTestCase):
         cursor = self.cursor(config='overwrite=false')
         cursor.set_key(*cols[:2])
         cursor.set_value(*cols[2:])
-        self.assertEqual(cursor.update(), wiredtiger.WT_NOTFOUND)
+        self.assertEqual(cursor.update(), archengine.AE_NOTFOUND)
         cursor.close()
 
     def remove(self, name, ID):
@@ -134,7 +134,7 @@ class test_index01(wttest.WiredTigerTestCase):
     def test_empty(self):
         '''Create a table, look for a nonexistent key'''
         self.create_table()
-        self.check_exists('jones', 10, wiredtiger.WT_NOTFOUND)
+        self.check_exists('jones', 10, archengine.AE_NOTFOUND)
         for i in xrange(self.NUM_INDICES):
             self.assertEqual(list(self.index_iter(i)), [])
         self.drop_table()
@@ -217,10 +217,10 @@ class test_index01(wttest.WiredTigerTestCase):
         self.insert('smith', 1, 'HR', 'manager', 100000, 1970)
         self.check_exists('smith', 1, 0)
         self.remove('smith', 1)
-        self.check_exists('smith', 1, wiredtiger.WT_NOTFOUND)
+        self.check_exists('smith', 1, archengine.AE_NOTFOUND)
         for i in xrange(self.NUM_INDICES):
             self.assertEqual(list(self.index_iter(i)), [])
         self.drop_table()
 
 if __name__ == '__main__':
-    wttest.run()
+    aetest.run()

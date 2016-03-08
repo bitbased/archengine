@@ -1,6 +1,6 @@
 /*-
  * Public Domain 2014-2015 MongoDB, Inc.
- * Public Domain 2008-2014 WiredTiger, Inc.
+ * Public Domain 2008-2014 ArchEngine, Inc.
  *
  * This is free and unencumbered software released into the public domain.
  *
@@ -30,28 +30,28 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <wiredtiger.h>
-#include <wiredtiger_ext.h>
+#include <archengine.h>
+#include <archengine_ext.h>
 
-/*! [WT_COMPRESSOR initialization structure] */
+/*! [AE_COMPRESSOR initialization structure] */
 /* Local compressor structure. */
 typedef struct {
-	WT_COMPRESSOR compressor;		/* Must come first */
+	AE_COMPRESSOR compressor;		/* Must come first */
 
-	WT_EXTENSION_API *wt_api;		/* Extension API */
+	AE_EXTENSION_API *ae_api;		/* Extension API */
 
 	unsigned long nop_calls;		/* Count of calls */
 
 } NOP_COMPRESSOR;
-/*! [WT_COMPRESSOR initialization structure] */
+/*! [AE_COMPRESSOR initialization structure] */
 
-/*! [WT_COMPRESSOR compress] */
+/*! [AE_COMPRESSOR compress] */
 /*
  * nop_compress --
  *	A simple compression example that passes data through unchanged.
  */
 static int
-nop_compress(WT_COMPRESSOR *compressor, WT_SESSION *session,
+nop_compress(AE_COMPRESSOR *compressor, AE_SESSION *session,
     uint8_t *src, size_t src_len,
     uint8_t *dst, size_t dst_len,
     size_t *result_lenp, int *compression_failed)
@@ -73,15 +73,15 @@ nop_compress(WT_COMPRESSOR *compressor, WT_SESSION *session,
 
 	return (0);
 }
-/*! [WT_COMPRESSOR compress] */
+/*! [AE_COMPRESSOR compress] */
 
-/*! [WT_COMPRESSOR decompress] */
+/*! [AE_COMPRESSOR decompress] */
 /*
  * nop_decompress --
  *	A simple decompression example that passes data through unchanged.
  */
 static int
-nop_decompress(WT_COMPRESSOR *compressor, WT_SESSION *session,
+nop_decompress(AE_COMPRESSOR *compressor, AE_SESSION *session,
     uint8_t *src, size_t src_len,
     uint8_t *dst, size_t dst_len,
     size_t *result_lenp)
@@ -101,15 +101,15 @@ nop_decompress(WT_COMPRESSOR *compressor, WT_SESSION *session,
 	*result_lenp = dst_len;
 	return (0);
 }
-/*! [WT_COMPRESSOR decompress] */
+/*! [AE_COMPRESSOR decompress] */
 
-/*! [WT_COMPRESSOR presize] */
+/*! [AE_COMPRESSOR presize] */
 /*
  * nop_pre_size --
  *	A simple pre-size example that returns the source length.
  */
 static int
-nop_pre_size(WT_COMPRESSOR *compressor, WT_SESSION *session,
+nop_pre_size(AE_COMPRESSOR *compressor, AE_SESSION *session,
     uint8_t *src, size_t src_len,
     size_t *result_lenp)
 {
@@ -123,15 +123,15 @@ nop_pre_size(WT_COMPRESSOR *compressor, WT_SESSION *session,
 	*result_lenp = src_len;
 	return (0);
 }
-/*! [WT_COMPRESSOR presize] */
+/*! [AE_COMPRESSOR presize] */
 
-/*! [WT_COMPRESSOR terminate] */
+/*! [AE_COMPRESSOR terminate] */
 /*
  * nop_terminate --
- *	WiredTiger no-op compression termination.
+ *	ArchEngine no-op compression termination.
  */
 static int
-nop_terminate(WT_COMPRESSOR *compressor, WT_SESSION *session)
+nop_terminate(AE_COMPRESSOR *compressor, AE_SESSION *session)
 {
 	NOP_COMPRESSOR *nop_compressor = (NOP_COMPRESSOR *)compressor;
 
@@ -144,15 +144,15 @@ nop_terminate(WT_COMPRESSOR *compressor, WT_SESSION *session)
 
 	return (0);
 }
-/*! [WT_COMPRESSOR terminate] */
+/*! [AE_COMPRESSOR terminate] */
 
-/*! [WT_COMPRESSOR initialization function] */
+/*! [AE_COMPRESSOR initialization function] */
 /*
- * wiredtiger_extension_init --
+ * archengine_extension_init --
  *	A simple shared library compression example.
  */
 int
-wiredtiger_extension_init(WT_CONNECTION *connection, WT_CONFIG_ARG *config)
+archengine_extension_init(AE_CONNECTION *connection, AE_CONFIG_ARG *config)
 {
 	NOP_COMPRESSOR *nop_compressor;
 
@@ -162,7 +162,7 @@ wiredtiger_extension_init(WT_CONNECTION *connection, WT_CONFIG_ARG *config)
 		return (errno);
 
 	/*
-	 * Allocate a local compressor structure, with a WT_COMPRESSOR structure
+	 * Allocate a local compressor structure, with a AE_COMPRESSOR structure
 	 * as the first field, allowing us to treat references to either type of
 	 * structure as a reference to the other type.
 	 *
@@ -174,10 +174,10 @@ wiredtiger_extension_init(WT_CONNECTION *connection, WT_CONFIG_ARG *config)
 	nop_compressor->compressor.pre_size = nop_pre_size;
 	nop_compressor->compressor.terminate = nop_terminate;
 
-	nop_compressor->wt_api = connection->get_extension_api(connection);
+	nop_compressor->ae_api = connection->get_extension_api(connection);
 
 						/* Load the compressor */
 	return (connection->add_compressor(
-	    connection, "nop", (WT_COMPRESSOR *)nop_compressor, NULL));
+	    connection, "nop", (AE_COMPRESSOR *)nop_compressor, NULL));
 }
-/*! [WT_COMPRESSOR initialization function] */
+/*! [AE_COMPRESSOR initialization function] */

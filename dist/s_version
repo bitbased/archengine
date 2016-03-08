@@ -4,7 +4,7 @@
 . ../RELEASE_INFO
 
 m4dir=../build_posix/aclocal
-rpmspec=./package/wiredtiger.spec
+rpmspec=./package/archengine.spec
 tmp_file=__tmp
 
 force=no
@@ -23,17 +23,17 @@ if test "$force" = no -a \
     -f $m4dir/version.m4 -a \
     -f $m4dir/version-set.m4 ; then
 	eval `grep '^VERSION_[A-Z]*=' $m4dir/version-set.m4`
-	if test x${WIREDTIGER_VERSION_MAJOR} = x${VERSION_MAJOR} -a \
-		x${WIREDTIGER_VERSION_MINOR} = x${VERSION_MINOR} -a \
-		x${WIREDTIGER_VERSION_PATCH} = x${VERSION_PATCH} ; then
+	if test x${ARCHENGINE_VERSION_MAJOR} = x${VERSION_MAJOR} -a \
+		x${ARCHENGINE_VERSION_MINOR} = x${VERSION_MINOR} -a \
+		x${ARCHENGINE_VERSION_PATCH} = x${VERSION_PATCH} ; then
 		exit 0
 	fi
 fi
 
-dotted_version=${WIREDTIGER_VERSION_MAJOR}.${WIREDTIGER_VERSION_MINOR}.${WIREDTIGER_VERSION_PATCH}
+dotted_version=${ARCHENGINE_VERSION_MAJOR}.${ARCHENGINE_VERSION_MINOR}.${ARCHENGINE_VERSION_PATCH}
 echo "Building $m4dir/version.m4"
 cat <<EOF > $m4dir/version.m4
-dnl WiredTiger product version for AC_INIT.  Maintained by dist/s_version
+dnl ArchEngine product version for AC_INIT.  Maintained by dist/s_version
 ${dotted_version}
 EOF
 
@@ -41,17 +41,17 @@ echo "Building $m4dir/version-set.m4"
 cat <<EOF > $m4dir/version-set.m4
 dnl build by dist/s_version
 
-VERSION_MAJOR=${WIREDTIGER_VERSION_MAJOR}
-VERSION_MINOR=${WIREDTIGER_VERSION_MINOR}
-VERSION_PATCH=${WIREDTIGER_VERSION_PATCH}
-VERSION_STRING='"${WIREDTIGER_VERSION_STRING}"'
+VERSION_MAJOR=${ARCHENGINE_VERSION_MAJOR}
+VERSION_MINOR=${ARCHENGINE_VERSION_MINOR}
+VERSION_PATCH=${ARCHENGINE_VERSION_PATCH}
+VERSION_STRING='"${ARCHENGINE_VERSION_STRING}"'
 
 AC_SUBST(VERSION_MAJOR)
 AC_SUBST(VERSION_MINOR)
 AC_SUBST(VERSION_PATCH)
 AC_SUBST(VERSION_STRING)
 
-VERSION_NOPATCH=${WIREDTIGER_VERSION_MAJOR}.${WIREDTIGER_VERSION_MINOR}
+VERSION_NOPATCH=${ARCHENGINE_VERSION_MAJOR}.${ARCHENGINE_VERSION_MINOR}
 AC_SUBST(VERSION_NOPATCH)
 EOF
 

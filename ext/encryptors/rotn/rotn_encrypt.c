@@ -1,6 +1,6 @@
 /*-
  * Public Domain 2014-2015 MongoDB, Inc.
- * Public Domain 2008-2014 WiredTiger, Inc.
+ * Public Domain 2008-2014 ArchEngine, Inc.
  *
  * This is free and unencumbered software released into the public domain.
  *
@@ -30,10 +30,10 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <wiredtiger.h>
-#include <wiredtiger_ext.h>
+#include <archengine.h>
+#include <archengine_ext.h>
 
-/*! [WT_ENCRYPTOR initialization structure] */
+/*! [AE_ENCRYPTOR initialization structure] */
 
 /*
  * This encryptor is used for testing and demonstration only.
@@ -66,9 +66,9 @@
 
 /* Local encryptor structure. */
 typedef struct {
-	WT_ENCRYPTOR encryptor;		/* Must come first */
+	AE_ENCRYPTOR encryptor;		/* Must come first */
 
-	WT_EXTENSION_API *wtext;	/* Extension API */
+	AE_EXTENSION_API *aeext;	/* Extension API */
 
 	int rot_N;			/* rotN value */
 	char *keyid;			/* Saved keyid */
@@ -79,7 +79,7 @@ typedef struct {
 	int force_error;		/* Force a decrypt error for testing */
 
 } ROTN_ENCRYPTOR;
-/*! [WT_ENCRYPTOR initialization structure] */
+/*! [AE_ENCRYPTOR initialization structure] */
 
 #define	CHKSUM_LEN	4
 #define	IV_LEN		16
@@ -89,14 +89,14 @@ typedef struct {
  *	Display an error from this module in a standard way.
  */
 static int
-rotn_error(ROTN_ENCRYPTOR *encryptor, WT_SESSION *session, int err,
+rotn_error(ROTN_ENCRYPTOR *encryptor, AE_SESSION *session, int err,
     const char *msg)
 {
-	WT_EXTENSION_API *wtext;
+	AE_EXTENSION_API *aeext;
 
-	wtext = encryptor->wtext;
-	(void)wtext->err_printf(wtext, session,
-	    "rotn encryption: %s: %s", msg, wtext->strerror(wtext, NULL, err));
+	aeext = encryptor->aeext;
+	(void)aeext->err_printf(aeext, session,
+	    "rotn encryption: %s: %s", msg, aeext->strerror(aeext, NULL, err));
 	return (err);
 }
 
@@ -172,13 +172,13 @@ do_shift(uint8_t *buf, size_t len, u_char *shift, size_t shiftlen)
 		buf[i] += shift[i % shiftlen];
 }
 
-/*! [WT_ENCRYPTOR encrypt] */
+/*! [AE_ENCRYPTOR encrypt] */
 /*
  * rotn_encrypt --
  *	A simple encryption example that passes data through unchanged.
  */
 static int
-rotn_encrypt(WT_ENCRYPTOR *encryptor, WT_SESSION *session,
+rotn_encrypt(AE_ENCRYPTOR *encryptor, AE_SESSION *session,
     uint8_t *src, size_t src_len,
     uint8_t *dst, size_t dst_len,
     size_t *result_lenp)
@@ -218,15 +218,15 @@ rotn_encrypt(WT_ENCRYPTOR *encryptor, WT_SESSION *session,
 	*result_lenp = dst_len;
 	return (0);
 }
-/*! [WT_ENCRYPTOR encrypt] */
+/*! [AE_ENCRYPTOR encrypt] */
 
-/*! [WT_ENCRYPTOR decrypt] */
+/*! [AE_ENCRYPTOR decrypt] */
 /*
  * rotn_decrypt --
  *	A simple decryption example that passes data through unchanged.
  */
 static int
-rotn_decrypt(WT_ENCRYPTOR *encryptor, WT_SESSION *session,
+rotn_decrypt(AE_ENCRYPTOR *encryptor, AE_SESSION *session,
     uint8_t *src, size_t src_len,
     uint8_t *dst, size_t dst_len,
     size_t *result_lenp)
@@ -277,15 +277,15 @@ rotn_decrypt(WT_ENCRYPTOR *encryptor, WT_SESSION *session,
 	*result_lenp = mylen;
 	return (0);
 }
-/*! [WT_ENCRYPTOR decrypt] */
+/*! [AE_ENCRYPTOR decrypt] */
 
-/*! [WT_ENCRYPTOR postsize] */
+/*! [AE_ENCRYPTOR postsize] */
 /*
  * rotn_sizing --
  *	A sizing example that returns the header size needed.
  */
 static int
-rotn_sizing(WT_ENCRYPTOR *encryptor, WT_SESSION *session,
+rotn_sizing(AE_ENCRYPTOR *encryptor, AE_SESSION *session,
     size_t *expansion_constantp)
 {
 	(void)encryptor;				/* Unused parameters */
@@ -294,21 +294,21 @@ rotn_sizing(WT_ENCRYPTOR *encryptor, WT_SESSION *session,
 	*expansion_constantp = CHKSUM_LEN + IV_LEN;
 	return (0);
 }
-/*! [WT_ENCRYPTOR postsize] */
+/*! [AE_ENCRYPTOR postsize] */
 
-/*! [WT_ENCRYPTOR customize] */
+/*! [AE_ENCRYPTOR customize] */
 /*
  * rotn_customize --
  *	The customize function creates a customized encryptor
  */
 static int
-rotn_customize(WT_ENCRYPTOR *encryptor, WT_SESSION *session,
-    WT_CONFIG_ARG *encrypt_config, WT_ENCRYPTOR **customp)
+rotn_customize(AE_ENCRYPTOR *encryptor, AE_SESSION *session,
+    AE_CONFIG_ARG *encrypt_config, AE_ENCRYPTOR **customp)
 {
 	const ROTN_ENCRYPTOR *orig;
 	ROTN_ENCRYPTOR *rotn_encryptor;
-	WT_CONFIG_ITEM keyid, secret;
-	WT_EXTENSION_API *wtext;
+	AE_CONFIG_ITEM keyid, secret;
+	AE_EXTENSION_API *aeext;
 	size_t i, len;
 	int ret, keyid_val;
 	u_char base;
@@ -317,7 +317,7 @@ rotn_customize(WT_ENCRYPTOR *encryptor, WT_SESSION *session,
 	keyid_val = 0;
 
 	orig = (const ROTN_ENCRYPTOR *)encryptor;
-	wtext = orig->wtext;
+	aeext = orig->aeext;
 
 	if ((rotn_encryptor = calloc(1, sizeof(ROTN_ENCRYPTOR))) == NULL)
 		return (errno);
@@ -327,7 +327,7 @@ rotn_customize(WT_ENCRYPTOR *encryptor, WT_SESSION *session,
 	/*
 	 * Stash the keyid from the configuration string.
 	 */
-	if ((ret = wtext->config_get(wtext, session, encrypt_config,
+	if ((ret = aeext->config_get(aeext, session, encrypt_config,
 	    "keyid", &keyid)) == 0 && keyid.len != 0) {
 		/*
 		 * In this demonstration, we expect keyid to be a number.
@@ -349,7 +349,7 @@ rotn_customize(WT_ENCRYPTOR *encryptor, WT_SESSION *session,
 	 * We stash the secret key from the configuration string
 	 * and build some shift bytes to make encryption/decryption easy.
 	 */
-	if ((ret = wtext->config_get(wtext, session, encrypt_config,
+	if ((ret = aeext->config_get(aeext, session, encrypt_config,
 	    "secretkey", &secret)) == 0 && secret.len != 0) {
 		len = secret.len;
 		if ((rotn_encryptor->secretkey = malloc(len + 1)) == NULL ||
@@ -384,7 +384,7 @@ rotn_customize(WT_ENCRYPTOR *encryptor, WT_SESSION *session,
 	 */
 	rotn_encryptor->rot_N = keyid_val;
 
-	*customp = (WT_ENCRYPTOR *)rotn_encryptor;
+	*customp = (AE_ENCRYPTOR *)rotn_encryptor;
 	return (0);
 
 err:	free(rotn_encryptor->keyid);
@@ -394,15 +394,15 @@ err:	free(rotn_encryptor->keyid);
 	free(rotn_encryptor);
 	return (ret);
 }
-/*! [WT_ENCRYPTOR presize] */
+/*! [AE_ENCRYPTOR presize] */
 
-/*! [WT_ENCRYPTOR terminate] */
+/*! [AE_ENCRYPTOR terminate] */
 /*
  * rotn_terminate --
- *	WiredTiger no-op encryption termination.
+ *	ArchEngine no-op encryption termination.
  */
 static int
-rotn_terminate(WT_ENCRYPTOR *encryptor, WT_SESSION *session)
+rotn_terminate(AE_ENCRYPTOR *encryptor, AE_SESSION *session)
 {
 	ROTN_ENCRYPTOR *rotn_encryptor = (ROTN_ENCRYPTOR *)encryptor;
 
@@ -416,32 +416,32 @@ rotn_terminate(WT_ENCRYPTOR *encryptor, WT_SESSION *session)
 	free(encryptor);
 	return (0);
 }
-/*! [WT_ENCRYPTOR terminate] */
+/*! [AE_ENCRYPTOR terminate] */
 
 /*
  * rotn_configure --
- *	WiredTiger no-op encryption configuration.
+ *	ArchEngine no-op encryption configuration.
  */
 static int
-rotn_configure(ROTN_ENCRYPTOR *rotn_encryptor, WT_CONFIG_ARG *config)
+rotn_configure(ROTN_ENCRYPTOR *rotn_encryptor, AE_CONFIG_ARG *config)
 {
-	WT_CONFIG_ITEM k, v;
-	WT_CONFIG_PARSER *config_parser;
-	WT_EXTENSION_API *wtext;	/* Extension API */
+	AE_CONFIG_ITEM k, v;
+	AE_CONFIG_PARSER *config_parser;
+	AE_EXTENSION_API *aeext;	/* Extension API */
 	int ret, t_ret;
 
-	wtext = rotn_encryptor->wtext;
+	aeext = rotn_encryptor->aeext;
 
 	/* Get the configuration string. */
-	if ((ret = wtext->config_get(wtext, NULL, config, "config", &v)) != 0)
+	if ((ret = aeext->config_get(aeext, NULL, config, "config", &v)) != 0)
 		return (rotn_error(rotn_encryptor, NULL, ret,
-		    "WT_EXTENSION_API.config_get"));
+		    "AE_EXTENSION_API.config_get"));
 
 	/* Step through the list of configuration options. */
-	if ((ret = wtext->config_parser_open(
-	    wtext, NULL, v.str, v.len, &config_parser)) != 0)
+	if ((ret = aeext->config_parser_open(
+	    aeext, NULL, v.str, v.len, &config_parser)) != 0)
 		return (rotn_error(rotn_encryptor, NULL, ret,
-		    "WT_EXTENSION_API.config_parser_open"));
+		    "AE_EXTENSION_API.config_parser_open"));
 
 	while ((ret = config_parser->next(config_parser, &k, &v)) == 0) {
 		if (strncmp("rotn_force_error", k.str, k.len) == 0 &&
@@ -457,21 +457,21 @@ rotn_configure(ROTN_ENCRYPTOR *rotn_encryptor, WT_CONFIG_ARG *config)
 	}
 	if ((t_ret = config_parser->close(config_parser)) != 0)
 		return (rotn_error(rotn_encryptor, NULL, t_ret,
-		    "WT_CONFIG_PARSER.close"));
-	if (ret != WT_NOTFOUND)
+		    "AE_CONFIG_PARSER.close"));
+	if (ret != AE_NOTFOUND)
 		return (rotn_error(rotn_encryptor, NULL, ret,
-		    "WT_CONFIG_PARSER.next"));
+		    "AE_CONFIG_PARSER.next"));
 
 	return (0);
 }
 
-/*! [WT_ENCRYPTOR initialization function] */
+/*! [AE_ENCRYPTOR initialization function] */
 /*
- * wiredtiger_extension_init --
+ * archengine_extension_init --
  *	A simple shared library encryption example.
  */
 int
-wiredtiger_extension_init(WT_CONNECTION *connection, WT_CONFIG_ARG *config)
+archengine_extension_init(AE_CONNECTION *connection, AE_CONFIG_ARG *config)
 {
 	ROTN_ENCRYPTOR *rotn_encryptor;
 	int ret;
@@ -480,7 +480,7 @@ wiredtiger_extension_init(WT_CONNECTION *connection, WT_CONFIG_ARG *config)
 		return (errno);
 
 	/*
-	 * Allocate a local encryptor structure, with a WT_ENCRYPTOR structure
+	 * Allocate a local encryptor structure, with a AE_ENCRYPTOR structure
 	 * as the first field, allowing us to treat references to either type of
 	 * structure as a reference to the other type.
 	 *
@@ -491,7 +491,7 @@ wiredtiger_extension_init(WT_CONNECTION *connection, WT_CONFIG_ARG *config)
 	rotn_encryptor->encryptor.sizing = rotn_sizing;
 	rotn_encryptor->encryptor.customize = rotn_customize;
 	rotn_encryptor->encryptor.terminate = rotn_terminate;
-	rotn_encryptor->wtext = connection->get_extension_api(connection);
+	rotn_encryptor->aeext = connection->get_extension_api(connection);
 
 	if ((ret = rotn_configure(rotn_encryptor, config)) != 0) {
 		free(rotn_encryptor);
@@ -499,6 +499,6 @@ wiredtiger_extension_init(WT_CONNECTION *connection, WT_CONFIG_ARG *config)
 	}
 						/* Load the encryptor */
 	return (connection->add_encryptor(
-	    connection, "rotn", (WT_ENCRYPTOR *)rotn_encryptor, NULL));
+	    connection, "rotn", (AE_ENCRYPTOR *)rotn_encryptor, NULL));
 }
-/*! [WT_ENCRYPTOR initialization function] */
+/*! [AE_ENCRYPTOR initialization function] */

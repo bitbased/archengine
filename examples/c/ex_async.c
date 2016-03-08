@@ -1,6 +1,6 @@
 /*-
  * Public Domain 2014-2015 MongoDB, Inc.
- * Public Domain 2008-2014 WiredTiger, Inc.
+ * Public Domain 2008-2014 ArchEngine, Inc.
  *
  * This is free and unencumbered software released into the public domain.
  *
@@ -38,7 +38,7 @@
 #include "windows_shim.h"
 #endif
 
-#include <wiredtiger.h>
+#include <archengine.h>
 
 #if defined(_lint)
 #define	ATOMIC_ADD(v, val)      ((v) += (val), (v))
@@ -53,17 +53,17 @@ static int global_error = 0;
 
 /*! [async example callback implementation] */
 typedef struct {
-	WT_ASYNC_CALLBACK iface;
+	AE_ASYNC_CALLBACK iface;
 	uint32_t num_keys;
 } ASYNC_KEYS;
 
 static int
-async_callback(WT_ASYNC_CALLBACK *cb,
-    WT_ASYNC_OP *op, int wiredtiger_error, uint32_t flags)
+async_callback(AE_ASYNC_CALLBACK *cb,
+    AE_ASYNC_OP *op, int archengine_error, uint32_t flags)
 {
 	ASYNC_KEYS *asynckey = (ASYNC_KEYS *)cb;
-	WT_ASYNC_OPTYPE type;
-	WT_ITEM k, v;
+	AE_ASYNC_OPTYPE type;
+	AE_ITEM k, v;
 	const char *key, *value;
 	uint64_t id;
 	int ret;
@@ -73,7 +73,7 @@ async_callback(WT_ASYNC_CALLBACK *cb,
 	ret = 0;
 
 	/*! [async get type] */
-	/* Retrieve the operation's WT_ASYNC_OPTYPE type. */
+	/* Retrieve the operation's AE_ASYNC_OPTYPE type. */
 	type = op->get_type(op);
 	/*! [async get type] */
 
@@ -82,18 +82,18 @@ async_callback(WT_ASYNC_CALLBACK *cb,
 	id = op->get_id(op);
 	/*! [async get identifier] */
 
-	/* Check for a WiredTiger error. */
-	if (wiredtiger_error != 0) {
+	/* Check for a ArchEngine error. */
+	if (archengine_error != 0) {
 		fprintf(stderr,
 		    "ID %" PRIu64 " error %d: %s\n",
-		    id, wiredtiger_error,
-		    wiredtiger_strerror(wiredtiger_error));
-		global_error = wiredtiger_error;
+		    id, archengine_error,
+		    archengine_strerror(archengine_error));
+		global_error = archengine_error;
 		return (1);
 	}
 
 	/* If doing a search, retrieve the key/value pair. */
-	if (type == WT_AOP_SEARCH) {
+	if (type == AE_AOP_SEARCH) {
 		/*! [async get the operation's string key] */
 		ret = op->get_key(op, &k);
 		key = k.data;
@@ -116,14 +116,14 @@ static ASYNC_KEYS ex_asynckeys = { {async_callback}, 0 };
 int
 main(void)
 {
-	WT_ASYNC_OP *op;
-	WT_CONNECTION *conn;
-	WT_SESSION *session;
+	AE_ASYNC_OP *op;
+	AE_CONNECTION *conn;
+	AE_SESSION *session;
 	int i, ret;
 	char k[MAX_KEYS][16], v[MAX_KEYS][16];
 
 	/*! [async example connection] */
-	ret = wiredtiger_open(home, NULL,
+	ret = archengine_open(home, NULL,
 	    "create,cache_size=100MB,"
 	    "async=(enabled=true,ops_max=20,threads=2)", &conn);
 	/*! [async example connection] */

@@ -1,6 +1,6 @@
 /*-
  * Public Domain 2014-2015 MongoDB, Inc.
- * Public Domain 2008-2014 WiredTiger, Inc.
+ * Public Domain 2008-2014 ArchEngine, Inc.
  *
  * This is free and unencumbered software released into the public domain.
  *
@@ -28,7 +28,7 @@
 
 #include <assert.h>
 
-#include "wt_internal.h"			/* For __wt_XXX */
+#include "ae_internal.h"			/* For __ae_XXX */
 
 int
 main(void)
@@ -47,9 +47,9 @@ main(void)
 
 #if 1
 			p = buf;
-			assert(__wt_vpack_uint(&p, sizeof(buf), r) == 0);
+			assert(__ae_vpack_uint(&p, sizeof(buf), r) == 0);
 			cp = buf;
-			assert(__wt_vunpack_uint(&cp, sizeof(buf), &r2) == 0);
+			assert(__ae_vunpack_uint(&cp, sizeof(buf), &r2) == 0);
 #else
 			/*
 			 * Note: use memmove for comparison because GCC does

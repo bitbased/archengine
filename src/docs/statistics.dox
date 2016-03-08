@@ -1,11 +1,11 @@
 /*! @m_page{{c,java},statistics,Statistics}
 
-WiredTiger can be configured to maintain a variety of run-time and
+ArchEngine can be configured to maintain a variety of run-time and
 data-source statistics.  As maintaining statistics may involve updating
 shared-memory data structures and traversing disk-based data structures,
 configuring statistics may decrease application performance.
 
-The ::wiredtiger_open \c statistics configuration must be set in order
+The ::archengine_open \c statistics configuration must be set in order
 for statistics to be maintained.  When configured to \c none (the
 default), no statistics are maintained and attempting to read the
 statistics will result in an error.   Alternatively, the \c fast
@@ -13,7 +13,7 @@ configuration maintains a subset of the statistics which are relatively
 inexpensive, and the \c all configuration maintains all statistics
 regardless of cost.
 
-The following example configures WiredTiger to maintain all statistics,
+The following example configures ArchEngine to maintain all statistics,
 regardless of cost:
 
 @snippet ex_all.c Statistics configuration
@@ -22,15 +22,15 @@ Statistics are gathered and returned to the application using a statistics
 cursor, which returns key/value pairs to the application.  See
 @ref data_statistics for information about accessing the gathered statistics.
 
-When the WT_SESSION::open_cursor method is called to open a statistics
+When the AE_SESSION::open_cursor method is called to open a statistics
 cursor, the statistics configuration specifies the statistics to be
-gathered, similarly to the ::wiredtiger_open function.   The \c fast
+gathered, similarly to the ::archengine_open function.   The \c fast
 configuration gathers the subset of the statistics that are relatively
 inexpensive, and the \c all configuration gathers all statistics,
 regardless of cost.  If no configuration is specified, the current
 database statistics configuration is assumed.
 
-The configuration of the WT_SESSION::open_cursor method must agree with the
+The configuration of the AE_SESSION::open_cursor method must agree with the
 database configuration: if the database is configured to maintain \c fast
 statistics, attempts to open a statistics cursor in \c all mode will fail.
 If the database has been configured to maintain \c all statistics, the
@@ -52,10 +52,10 @@ only the relatively inexpensive statistics:
 
 @snippet ex_all.c Statistics cursor table fast
 
-The WT_SESSION::open_cursor method and the ::wiredtiger_open function
+The AE_SESSION::open_cursor method and the ::archengine_open function
 also support the statistics configuration value \c clear.
 
-When \c clear is specified to the WT_SESSION::open_cursor method, gathered
+When \c clear is specified to the AE_SESSION::open_cursor method, gathered
 statistics will be reset, where appropriate, after they are gathered.  For
 example, a cache size statistic is not cleared because it's not expected to
 change rapidly over time, while the count of cursor insert operations will
@@ -67,13 +67,13 @@ cost, and then clears them:
 
 @snippet ex_all.c Statistics cursor clear configuration
 
-When \c clear is specified to the ::wiredtiger_open function, gathered
+When \c clear is specified to the ::archengine_open function, gathered
 statistics will be reset, where appropriate, after they are gathered.
 This applies to all statistics cursors (as if \c clear was configured
 when the cursor was opened), as well as statistics logging, when it is
 configured.
 
-The following example configures WiredTiger to maintain only relatively
+The following example configures ArchEngine to maintain only relatively
 inexpensive statistics, and to clears statistics after they are gathered
 or logged:
 
@@ -81,11 +81,11 @@ or logged:
 
 @section statistics_log Statistics logging
 
-WiredTiger will optionally log database statistics into a file when the
-the ::wiredtiger_open \c statistics_log configuration is set.
+ArchEngine will optionally log database statistics into a file when the
+the ::archengine_open \c statistics_log configuration is set.
 
-The resulting statistics can be displayed using the \c wtstats visualization
-tool.  For more information, see @ref_single wtstats.
+The resulting statistics can be displayed using the \c aestats visualization
+tool.  For more information, see @ref_single aestats.
 
 The following example logs statistics every 30 seconds:
 
@@ -144,8 +144,8 @@ were set).
 
 The location of the log files may be changed with the \c statistics_log.path
 configuration string.  The \c path value value may contain ISO C90 standard
-strftime conversion specifications.  WiredTiger will not create non-existent
-directories in the path, they must exist before ::wiredtiger_open is called.
+strftime conversion specifications.  ArchEngine will not create non-existent
+directories in the path, they must exist before ::archengine_open is called.
 
 The following example logs statistics into files named with the month,
 day and year:
@@ -155,10 +155,10 @@ day and year:
 A Python script that parses the default logging output and uses the
 <a href="http://www.gnuplot.info/">gnuplot</a>, utility to generate
 Portable Network Graphics (PNG) format graphs is included in the
-WiredTiger distribution in the file \c tools/statlog.py.
+ArchEngine distribution in the file \c tools/statlog.py.
 
 @m_if{c}
-To interactively examine statistics results, see @ref wtstats.
+To interactively examine statistics results, see @ref aestats.
 @m_endif
 
 */

@@ -2,7 +2,7 @@
 
 @section config_intro Introduction
 
-Methods in WiredTiger take a configuration string to provide optional
+Methods in ArchEngine take a configuration string to provide optional
 arguments and configure non-standard behaviors.  These strings are
 simple comma-separated lists of <code>"<key>=<value>"</code> pairs, and
 all have the same format:
@@ -88,7 +88,7 @@ Empty configuration strings may be represented in Java by passing
 
 @section config_json JavaScript Object Notation (JSON) compatibility
 
-WiredTiger configuration strings are compatible with
+ArchEngine configuration strings are compatible with
 <a href="http://www.json.org/">JavaScript Object Notation (JSON)</a>,
 and will accept additional formatting as follows:
 
@@ -117,8 +117,8 @@ For example, in Python, code might look as follows:
 \endcode
 
 Because JSON compatibility allows colons to be used as key/value separators,
-WiredTiger URIs may require quoting.  For example, the following
-WT_SESSION::checkpoint call specifies a set of URIs as checkpoint targets,
+ArchEngine URIs may require quoting.  For example, the following
+AE_SESSION::checkpoint call specifies a set of URIs as checkpoint targets,
 using double-quote characters to keep the parser from treating the colon
 characters as JSON name/value separators:
 

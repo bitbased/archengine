@@ -40,7 +40,7 @@
   FreeBSD: shared libraries.
   Memcheck:Addr8
   ...
-  fun:__wt_dlsym
+  fun:__ae_dlsym
 }
 
 {

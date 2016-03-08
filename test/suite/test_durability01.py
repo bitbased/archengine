@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Public Domain 2014-2015 MongoDB, Inc.
-# Public Domain 2008-2014 WiredTiger, Inc.
+# Public Domain 2008-2014 ArchEngine, Inc.
 #
 # This is free and unencumbered software released into the public domain.
 #
@@ -32,20 +32,20 @@
 #
 
 import fnmatch, os, shutil, time
-from helper import copy_wiredtiger_home
+from helper import copy_archengine_home
 from suite_subprocess import suite_subprocess
-from wiredtiger import wiredtiger_open
-from wtscenario import multiply_scenarios, number_scenarios, prune_scenarios
-import wttest
+from archengine import archengine_open
+from aescenario import multiply_scenarios, number_scenarios, prune_scenarios
+import aetest
 
-class test_durability01(wttest.WiredTigerTestCase, suite_subprocess):
+class test_durability01(aetest.ArchEngineTestCase, suite_subprocess):
     uri = 'table:test_durability01'
     create_params = 'key_format=i,value_format=i'
 
     def check_crash_restart(self, olddir, newdir):
         ''' Simulate a crash from olddir and restart in newdir. '''
         # with the connection still open, copy files to new directory
-        copy_wiredtiger_home(olddir, newdir)
+        copy_archengine_home(olddir, newdir)
 
         # Open the new directory
         conn = self.setUpConnectionOpen(newdir)
@@ -77,4 +77,4 @@ class test_durability01(wttest.WiredTigerTestCase, suite_subprocess):
             self.check_crash_restart(".", "RESTART")
 
 if __name__ == '__main__':
-    wttest.run()
+    aetest.run()

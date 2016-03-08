@@ -1,6 +1,6 @@
 /*-
  * Copyright (c) 2014-2015 MongoDB, Inc.
- * Copyright (c) 2008-2014 WiredTiger, Inc.
+ * Copyright (c) 2008-2014 ArchEngine, Inc.
  *	All rights reserved.
  *
  * See the file LICENSE for redistribution information.
@@ -29,8 +29,8 @@ util_copyright(void)
 	    "http://www.gnu.org/licenses/gpl-3.0-standalone.html");
 
 	printf("%s\n",
-	    "For a license to use the WiredTiger software under conditions\n"
+	    "For a license to use the ArchEngine software under conditions\n"
 	    "other than those described by the GNU General Public License,\n"
-	    "or for technical support for this software, contact WiredTiger,\n"
-	    "Inc. at info@wiredtiger.com.");
+	    "or for technical support for this software, contact ArchEngine,\n"
+	    "Inc. at info@archengine.com.");
 }

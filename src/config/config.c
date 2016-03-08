@@ -1,34 +1,34 @@
 /*-
  * Copyright (c) 2014-2015 MongoDB, Inc.
- * Copyright (c) 2008-2014 WiredTiger, Inc.
+ * Copyright (c) 2008-2014 ArchEngine, Inc.
  *	All rights reserved.
  *
  * See the file LICENSE for redistribution information.
  */
 
-#include "wt_internal.h"
+#include "ae_internal.h"
 
 /*
  * __config_err --
  *	Error message and return for config string parse failures.
  */
 static int
-__config_err(WT_CONFIG *conf, const char *msg, int err)
+__config_err(AE_CONFIG *conf, const char *msg, int err)
 {
-	WT_RET_MSG(conf->session, err,
+	AE_RET_MSG(conf->session, err,
 	    "Error parsing '%.*s' at byte %u: %s",
 	    (int)(conf->end - conf->orig), conf->orig,
 	    (u_int)(conf->cur - conf->orig), msg);
 }
 
 /*
- * __wt_config_initn --
+ * __ae_config_initn --
  *	Initialize a config handle, used to iterate through a config string of
  *	specified length.
  */
 int
-__wt_config_initn(
-    WT_SESSION_IMPL *session, WT_CONFIG *conf, const char *str, size_t len)
+__ae_config_initn(
+    AE_SESSION_IMPL *session, AE_CONFIG *conf, const char *str, size_t len)
 {
 	conf->session = session;
 	conf->orig = conf->cur = str;
@@ -41,31 +41,31 @@ __wt_config_initn(
 }
 
 /*
- * __wt_config_init --
+ * __ae_config_init --
  *	Initialize a config handle, used to iterate through a NUL-terminated
  *	config string.
  */
 int
-__wt_config_init(WT_SESSION_IMPL *session, WT_CONFIG *conf, const char *str)
+__ae_config_init(AE_SESSION_IMPL *session, AE_CONFIG *conf, const char *str)
 {
 	size_t len;
 
 	len = (str == NULL) ? 0 : strlen(str);
 
-	return (__wt_config_initn(session, conf, str, len));
+	return (__ae_config_initn(session, conf, str, len));
 }
 
 /*
- * __wt_config_subinit --
+ * __ae_config_subinit --
  *	Initialize a config handle, used to iterate through a config string
  *	extracted from another config string (used for parsing nested
  *	structures).
  */
 int
-__wt_config_subinit(
-    WT_SESSION_IMPL *session, WT_CONFIG *conf, WT_CONFIG_ITEM *item)
+__ae_config_subinit(
+    AE_SESSION_IMPL *session, AE_CONFIG *conf, AE_CONFIG_ITEM *item)
 {
-	return (__wt_config_initn(session, conf, item->str, item->len));
+	return (__ae_config_initn(session, conf, item->str, item->len));
 }
 
 #define	PUSH(i, t) do {							\
@@ -340,12 +340,12 @@ static const int8_t goesc[256] = {
  *	Get the next config item in the string without processing the value.
  */
 static int
-__config_next(WT_CONFIG *conf, WT_CONFIG_ITEM *key, WT_CONFIG_ITEM *value)
+__config_next(AE_CONFIG *conf, AE_CONFIG_ITEM *key, AE_CONFIG_ITEM *value)
 {
-	WT_CONFIG_ITEM *out = key;
+	AE_CONFIG_ITEM *out = key;
 	int utf8_remain = 0;
-	static const WT_CONFIG_ITEM true_value = {
-		"", 0, 1, WT_CONFIG_ITEM_BOOL
+	static const AE_CONFIG_ITEM true_value = {
+		"", 0, 1, AE_CONFIG_ITEM_BOOL
 	};
 
 	key->len = 0;
@@ -372,7 +372,7 @@ __config_next(WT_CONFIG *conf, WT_CONFIG_ITEM *key, WT_CONFIG_ITEM *value)
 		case A_UP:
 			if (conf->top == -1)
 				conf->top = 1;
-			PUSH(0, WT_CONFIG_ITEM_STRUCT);
+			PUSH(0, AE_CONFIG_ITEM_STRUCT);
 			++conf->depth;
 			break;
 
@@ -406,7 +406,7 @@ __config_next(WT_CONFIG *conf, WT_CONFIG_ITEM *key, WT_CONFIG_ITEM *value)
 			break;
 
 		case A_QUP:
-			PUSH(1, WT_CONFIG_ITEM_STRING);
+			PUSH(1, AE_CONFIG_ITEM_STRING);
 			conf->go = gostring;
 			break;
 
@@ -419,12 +419,12 @@ __config_next(WT_CONFIG *conf, WT_CONFIG_ITEM *key, WT_CONFIG_ITEM *value)
 			break;
 
 		case A_BARE:
-			PUSH(0, WT_CONFIG_ITEM_ID);
+			PUSH(0, AE_CONFIG_ITEM_ID);
 			conf->go = gobare;
 			break;
 
 		case A_NUMBARE:
-			PUSH(0, WT_CONFIG_ITEM_NUM);
+			PUSH(0, AE_CONFIG_ITEM_NUM);
 			conf->go = gobare;
 			break;
 
@@ -469,7 +469,7 @@ __config_next(WT_CONFIG *conf, WT_CONFIG_ITEM *key, WT_CONFIG_ITEM *value)
 
 	/* We're either at the end of the string or we failed to parse. */
 	if (conf->depth == 0)
-		return (WT_NOTFOUND);
+		return (AE_NOTFOUND);
 
 	return (__config_err(conf,
 	    "Closing brackets missing from config string", EINVAL));
@@ -477,10 +477,10 @@ __config_next(WT_CONFIG *conf, WT_CONFIG_ITEM *key, WT_CONFIG_ITEM *value)
 
 /*
  * Arithmetic shift of a negative number is undefined by ISO/IEC 9899, and the
- * WiredTiger API supports negative numbers.  Check it's not a negative number,
+ * ArchEngine API supports negative numbers.  Check it's not a negative number,
  * and then cast the shift out of paranoia.
  */
-#define	WT_SHIFT_INT64(v, s) do {					\
+#define	AE_SHIFT_INT64(v, s) do {					\
 	if ((v) < 0)							\
 		goto range;						\
 	(v) = (int64_t)(((uint64_t)(v)) << (s));			\
@@ -491,7 +491,7 @@ __config_next(WT_CONFIG *conf, WT_CONFIG_ITEM *key, WT_CONFIG_ITEM *value)
  *	Deal with special config values like true / false.
  */
 static int
-__config_process_value(WT_CONFIG *conf, WT_CONFIG_ITEM *value)
+__config_process_value(AE_CONFIG *conf, AE_CONFIG_ITEM *value)
 {
 	char *endptr;
 
@@ -499,15 +499,15 @@ __config_process_value(WT_CONFIG *conf, WT_CONFIG_ITEM *value)
 	if (value->len == 0)
 		return (0);
 
-	if (value->type == WT_CONFIG_ITEM_ID) {
-		if (WT_STRING_MATCH("false", value->str, value->len)) {
-			value->type = WT_CONFIG_ITEM_BOOL;
+	if (value->type == AE_CONFIG_ITEM_ID) {
+		if (AE_STRING_MATCH("false", value->str, value->len)) {
+			value->type = AE_CONFIG_ITEM_BOOL;
 			value->val = 0;
-		} else if (WT_STRING_MATCH("true", value->str, value->len)) {
-			value->type = WT_CONFIG_ITEM_BOOL;
+		} else if (AE_STRING_MATCH("true", value->str, value->len)) {
+			value->type = AE_CONFIG_ITEM_BOOL;
 			value->val = 1;
 		}
-	} else if (value->type == WT_CONFIG_ITEM_NUM) {
+	} else if (value->type == AE_CONFIG_ITEM_NUM) {
 		errno = 0;
 		value->val = strtoll(value->str, &endptr, 10);
 
@@ -520,31 +520,31 @@ __config_process_value(WT_CONFIG *conf, WT_CONFIG_ITEM *value)
 				break;
 			case 'k':
 			case 'K':
-				WT_SHIFT_INT64(value->val, 10);
+				AE_SHIFT_INT64(value->val, 10);
 				break;
 			case 'm':
 			case 'M':
-				WT_SHIFT_INT64(value->val, 20);
+				AE_SHIFT_INT64(value->val, 20);
 				break;
 			case 'g':
 			case 'G':
-				WT_SHIFT_INT64(value->val, 30);
+				AE_SHIFT_INT64(value->val, 30);
 				break;
 			case 't':
 			case 'T':
-				WT_SHIFT_INT64(value->val, 40);
+				AE_SHIFT_INT64(value->val, 40);
 				break;
 			case 'p':
 			case 'P':
-				WT_SHIFT_INT64(value->val, 50);
+				AE_SHIFT_INT64(value->val, 50);
 				break;
 			default:
 				/*
 				 * We didn't get a well-formed number.  That
 				 * might be okay, the required type will be
-				 * checked by __wt_config_check.
+				 * checked by __ae_config_check.
 				 */
-				value->type = WT_CONFIG_ITEM_ID;
+				value->type = AE_CONFIG_ITEM_ID;
 				break;
 			}
 
@@ -552,9 +552,9 @@ __config_process_value(WT_CONFIG *conf, WT_CONFIG_ITEM *value)
 		 * If we parsed the whole string but the number is out of range,
 		 * report an error.  Don't report an error for strings that
 		 * aren't well-formed integers: if an integer is expected, that
-		 * will be caught by __wt_config_check.
+		 * will be caught by __ae_config_check.
 		 */
-		if (value->type == WT_CONFIG_ITEM_NUM && errno == ERANGE)
+		if (value->type == AE_CONFIG_ITEM_NUM && errno == ERANGE)
 			goto range;
 	}
 
@@ -564,13 +564,13 @@ range:	return (__config_err(conf, "Number out of range", ERANGE));
 }
 
 /*
- * __wt_config_next --
+ * __ae_config_next --
  *	Get the next config item in the string and process the value.
  */
 int
-__wt_config_next(WT_CONFIG *conf, WT_CONFIG_ITEM *key, WT_CONFIG_ITEM *value)
+__ae_config_next(AE_CONFIG *conf, AE_CONFIG_ITEM *key, AE_CONFIG_ITEM *value)
 {
-	WT_RET(__config_next(conf, key, value));
+	AE_RET(__config_next(conf, key, value));
 	return (__config_process_value(conf, value));
 }
 
@@ -580,17 +580,17 @@ __wt_config_next(WT_CONFIG *conf, WT_CONFIG_ITEM *key, WT_CONFIG_ITEM *value)
  */
 static int
 __config_getraw(
-    WT_CONFIG *cparser, WT_CONFIG_ITEM *key, WT_CONFIG_ITEM *value, bool top)
+    AE_CONFIG *cparser, AE_CONFIG_ITEM *key, AE_CONFIG_ITEM *value, bool top)
 {
-	WT_CONFIG sparser;
-	WT_CONFIG_ITEM k, v, subk;
-	WT_DECL_RET;
+	AE_CONFIG sparser;
+	AE_CONFIG_ITEM k, v, subk;
+	AE_DECL_RET;
 	bool found;
 
 	found = false;
 	while ((ret = __config_next(cparser, &k, &v)) == 0) {
-		if (k.type != WT_CONFIG_ITEM_STRING &&
-		    k.type != WT_CONFIG_ITEM_ID)
+		if (k.type != AE_CONFIG_ITEM_STRING &&
+		    k.type != AE_CONFIG_ITEM_ID)
 			continue;
 		if (k.len == key->len && strncmp(key->str, k.str, k.len) == 0) {
 			*value = v;
@@ -599,36 +599,36 @@ __config_getraw(
 		    strncmp(key->str, k.str, k.len) == 0) {
 			subk.str = key->str + k.len + 1;
 			subk.len = (key->len - k.len) - 1;
-			WT_RET(__wt_config_initn(
+			AE_RET(__ae_config_initn(
 			    cparser->session, &sparser, v.str, v.len));
 			if ((ret = __config_getraw(
 			    &sparser, &subk, value, false)) == 0)
 				found = true;
-			WT_RET_NOTFOUND_OK(ret);
+			AE_RET_NOTFOUND_OK(ret);
 		}
 	}
-	WT_RET_NOTFOUND_OK(ret);
+	AE_RET_NOTFOUND_OK(ret);
 
 	if (!found)
-		return (WT_NOTFOUND);
+		return (AE_NOTFOUND);
 	return (top ? __config_process_value(cparser, value) : 0);
 }
 
 /*
- * __wt_config_get --
+ * __ae_config_get --
  *	Given a NULL-terminated list of configuration strings, find
  *	the final value for a given key.
  */
 int
-__wt_config_get(WT_SESSION_IMPL *session,
-    const char **cfg_arg, WT_CONFIG_ITEM *key, WT_CONFIG_ITEM *value)
+__ae_config_get(AE_SESSION_IMPL *session,
+    const char **cfg_arg, AE_CONFIG_ITEM *key, AE_CONFIG_ITEM *value)
 {
-	WT_CONFIG cparser;
-	WT_DECL_RET;
+	AE_CONFIG cparser;
+	AE_DECL_RET;
 	const char **cfg;
 
 	if (cfg_arg[0] == NULL)
-		return (WT_NOTFOUND);
+		return (AE_NOTFOUND);
 
 	/*
 	 * Search the strings in reverse order, that way the first hit wins
@@ -639,92 +639,92 @@ __wt_config_get(WT_SESSION_IMPL *session,
 	do {
 		--cfg;
 
-		WT_RET(__wt_config_init(session, &cparser, *cfg));
+		AE_RET(__ae_config_init(session, &cparser, *cfg));
 		if ((ret = __config_getraw(&cparser, key, value, true)) == 0)
 			return (0);
-		WT_RET_NOTFOUND_OK(ret);
+		AE_RET_NOTFOUND_OK(ret);
 	} while (cfg != cfg_arg);
 
-	return (WT_NOTFOUND);
+	return (AE_NOTFOUND);
 }
 
 /*
- * __wt_config_gets --
+ * __ae_config_gets --
  *	Given a NULL-terminated list of configuration strings, find the final
  *	value for a given string key.
  */
 int
-__wt_config_gets(WT_SESSION_IMPL *session,
-    const char **cfg, const char *key, WT_CONFIG_ITEM *value)
+__ae_config_gets(AE_SESSION_IMPL *session,
+    const char **cfg, const char *key, AE_CONFIG_ITEM *value)
 {
-	WT_CONFIG_ITEM key_item =
-	    { key, strlen(key), 0, WT_CONFIG_ITEM_STRING };
+	AE_CONFIG_ITEM key_item =
+	    { key, strlen(key), 0, AE_CONFIG_ITEM_STRING };
 
-	return (__wt_config_get(session, cfg, &key_item, value));
+	return (__ae_config_get(session, cfg, &key_item, value));
 }
 
 /*
- * __wt_config_gets_none --
+ * __ae_config_gets_none --
  *	Given a NULL-terminated list of configuration strings, find the final
  *	value for a given string key.  Treat "none" as empty.
  */
 int
-__wt_config_gets_none(WT_SESSION_IMPL *session,
-    const char **cfg, const char *key, WT_CONFIG_ITEM *value)
+__ae_config_gets_none(AE_SESSION_IMPL *session,
+    const char **cfg, const char *key, AE_CONFIG_ITEM *value)
 {
-	WT_RET(__wt_config_gets(session, cfg, key, value));
-	if (WT_STRING_MATCH("none", value->str, value->len))
+	AE_RET(__ae_config_gets(session, cfg, key, value));
+	if (AE_STRING_MATCH("none", value->str, value->len))
 		value->len = 0;
 	return (0);
 }
 
 /*
- * __wt_config_getone --
+ * __ae_config_getone --
  *	Get the value for a given key from a single config string.
  */
 int
-__wt_config_getone(WT_SESSION_IMPL *session,
-    const char *config, WT_CONFIG_ITEM *key, WT_CONFIG_ITEM *value)
+__ae_config_getone(AE_SESSION_IMPL *session,
+    const char *config, AE_CONFIG_ITEM *key, AE_CONFIG_ITEM *value)
 {
-	WT_CONFIG cparser;
+	AE_CONFIG cparser;
 
-	WT_RET(__wt_config_init(session, &cparser, config));
+	AE_RET(__ae_config_init(session, &cparser, config));
 	return (__config_getraw(&cparser, key, value, true));
 }
 
 /*
- * __wt_config_getones --
+ * __ae_config_getones --
  *	Get the value for a given string key from a single config string.
  */
 int
-__wt_config_getones(WT_SESSION_IMPL *session,
-    const char *config, const char *key, WT_CONFIG_ITEM *value)
+__ae_config_getones(AE_SESSION_IMPL *session,
+    const char *config, const char *key, AE_CONFIG_ITEM *value)
 {
-	WT_CONFIG cparser;
-	WT_CONFIG_ITEM key_item =
-	    { key, strlen(key), 0, WT_CONFIG_ITEM_STRING };
+	AE_CONFIG cparser;
+	AE_CONFIG_ITEM key_item =
+	    { key, strlen(key), 0, AE_CONFIG_ITEM_STRING };
 
-	WT_RET(__wt_config_init(session, &cparser, config));
+	AE_RET(__ae_config_init(session, &cparser, config));
 	return (__config_getraw(&cparser, &key_item, value, true));
 }
 
 /*
- * __wt_config_getones_none --
+ * __ae_config_getones_none --
  *	Get the value for a given string key from a single config string.
  * Treat "none" as empty.
  */
 int
-__wt_config_getones_none(WT_SESSION_IMPL *session,
-    const char *config, const char *key, WT_CONFIG_ITEM *value)
+__ae_config_getones_none(AE_SESSION_IMPL *session,
+    const char *config, const char *key, AE_CONFIG_ITEM *value)
 {
-	WT_RET(__wt_config_getones(session, config, key, value));
-	if (WT_STRING_MATCH("none", value->str, value->len))
+	AE_RET(__ae_config_getones(session, config, key, value));
+	if (AE_STRING_MATCH("none", value->str, value->len))
 		value->len = 0;
 	return (0);
 }
 
 /*
- * __wt_config_gets_def --
+ * __ae_config_gets_def --
  *	Performance hack: skip parsing config strings by hard-coding defaults.
  *
  *	It's expensive to repeatedly parse configuration strings, so don't do
@@ -736,11 +736,11 @@ __wt_config_getones_none(WT_SESSION_IMPL *session,
  *	"next_random".
  */
 int
-__wt_config_gets_def(WT_SESSION_IMPL *session,
-    const char **cfg, const char *key, int def, WT_CONFIG_ITEM *value)
+__ae_config_gets_def(AE_SESSION_IMPL *session,
+    const char **cfg, const char *key, int def, AE_CONFIG_ITEM *value)
 {
-	static const WT_CONFIG_ITEM false_value = {
-		"", 0, 0, WT_CONFIG_ITEM_NUM
+	static const AE_CONFIG_ITEM false_value = {
+		"", 0, 0, AE_CONFIG_ITEM_NUM
 	};
 
 	*value = false_value;
@@ -750,40 +750,40 @@ __wt_config_gets_def(WT_SESSION_IMPL *session,
 		return (0);
 
 	if (cfg[2] == NULL) {
-		WT_RET_NOTFOUND_OK(
-		    __wt_config_getones(session, cfg[1], key, value));
+		AE_RET_NOTFOUND_OK(
+		    __ae_config_getones(session, cfg[1], key, value));
 		return (0);
 	}
 
-	return (__wt_config_gets(session, cfg, key, value));
+	return (__ae_config_gets(session, cfg, key, value));
 }
 
 /*
- * __wt_config_subgetraw --
- *	Get the value for a given key from a config string in a WT_CONFIG_ITEM.
+ * __ae_config_subgetraw --
+ *	Get the value for a given key from a config string in a AE_CONFIG_ITEM.
  *	This is useful for dealing with nested structs in config strings.
  */
 int
-__wt_config_subgetraw(WT_SESSION_IMPL *session,
-    WT_CONFIG_ITEM *cfg, WT_CONFIG_ITEM *key, WT_CONFIG_ITEM *value)
+__ae_config_subgetraw(AE_SESSION_IMPL *session,
+    AE_CONFIG_ITEM *cfg, AE_CONFIG_ITEM *key, AE_CONFIG_ITEM *value)
 {
-	WT_CONFIG cparser;
+	AE_CONFIG cparser;
 
-	WT_RET(__wt_config_initn(session, &cparser, cfg->str, cfg->len));
+	AE_RET(__ae_config_initn(session, &cparser, cfg->str, cfg->len));
 	return (__config_getraw(&cparser, key, value, true));
 }
 
 /*
- * __wt_config_subgets --
- *	Get the value for a given key from a config string in a WT_CONFIG_ITEM.
+ * __ae_config_subgets --
+ *	Get the value for a given key from a config string in a AE_CONFIG_ITEM.
  *	This is useful for dealing with nested structs in config strings.
  */
 int
-__wt_config_subgets(WT_SESSION_IMPL *session,
-    WT_CONFIG_ITEM *cfg, const char *key, WT_CONFIG_ITEM *value)
+__ae_config_subgets(AE_SESSION_IMPL *session,
+    AE_CONFIG_ITEM *cfg, const char *key, AE_CONFIG_ITEM *value)
 {
-	WT_CONFIG_ITEM key_item =
-	    { key, strlen(key), 0, WT_CONFIG_ITEM_STRING };
+	AE_CONFIG_ITEM key_item =
+	    { key, strlen(key), 0, AE_CONFIG_ITEM_STRING };
 
-	return (__wt_config_subgetraw(session, cfg, &key_item, value));
+	return (__ae_config_subgetraw(session, cfg, &key_item, value));
 }

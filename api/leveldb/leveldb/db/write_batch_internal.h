@@ -5,7 +5,7 @@
 #ifndef STORAGE_LEVELDB_DB_WRITE_BATCH_INTERNAL_H_
 #define STORAGE_LEVELDB_DB_WRITE_BATCH_INTERNAL_H_
 
-#include "leveldb_wt.h"
+#include "leveldb_ae.h"
 #include "db/dbformat.h"
 
 namespace leveldb {

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Public Domain 2014-2015 MongoDB, Inc.
-# Public Domain 2008-2014 WiredTiger, Inc.
+# Public Domain 2008-2014 ArchEngine, Inc.
 #
 # This is free and unencumbered software released into the public domain.
 #
@@ -26,15 +26,15 @@
 # ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 # OTHER DEALINGS IN THE SOFTWARE.
 
-import itertools, wiredtiger, wttest
+import itertools, archengine, aetest
 from suite_subprocess import suite_subprocess
-from wtscenario import multiply_scenarios, number_scenarios
-from wiredtiger import stat
+from aescenario import multiply_scenarios, number_scenarios
+from archengine import stat
 from helper import complex_populate, complex_populate_lsm, simple_populate
 
 # test_stat02.py
 #    Statistics cursor configurations.
-class test_stat_cursor_config(wttest.WiredTigerTestCase):
+class test_stat_cursor_config(aetest.ArchEngineTestCase):
     pfx = 'test_stat_cursor_config'
     uri = [
         ('file',  dict(uri='file:' + pfx, pop=simple_populate, cfg='')),
@@ -60,9 +60,9 @@ class test_stat_cursor_config(wttest.WiredTigerTestCase):
     scenarios = number_scenarios(
         multiply_scenarios('.', uri, data_config, cursor_config))
 
-    # Override WiredTigerTestCase, we have extensions.
+    # Override ArchEngineTestCase, we have extensions.
     def setUpConnectionOpen(self, dir):
-        conn = wiredtiger.wiredtiger_open(dir,
+        conn = archengine.archengine_open(dir,
             'create,' +
             'statistics=(' + self.data_config + '),' +
             'error_prefix="%s: "' % self.shortid())
@@ -80,17 +80,17 @@ class test_stat_cursor_config(wttest.WiredTigerTestCase):
             self.session.open_cursor('statistics:', None, config)
         else:
             msg = '/database statistics configuration/'
-            self.assertRaisesWithMessage(wiredtiger.WiredTigerError, lambda:
+            self.assertRaisesWithMessage(archengine.ArchEngineError, lambda:
                 self.session.open_cursor('statistics:', None, config), msg)
 
 
 # Test the connection "clear" configuration.
-class test_stat_cursor_conn_clear(wttest.WiredTigerTestCase):
+class test_stat_cursor_conn_clear(aetest.ArchEngineTestCase):
     pfx = 'test_stat_cursor_conn_clear'
 
-    # Override WiredTigerTestCase, we have extensions.
+    # Override ArchEngineTestCase, we have extensions.
     def setUpConnectionOpen(self, dir):
-        conn = wiredtiger.wiredtiger_open(dir,
+        conn = archengine.archengine_open(dir,
             'create,statistics=(all),' +
             'error_prefix="%s: "' % self.shortid())
         return conn
@@ -112,7 +112,7 @@ class test_stat_cursor_conn_clear(wttest.WiredTigerTestCase):
 
 
 # Test the data-source "clear" configuration.
-class test_stat_cursor_dsrc_clear(wttest.WiredTigerTestCase):
+class test_stat_cursor_dsrc_clear(aetest.ArchEngineTestCase):
     pfx = 'test_stat_cursor_dsrc_clear'
 
     uri = [
@@ -124,9 +124,9 @@ class test_stat_cursor_dsrc_clear(wttest.WiredTigerTestCase):
 
     scenarios = number_scenarios(multiply_scenarios('.', uri))
 
-    # Override WiredTigerTestCase, we have extensions.
+    # Override ArchEngineTestCase, we have extensions.
     def setUpConnectionOpen(self, dir):
-        conn = wiredtiger.wiredtiger_open(dir,
+        conn = archengine.archengine_open(dir,
             'create,statistics=(all),' +
             'error_prefix="%s: "' % self.shortid())
         return conn
@@ -148,7 +148,7 @@ class test_stat_cursor_dsrc_clear(wttest.WiredTigerTestCase):
 
 
 # Test the "fast" configuration.
-class test_stat_cursor_fast(wttest.WiredTigerTestCase):
+class test_stat_cursor_fast(aetest.ArchEngineTestCase):
     pfx = 'test_stat_cursor_fast'
 
     uri = [
@@ -160,9 +160,9 @@ class test_stat_cursor_fast(wttest.WiredTigerTestCase):
 
     scenarios = number_scenarios(multiply_scenarios('.', uri))
 
-    # Override WiredTigerTestCase, we have extensions.
+    # Override ArchEngineTestCase, we have extensions.
     def setUpConnectionOpen(self, dir):
-        conn = wiredtiger.wiredtiger_open(dir,
+        conn = archengine.archengine_open(dir,
             'create,statistics=(all),' +
             'error_prefix="%s: "' % self.shortid())
         return conn
@@ -182,7 +182,7 @@ class test_stat_cursor_fast(wttest.WiredTigerTestCase):
 
 
 # Test connection error combinations.
-class test_stat_cursor_conn_error(wttest.WiredTigerTestCase):
+class test_stat_cursor_conn_error(aetest.ArchEngineTestCase):
     def setUpConnectionOpen(self, dir):
         return None
     def setUpSessionOpen(self, conn):
@@ -193,12 +193,12 @@ class test_stat_cursor_conn_error(wttest.WiredTigerTestCase):
         for i in list(itertools.permutations(args, 2)):
             config = 'create,statistics=(' + i[0] + ',' + i[1] + ')'
             msg = '/only one statistics configuration value/'
-            self.assertRaisesWithMessage(wiredtiger.WiredTigerError,
-                lambda: wiredtiger.wiredtiger_open('.', config), msg)
+            self.assertRaisesWithMessage(archengine.ArchEngineError,
+                lambda: archengine.archengine_open('.', config), msg)
 
 
 # Test data-source error combinations.
-class test_stat_cursor_dsrc_error(wttest.WiredTigerTestCase):
+class test_stat_cursor_dsrc_error(aetest.ArchEngineTestCase):
     pfx = 'test_stat_cursor_dsrc_error'
 
     uri = [
@@ -210,9 +210,9 @@ class test_stat_cursor_dsrc_error(wttest.WiredTigerTestCase):
 
     scenarios = number_scenarios(multiply_scenarios('.', uri))
 
-    # Override WiredTigerTestCase, we have extensions.
+    # Override ArchEngineTestCase, we have extensions.
     def setUpConnectionOpen(self, dir):
-        conn = wiredtiger.wiredtiger_open(dir,
+        conn = archengine.archengine_open(dir,
             'create,statistics=(all),' +
             'error_prefix="%s: "' % self.shortid())
         return conn
@@ -223,10 +223,10 @@ class test_stat_cursor_dsrc_error(wttest.WiredTigerTestCase):
         for i in list(itertools.permutations(args, 2)):
             config = 'statistics=(' + i[0] + ',' + i[1] + ')'
             msg = '/only one statistics configuration value/'
-            self.assertRaisesWithMessage(wiredtiger.WiredTigerError,
+            self.assertRaisesWithMessage(archengine.ArchEngineError,
                 lambda: self.session.open_cursor(
                 'statistics:' + self.uri, None, config), msg)
 
 
 if __name__ == '__main__':
-    wttest.run()
+    aetest.run()

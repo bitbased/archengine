@@ -1,52 +1,52 @@
 /*-
  * Copyright (c) 2014-2015 MongoDB, Inc.
- * Copyright (c) 2008-2014 WiredTiger, Inc.
+ * Copyright (c) 2008-2014 ArchEngine, Inc.
  *	All rights reserved.
  *
  * See the file LICENSE for redistribution information.
  */
 
-#include "wt_internal.h"
+#include "ae_internal.h"
 
 /*
- * __wt_errno --
- *	Return errno, or WT_ERROR if errno not set.
+ * __ae_errno --
+ *	Return errno, or AE_ERROR if errno not set.
  */
 int
-__wt_errno(void)
+__ae_errno(void)
 {
 	/*
 	 * Called when we know an error occurred, and we want the system
 	 * error code, but there's some chance it's not set.
 	 */
-	return (errno == 0 ? WT_ERROR : errno);
+	return (errno == 0 ? AE_ERROR : errno);
 }
 
 /*
- * __wt_strerror --
- *	POSIX implementation of WT_SESSION.strerror and wiredtiger_strerror.
+ * __ae_strerror --
+ *	POSIX implementation of AE_SESSION.strerror and archengine_strerror.
  */
 const char *
-__wt_strerror(WT_SESSION_IMPL *session, int error, char *errbuf, size_t errlen)
+__ae_strerror(AE_SESSION_IMPL *session, int error, char *errbuf, size_t errlen)
 {
 	const char *p;
 
 	/*
-	 * Check for a WiredTiger or POSIX constant string, no buffer needed.
+	 * Check for a ArchEngine or POSIX constant string, no buffer needed.
 	 */
-	if ((p = __wt_wiredtiger_error(error)) != NULL)
+	if ((p = __ae_archengine_error(error)) != NULL)
 		return (p);
 
 	/*
-	 * When called from wiredtiger_strerror, write a passed-in buffer.
-	 * When called from WT_SESSION.strerror, write the session's buffer.
+	 * When called from archengine_strerror, write a passed-in buffer.
+	 * When called from AE_SESSION.strerror, write the session's buffer.
 	 *
 	 * Fallback to a generic message.
 	 */
 	if (session == NULL &&
 	    snprintf(errbuf, errlen, "error return: %d", error) > 0)
 		return (errbuf);
-	if (session != NULL && __wt_buf_fmt(
+	if (session != NULL && __ae_buf_fmt(
 	    session, &session->err, "error return: %d", error) == 0)
 		return (session->err.data);
 

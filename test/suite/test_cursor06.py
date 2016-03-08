@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Public Domain 2014-2015 MongoDB, Inc.
-# Public Domain 2008-2014 WiredTiger, Inc.
+# Public Domain 2008-2014 ArchEngine, Inc.
 #
 # This is free and unencumbered software released into the public domain.
 #
@@ -26,14 +26,14 @@
 # ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 # OTHER DEALINGS IN THE SOFTWARE.
 
-import wiredtiger, wttest
+import archengine, aetest
 from helper import key_populate, value_populate, simple_populate
 from helper import complex_value_populate, complex_populate
-from wtscenario import check_scenarios
+from aescenario import check_scenarios
 
 # test_cursor06.py
 #    Test cursor reconfiguration.
-class test_cursor06(wttest.WiredTigerTestCase):
+class test_cursor06(aetest.ArchEngineTestCase):
     name = 'reconfigure'
     scenarios = check_scenarios([
         ('file-r', dict(type='file:', config='key_format=r', complex=0)),
@@ -76,7 +76,7 @@ class test_cursor06(wttest.WiredTigerTestCase):
             for i in range(0, 10):
                 cursor.reconfigure("overwrite=0")
                 self.set_kv(cursor)
-                self.assertRaises(wiredtiger.WiredTigerError,
+                self.assertRaises(archengine.ArchEngineError,
                                   lambda: cursor.insert())
                 cursor.reconfigure("overwrite=1")
                 self.set_kv(cursor)
@@ -91,7 +91,7 @@ class test_cursor06(wttest.WiredTigerTestCase):
             cursor = self.session.open_cursor(uri, None, open_config)
             if open_config == "readonly=1":
                 self.set_kv(cursor)
-                self.assertRaises(wiredtiger.WiredTigerError,
+                self.assertRaises(archengine.ArchEngineError,
                                   lambda: cursor.update())
             else:
                 self.set_kv(cursor)
@@ -99,4 +99,4 @@ class test_cursor06(wttest.WiredTigerTestCase):
             cursor.close()
 
 if __name__ == '__main__':
-    wttest.run()
+    aetest.run()

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Public Domain 2014-2015 MongoDB, Inc.
-# Public Domain 2008-2014 WiredTiger, Inc.
+# Public Domain 2008-2014 ArchEngine, Inc.
 #
 # This is free and unencumbered software released into the public domain.
 #
@@ -27,12 +27,12 @@
 # OTHER DEALINGS IN THE SOFTWARE.
 
 from suite_subprocess import suite_subprocess
-import wiredtiger, wttest
-from wtscenario import check_scenarios
+import archengine, aetest
+from aescenario import check_scenarios
 
 # test_util03.py
-#    Utilities: wt create
-class test_util03(wttest.WiredTigerTestCase, suite_subprocess):
+#    Utilities: ae create
+class test_util03(aetest.ArchEngineTestCase, suite_subprocess):
     tablename = 'test_util03.a'
     nentries = 1000
 
@@ -45,7 +45,7 @@ class test_util03(wttest.WiredTigerTestCase, suite_subprocess):
 
     def test_create_process(self):
         """
-        Test create in a 'wt' process
+        Test create in a 'ae' process
         """
 
         args = ["create"]
@@ -58,7 +58,7 @@ class test_util03(wttest.WiredTigerTestCase, suite_subprocess):
                 config += 'value_format=' + self.value_format
             args.append(config)
         args.append('table:' + self.tablename)
-        self.runWt(args)
+        self.runAe(args)
 
         cursor = self.session.open_cursor('table:' + self.tablename, None, None)
         if self.key_format != None:
@@ -71,4 +71,4 @@ class test_util03(wttest.WiredTigerTestCase, suite_subprocess):
 
 
 if __name__ == '__main__':
-    wttest.run()
+    aetest.run()

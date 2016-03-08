@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Public Domain 2014-2015 MongoDB, Inc.
-# Public Domain 2008-2014 WiredTiger, Inc.
+# Public Domain 2008-2014 ArchEngine, Inc.
 #
 # This is free and unencumbered software released into the public domain.
 #
@@ -27,18 +27,18 @@
 # OTHER DEALINGS IN THE SOFTWARE.
 
 import os
-import wiredtiger, wttest
+import archengine, aetest
 from helper import \
     complex_populate, complex_populate_check_cursor,\
     simple_populate, simple_populate_check_cursor
 from suite_subprocess import suite_subprocess
-from wtscenario import multiply_scenarios, number_scenarios
+from aescenario import multiply_scenarios, number_scenarios
 
 # test_dump.py
-#    Utilities: wt dump
+#    Utilities: ae dump
 # Test the dump utility (I'm not testing the dump cursors, that's what the
 # utility uses underneath).
-class test_dump(wttest.WiredTigerTestCase, suite_subprocess):
+class test_dump(aetest.ArchEngineTestCase, suite_subprocess):
     dir='dump.dir'            # Backup directory name
 
     name = 'test_dump'
@@ -101,32 +101,32 @@ class test_dump(wttest.WiredTigerTestCase, suite_subprocess):
         # Dump the object.
         os.mkdir(self.dir)
         if self.hex == 1:
-            self.runWt(['dump', '-x', uri], outfilename='dump.out')
+            self.runAe(['dump', '-x', uri], outfilename='dump.out')
         else:
-            self.runWt(['dump', uri], outfilename='dump.out')
+            self.runAe(['dump', uri], outfilename='dump.out')
 
         # Re-load the object.
-        self.runWt(['-h', self.dir, 'load', '-f', 'dump.out'])
+        self.runAe(['-h', self.dir, 'load', '-f', 'dump.out'])
 
         # Check the contents
-        conn = wiredtiger.wiredtiger_open(self.dir)
+        conn = archengine.archengine_open(self.dir)
         session = conn.open_session()
         cursor = session.open_cursor(uri, None, None)
         self.populate_check(self, cursor, self.nentries)
         conn.close()
 
         # Re-load the object again.
-        self.runWt(['-h', self.dir, 'load', '-f', 'dump.out'])
+        self.runAe(['-h', self.dir, 'load', '-f', 'dump.out'])
 
         # Check the contents, they shouldn't have changed.
-        conn = wiredtiger.wiredtiger_open(self.dir)
+        conn = archengine.archengine_open(self.dir)
         session = conn.open_session()
         cursor = session.open_cursor(uri, None, None)
         self.populate_check(self, cursor, self.nentries)
         conn.close()
 
         # Re-load the object again, but confirm -n (no overwrite) fails.
-        self.runWt(['-h', self.dir,
+        self.runAe(['-h', self.dir,
             'load', '-n', '-f', 'dump.out'], errfilename='errfile.out')
         self.check_non_empty_file('errfile.out')
 
@@ -134,10 +134,10 @@ class test_dump(wttest.WiredTigerTestCase, suite_subprocess):
         if self.populate == complex_populate:
             indexuri = 'index:' + self.name + ':indx1'
             hexopt = ['-x'] if self.hex == 1 else []
-            self.runWt(['-h', self.dir, 'dump'] + hexopt + [indexuri],
+            self.runAe(['-h', self.dir, 'dump'] + hexopt + [indexuri],
                        outfilename='dumpidx.out')
             self.check_non_empty_file('dumpidx.out')
             self.compare_dump_values('dump.out', 'dumpidx.out')
 
 if __name__ == '__main__':
-    wttest.run()
+    aetest.run()

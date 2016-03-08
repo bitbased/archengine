@@ -1,17 +1,17 @@
 Helium README.
 
 The data structures are "Helium sources" which map to one or more physical
-volumes; each Helium source supports any number of "WiredTiger sources",
-where a WiredTiger source is an object similar to a Btree "file:" object.
-Each WiredTiger source supports any number of WiredTiger cursors.
+volumes; each Helium source supports any number of "ArchEngine sources",
+where a ArchEngine source is an object similar to a Btree "file:" object.
+Each ArchEngine source supports any number of ArchEngine cursors.
 
 Each Helium source is given a logical name when first referenced, and that
-logical name is subsequently used when a WiredTiger source is created.  For
+logical name is subsequently used when a ArchEngine source is created.  For
 example, the logical name for a Helium source might be "dev1", and it would
-map to the Helium volumes /dev/sd0 and /dev/sd1; subsequent WT_SESSION.create
+map to the Helium volumes /dev/sd0 and /dev/sd1; subsequent AE_SESSION.create
 calls specify a URI like "table:dev1/my_table".
 
-For each WiredTiger source, we create two namespaces on the underlying device,
+For each ArchEngine source, we create two namespaces on the underlying device,
 a "cache" and a "primary".
 
 The cache contains key/value pairs based on updates or changes that have been
@@ -55,12 +55,12 @@ Locks are not acquired for read operations, and no flushes are done for any of
 these operations.
 
 We also create one additional object, the transaction name space, which serves
-all of the WiredTiger and Helium objects in a WiredTiger connection.  Whenever
+all of the ArchEngine and Helium objects in a ArchEngine connection.  Whenever
 a transaction involving a Helium source commits, we insert a commit record into
 the transaction name space and flush the device.  When a transaction rolls back,
 we insert an abort record into the txn name space, but don't flush the device.
 
-The visibility check is slightly different than the rest of WiredTiger: we do
+The visibility check is slightly different than the rest of ArchEngine: we do
 not reset anything when a transaction aborts, and so we have to check if the
 transaction has been aborted as well as check the transaction ID for visibility.
 
@@ -104,19 +104,19 @@ not committed has been aborted.
 =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 Questions, problems, whatever:
 
-* The implementation is endian-specific, that is, the WiredTiger metadata
+* The implementation is endian-specific, that is, the ArchEngine metadata
 stored on the Helium device is on not portable to a big-endian machine.
 Helium's metadata is portable between different endian machines, so this
 should probably be fixed.
 
-* There's a problem with transactions in WiredTiger that span more than a
+* There's a problem with transactions in ArchEngine that span more than a
 single data source.   For example, consider a transaction that modifies
 both a Helium object and a Btree object.  If we commit and push the Helium
 commit record to stable storage, and then crash before committing the Btree
-change, the enclosing WiredTiger transaction will/should end up aborting,
+change, the enclosing ArchEngine transaction will/should end up aborting,
 and there's no way for us to back out the change in Helium.  I'm leaving
-this problem alone until WiredTiger fine-grained durability is complete,
-we're going to need WiredTiger support for some kind of 2PC to solve this.
+this problem alone until ArchEngine fine-grained durability is complete,
+we're going to need ArchEngine support for some kind of 2PC to solve this.
 
 * If a record in the cache gets too busy, we could end up unable to remove
 it (there would always be an active transaction), and it would grow forever.

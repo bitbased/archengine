@@ -9,7 +9,7 @@
 ^configure.*$
 ^build.*/(\.deps|COPYING|ChangeLog|INSTALL|Makefile.*|NEWS|README)
 ^build.*/(aclocal\.m4|config\..*|configure|stamp-h1|prototype.chk|w.*\.h)
-^build.*/(ex.*|lib.*|test.*|wt_.*|_wiredtiger.so)
+^build.*/(ex.*|lib.*|test.*|ae_.*|_archengine.so)
 ^build_posix/gnu-support/(compile|depcomp|install-sh|ltmain.sh|missing)
 ^build_posix/autom4te.cache
 ^docs/(doxygen.log|installdox|search)
@@ -18,7 +18,7 @@
 ^docs/latex
 ^docs/python
 ^docs/swig
-^lang/python/(wiredtiger/__init__.py|wiredtiger_wrap.c)
+^lang/python/(archengine/__init__.py|archengine_wrap.c)
 ^releases
 ^src/server
-^test/bt/(CONFIG|__rand|__wt.bdb|__wt.run|__wt.wt|db|t|vgout\..*)
+^test/bt/(CONFIG|__rand|__ae.bdb|__ae.run|__ae.ae|db|t|vgout\..*)

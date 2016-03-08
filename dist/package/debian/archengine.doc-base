@@ -1,0 +1,12 @@
+Document: archengine
+Title: Debian archengine Manual
+Author: ArchEngine, Inc.
+Abstract: ArchEngine is a database storage engine library.
+Section: library
+
+Format: postscript
+Files: /usr/share/doc/archengine/archengine.ps.gz
+
+Format: HTML
+Index: /usr/share/doc/archengine/html/index.html
+Files: /usr/share/doc/archengine/html/*.html

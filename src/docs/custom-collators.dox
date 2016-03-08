@@ -2,9 +2,9 @@
 
 @section custom_collators_intro Introduction to Custom Collators
 
-WiredTiger tables order records based on their keys.  Cursors traverse
-records in key order using WT_CURSOR::next, or in reverse order using
-WT_CURSOR::prev.  By default, WiredTiger uses lexicographic ordering, by
+ArchEngine tables order records based on their keys.  Cursors traverse
+records in key order using AE_CURSOR::next, or in reverse order using
+AE_CURSOR::prev.  By default, ArchEngine uses lexicographic ordering, by
 comparing the raw bytes of each key to determine their order.
 
 The built-in encoding of types (including integers and strings) is designed
@@ -14,27 +14,27 @@ type.
 
 Applications that need custom ordering of keys can either change the
 serialized representation so that the lexicographic order matches the
-required order, or implement the WT_COLLATOR interface to change the
-comparison routine that WiredTiger uses.
+required order, or implement the AE_COLLATOR interface to change the
+comparison routine that ArchEngine uses.
 
-Applications must register their WT_COLLATOR implementations using
-WT_CONNECTION::add_collator.  They are then configured by passing
-\c "collator=..." to WT_SESSION::create when creating a table or index.
+Applications must register their AE_COLLATOR implementations using
+AE_CONNECTION::add_collator.  They are then configured by passing
+\c "collator=..." to AE_SESSION::create when creating a table or index.
 
 See @ex_ref{ex_extending.c} for more details about how to implement custom
 collators.
 
 @section custom_collators_recovery Custom Collators and Recovery
 
-If logging is enabled, WiredTiger will run recovery as required in
-::wiredtiger_open.  Any custom collators in use must be registered before
+If logging is enabled, ArchEngine will run recovery as required in
+::archengine_open.  Any custom collators in use must be registered before
 recovery runs.  This is described in more detail in
 @ref extensions_recovery.
 
 @section custom_collators_indices Custom Collators for Indices
 
 Custom collators can be used with indices, but they must take into account
-how WiredTiger indices are implemented.  The primary key columns are
+how ArchEngine indices are implemented.  The primary key columns are
 implicitly appended to the logical index key columns in order to create the
 key that is stored in the index.  This is done so that the key stored in
 the index is unique even when multiple records have the same values for the
@@ -49,7 +49,7 @@ the index is on a string column, then the index cursor will have
 \c key_format=S, but the actual keys stored in the index will have
 \c key_format=Sr (with the primary key appended).
 
-Collators usually call ::wiredtiger_struct_unpack with the appropriate
+Collators usually call ::archengine_struct_unpack with the appropriate
 format to split the index key into fields that are used for the comparison.
 
 */

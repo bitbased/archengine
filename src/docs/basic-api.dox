@@ -1,18 +1,18 @@
 /*! @m_page{{c,java},basic_api,Getting Started with the API}
 
-WiredTiger applications will generally use the following classes to access
+ArchEngine applications will generally use the following classes to access
 and manage data:
 
- - a WT_CONNECTION represents a connection to a database.  Most
+ - a AE_CONNECTION represents a connection to a database.  Most
  applications will only open one connection to a database for each process.
- All methods in WT_CONNECTION are thread safe.
+ All methods in AE_CONNECTION are thread safe.
 
- - a WT_SESSION represents a context in which database operations are
+ - a AE_SESSION represents a context in which database operations are
  performed.  Sessions are opened on a specified connection, and
  applications must open a single session for each thread accessing the
  database.
 
- - a WT_CURSOR represents a cursor over a collection of data.  Cursors are
+ - a AE_CURSOR represents a cursor over a collection of data.  Cursors are
  opened in the context of a session (which may have an associated
  transaction), and can query and update records.  In the common case, a
  cursor is used to access records in a table.  However, cursors can be used
@@ -23,26 +23,26 @@ and manage data:
 Handles and operations are @ref config_strings "configured using strings",
 which keeps the set of methods in the API relatively small and makes the
 interface very similar regardless of the programming language used in the
-application.  WiredTiger supports the C, C++, Java and Python programming
+application.  ArchEngine supports the C, C++, Java and Python programming
 languages (among others).
 
-By default, WiredTiger works as a traditional key/value store, where the
+By default, ArchEngine works as a traditional key/value store, where the
 keys and values are
 @m_if{c}
-raw byte arrays accessed using a WT_ITEM structure.
+raw byte arrays accessed using a AE_ITEM structure.
 @m_else
 raw byte arrays.
 @m_endif
 Keys and values may be up to (4GB - 512B) bytes in size, but depending
-on how WT_SESSION::create "maximum item sizes" are configured,
+on how AE_SESSION::create "maximum item sizes" are configured,
 large key and value items will be stored on overflow pages.
 
-WiredTiger also supports a @ref schema "schema layer" so that keys and
+ArchEngine also supports a @ref schema "schema layer" so that keys and
 values types can be chosen from a list, or composite keys or values made
 up of columns with any combination of types.  The size (4GB - 512B) byte
 limit on keys and values still applies.
 
-All applications that use WiredTiger will be structured roughly as follows.
+All applications that use ArchEngine will be structured roughly as follows.
 The code below is taken from the complete example program
 @ex_ref{ex_access.c}.
 
@@ -53,19 +53,19 @@ for the single thread accessing the database:
 
 @snippet ex_access.c access example connection
 
-The configuration string @c "create" is passed to ::wiredtiger_open to
+The configuration string @c "create" is passed to ::archengine_open to
 indicate the database should be created if it does not already exist.
 
 @m_if{c}
 The code block above also shows simple error handling with
-::wiredtiger_strerror (a function that returns a string describing an
+::archengine_strerror (a function that returns a string describing an
 error code passed as its argument).  More complex error handling can be
-configured by passing an implementation of WT_EVENT_HANDLER to
-::wiredtiger_open or WT_CONNECTION::open_session.
+configured by passing an implementation of AE_EVENT_HANDLER to
+::archengine_open or AE_CONNECTION::open_session.
 @m_endif
 @m_if{java}
 The code block above also shows simple error handling by catching
-WiredTigerException.
+ArchEngineException.
 @m_endif
 
 @section basic_create_table Creating a table
@@ -88,9 +88,9 @@ on it:
 Here, the string @c "table:access" specifies that we are opening the
 cursor on the table named @c "access".
 
-Then we insert a new row into the table.  The WT_CURSOR::set_key and
-WT_CURSOR::set_value calls put the application's key and value into
-the cursor, respectively.  The WT_CURSOR::insert call creates a
+Then we insert a new row into the table.  The AE_CURSOR::set_key and
+AE_CURSOR::set_value calls put the application's key and value into
+the cursor, respectively.  The AE_CURSOR::insert call creates a
 record containing that value and inserts it into the table.
 
 @snippet ex_access.c access example cursor insert
@@ -105,9 +105,9 @@ strings because the table was created that way (even if it was created
 by a previous run of the example).  No data extraction or conversion is
 required in the application.
 
-Because the cursor was positioned in the table after the WT_CURSOR::insert
-call, we had to re-position it using the WT_CURSOR::first call; if we
-weren't using the cursor for the call to WT_CURSOR::insert above, this loop
+Because the cursor was positioned in the table after the AE_CURSOR::insert
+call, we had to re-position it using the AE_CURSOR::first call; if we
+weren't using the cursor for the call to AE_CURSOR::insert above, this loop
 would simplify to:
 
 @code

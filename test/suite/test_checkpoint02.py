@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Public Domain 2014-2015 MongoDB, Inc.
-# Public Domain 2008-2014 WiredTiger, Inc.
+# Public Domain 2008-2014 ArchEngine, Inc.
 #
 # This is free and unencumbered software released into the public domain.
 #
@@ -27,15 +27,15 @@
 # OTHER DEALINGS IN THE SOFTWARE.
 
 import Queue
-import threading, time, wiredtiger, wttest
+import threading, time, archengine, aetest
 from helper import key_populate, simple_populate
-from wtthread import checkpoint_thread, op_thread
-from wtscenario import check_scenarios
+from aethread import checkpoint_thread, op_thread
+from aescenario import check_scenarios
 
 # test_checkpoint02.py
 #   Run background checkpoints repeatedly while doing inserts and other
 #   operations in another thread
-class test_checkpoint02(wttest.WiredTigerTestCase):
+class test_checkpoint02(aetest.ArchEngineTestCase):
     scenarios = check_scenarios([
         ('table-100', dict(uri='table:test',fmt='L',dsize=100,nops=50000,nthreads=10)),
         ('table-10', dict(uri='table:test',fmt='L',dsize=10,nops=50000,nthreads=30))
@@ -86,4 +86,4 @@ class test_checkpoint02(wttest.WiredTigerTestCase):
 
 
 if __name__ == '__main__':
-    wttest.run()
+    aetest.run()

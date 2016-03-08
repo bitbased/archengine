@@ -1,6 +1,6 @@
 /*-
  * Public Domain 2014-2015 MongoDB, Inc.
- * Public Domain 2008-2014 WiredTiger, Inc.
+ * Public Domain 2008-2014 ArchEngine, Inc.
  *
  * This is free and unencumbered software released into the public domain.
  *
@@ -98,17 +98,17 @@ fop(void *arg)
 {
 	STATS *s;
 	uintptr_t id;
-	WT_RAND_STATE rnd;
+	AE_RAND_STATE rnd;
 	u_int i;
 
 	id = (uintptr_t)arg;
 	sched_yield();		/* Get all the threads created. */
 
 	s = &run_stats[id];
-	__wt_random_init(&rnd);
+	__ae_random_init(&rnd);
 
 	for (i = 0; i < nops; ++i, sched_yield())
-		switch (__wt_random(&rnd) % 9) {
+		switch (__ae_random(&rnd) % 9) {
 		case 0:
 			++s->bulk;
 			obj_bulk();
@@ -123,7 +123,7 @@ fop(void *arg)
 			break;
 		case 3:
 			++s->drop;
-			obj_drop(__wt_random(&rnd) & 1);
+			obj_drop(__ae_random(&rnd) & 1);
 			break;
 		case 4:
 			++s->ckpt;
@@ -139,11 +139,11 @@ fop(void *arg)
 			break;
 		case 7:
 			++s->bulk_unique;
-			obj_bulk_unique(__wt_random(&rnd) & 1);
+			obj_bulk_unique(__ae_random(&rnd) & 1);
 			break;
 		case 8:
 			++s->create_unique;
-			obj_create_unique(__wt_random(&rnd) & 1);
+			obj_create_unique(__ae_random(&rnd) & 1);
 			break;
 		}
 

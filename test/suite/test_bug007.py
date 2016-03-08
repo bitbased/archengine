@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Public Domain 2014-2015 MongoDB, Inc.
-# Public Domain 2008-2014 WiredTiger, Inc.
+# Public Domain 2008-2014 ArchEngine, Inc.
 #
 # This is free and unencumbered software released into the public domain.
 #
@@ -29,10 +29,10 @@
 # test_bug007.py
 #       Regression tests.
 
-import wiredtiger, wttest
+import archengine, aetest
 
 # Check that forced salvage works correctly.
-class test_bug007(wttest.WiredTigerTestCase):
+class test_bug007(aetest.ArchEngineTestCase):
     def test_bug007(self):
         # This is a btree layer test, test files only.
         uri = 'file:test_bug007'
@@ -50,12 +50,12 @@ class test_bug007(wttest.WiredTigerTestCase):
 
         # Salvage should fail.
         self.assertRaisesWithMessage(
-            wiredtiger.WiredTigerError,
-            lambda: self.session.salvage(uri), "/WT_SESSION.salvage/")
+            archengine.ArchEngineError,
+            lambda: self.session.salvage(uri), "/AE_SESSION.salvage/")
 
         # Forced salvage should succeed.
         self.session.salvage(uri, "force")
 
 
 if __name__ == '__main__':
-    wttest.run()
+    aetest.run()

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Public Domain 2014-2015 MongoDB, Inc.
-# Public Domain 2008-2014 WiredTiger, Inc.
+# Public Domain 2008-2014 ArchEngine, Inc.
 #
 # This is free and unencumbered software released into the public domain.
 #
@@ -28,15 +28,15 @@
 
 import glob, os, shutil, string
 from suite_subprocess import suite_subprocess
-from wtscenario import multiply_scenarios, number_scenarios
-import wiredtiger, wttest
+from aescenario import multiply_scenarios, number_scenarios
+import archengine, aetest
 from helper import compare_files,\
     complex_populate, complex_populate_lsm, simple_populate
 
 # test_backup03.py
-#    Utilities: wt backup
+#    Utilities: ae backup
 # Test cursor backup with target URIs
-class test_backup_target(wttest.WiredTigerTestCase, suite_subprocess):
+class test_backup_target(aetest.ArchEngineTestCase, suite_subprocess):
     dir='backup.dir'                    # Backup directory name
 
     # This test is written to test LSM hot backups: we test a simple LSM object
@@ -78,8 +78,8 @@ class test_backup_target(wttest.WiredTigerTestCase, suite_subprocess):
 
     # Create a large cache, otherwise this test runs quite slowly.
     def setUpConnectionOpen(self, dir):
-        wtopen_args = 'create,cache_size=1G'
-        conn = wiredtiger.wiredtiger_open(dir, wtopen_args)
+        aeopen_args = 'create,cache_size=1G'
+        conn = archengine.archengine_open(dir, aeopen_args)
         self.pr(`conn`)
         return conn
 
@@ -94,17 +94,17 @@ class test_backup_target(wttest.WiredTigerTestCase, suite_subprocess):
         # Backup needs a checkpoint
         self.session.checkpoint(None)
 
-    # Compare the original and backed-up files using the wt dump command.
+    # Compare the original and backed-up files using the ae dump command.
     def compare(self, uri):
-        self.runWt(['dump', uri], outfilename='orig')
-        self.runWt(['-h', self.dir, 'dump', uri], outfilename='backup')
+        self.runAe(['dump', uri], outfilename='orig')
+        self.runAe(['-h', self.dir, 'dump', uri], outfilename='backup')
         self.assertEqual(True, compare_files(self, 'orig', 'backup'))
 
     # Check that a URI doesn't exist, both the meta-data and the file names.
     def confirmPathDoesNotExist(self, uri):
-        conn = wiredtiger.wiredtiger_open(self.dir)
+        conn = archengine.archengine_open(self.dir)
         session = conn.open_session()
-        self.assertRaises(wiredtiger.WiredTigerError,
+        self.assertRaises(archengine.ArchEngineError,
             lambda: session.open_cursor(uri, None, None))
         conn.close()
 
@@ -135,7 +135,7 @@ class test_backup_target(wttest.WiredTigerTestCase, suite_subprocess):
                 break
             #print 'Copy from: ' + cursor.get_key() + ' to ' + self.dir
             shutil.copy(cursor.get_key(), self.dir)
-        self.assertEqual(ret, wiredtiger.WT_NOTFOUND)
+        self.assertEqual(ret, archengine.AE_NOTFOUND)
         cursor.close()
 
         # Confirm the objects we backed up exist, with correct contents.
@@ -156,4 +156,4 @@ class test_backup_target(wttest.WiredTigerTestCase, suite_subprocess):
 
 
 if __name__ == '__main__':
-    wttest.run()
+    aetest.run()

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Public Domain 2014-2015 MongoDB, Inc.
-# Public Domain 2008-2014 WiredTiger, Inc.
+# Public Domain 2008-2014 ArchEngine, Inc.
 #
 # This is free and unencumbered software released into the public domain.
 #
@@ -30,11 +30,11 @@
 #   Named snapshots: Combinations of dropping snapshots
 
 from suite_subprocess import suite_subprocess
-from wtscenario import multiply_scenarios, number_scenarios
+from aescenario import multiply_scenarios, number_scenarios
 from helper import simple_populate
-import wiredtiger, wttest
+import archengine, aetest
 
-class test_nsnap02(wttest.WiredTigerTestCase, suite_subprocess):
+class test_nsnap02(aetest.ArchEngineTestCase, suite_subprocess):
     tablename = 'test_nsnap02'
     uri = 'table:' + tablename
     nrows = 1000
@@ -57,7 +57,7 @@ class test_nsnap02(wttest.WiredTigerTestCase, suite_subprocess):
             if dropped == 0:
                 self.check_named_snapshot(c, snap_name, expected)
             else:
-                self.assertRaisesWithMessage(wiredtiger.WiredTigerError, lambda:
+                self.assertRaisesWithMessage(archengine.ArchEngineError, lambda:
                     self.session.begin_transaction("snapshot=%d" % (snap_name)),
                     "/Invalid argument/")
 
@@ -248,4 +248,4 @@ class test_nsnap02(wttest.WiredTigerTestCase, suite_subprocess):
         self.check_named_snapshots(new_snapshots)
 
 if __name__ == '__main__':
-    wttest.run()
+    aetest.run()

@@ -1,51 +1,51 @@
 /*-
  * Copyright (c) 2014-2015 MongoDB, Inc.
- * Copyright (c) 2008-2014 WiredTiger, Inc.
+ * Copyright (c) 2008-2014 ArchEngine, Inc.
  *	All rights reserved.
  *
  * See the file LICENSE for redistribution information.
  */
 
-#include "wt_internal.h"
+#include "ae_internal.h"
 
 /*
- * __wt_filesize --
+ * __ae_filesize --
  *	Get the size of a file in bytes.
  */
 int
-__wt_filesize(WT_SESSION_IMPL *session, WT_FH *fh, wt_off_t *sizep)
+__ae_filesize(AE_SESSION_IMPL *session, AE_FH *fh, ae_off_t *sizep)
 {
 	struct stat sb;
-	WT_DECL_RET;
+	AE_DECL_RET;
 
-	WT_RET(__wt_verbose(session, WT_VERB_FILEOPS, "%s: fstat", fh->name));
+	AE_RET(__ae_verbose(session, AE_VERB_FILEOPS, "%s: fstat", fh->name));
 
-	WT_SYSCALL_RETRY(fstat(fh->fd, &sb), ret);
+	AE_SYSCALL_RETRY(fstat(fh->fd, &sb), ret);
 	if (ret == 0) {
 		*sizep = sb.st_size;
 		return (0);
 	}
 
-	WT_RET_MSG(session, ret, "%s: fstat", fh->name);
+	AE_RET_MSG(session, ret, "%s: fstat", fh->name);
 }
 
 /*
- * __wt_filesize_name --
+ * __ae_filesize_name --
  *	Return the size of a file in bytes, given a file name.
  */
 int
-__wt_filesize_name(WT_SESSION_IMPL *session,
-    const char *filename, bool silent, wt_off_t *sizep)
+__ae_filesize_name(AE_SESSION_IMPL *session,
+    const char *filename, bool silent, ae_off_t *sizep)
 {
 	struct stat sb;
-	WT_DECL_RET;
+	AE_DECL_RET;
 	char *path;
 
-	WT_RET(__wt_filename(session, filename, &path));
+	AE_RET(__ae_filename(session, filename, &path));
 
-	WT_SYSCALL_RETRY(stat(path, &sb), ret);
+	AE_SYSCALL_RETRY(stat(path, &sb), ret);
 
-	__wt_free(session, path);
+	__ae_free(session, path);
 
 	if (ret == 0) {
 		*sizep = sb.st_size;
@@ -57,6 +57,6 @@ __wt_filesize_name(WT_SESSION_IMPL *session,
 	 * exist, and don't want an error message logged.
 	 */
 	if (!silent)
-		WT_RET_MSG(session, ret, "%s: fstat", filename);
+		AE_RET_MSG(session, ret, "%s: fstat", filename);
 	return (ret);
 }

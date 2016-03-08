@@ -1,6 +1,6 @@
 /*-
  * Public Domain 2014-2015 MongoDB, Inc.
- * Public Domain 2008-2014 WiredTiger, Inc.
+ * Public Domain 2008-2014 ArchEngine, Inc.
  *
  * This is free and unencumbered software released into the public domain.
  *
@@ -31,7 +31,7 @@
 static void
 file_create(const char *name)
 {
-	WT_SESSION *session;
+	AE_SESSION *session;
 	int ret;
 	char *p, *end, config[128];
 
@@ -59,9 +59,9 @@ file_create(const char *name)
 void
 load(const char *name)
 {
-	WT_CURSOR *cursor;
-	WT_ITEM *key, _key, *value, _value;
-	WT_SESSION *session;
+	AE_CURSOR *cursor;
+	AE_ITEM *key, _key, *value, _value;
+	AE_SESSION *session;
 	char keybuf[64], valuebuf[64];
 	u_int keyno;
 	int ret;
@@ -104,7 +104,7 @@ load(const char *name)
 void
 verify(const char *name)
 {
-	WT_SESSION *session;
+	AE_SESSION *session;
 	int ret;
 
 	if ((ret = conn->open_session(conn, NULL, NULL, &session)) != 0)

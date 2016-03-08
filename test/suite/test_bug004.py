@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Public Domain 2014-2015 MongoDB, Inc.
-# Public Domain 2008-2014 WiredTiger, Inc.
+# Public Domain 2008-2014 ArchEngine, Inc.
 #
 # This is free and unencumbered software released into the public domain.
 #
@@ -29,13 +29,13 @@
 # test_bug004.py
 #       Regression tests.
 
-import wiredtiger, wttest
+import archengine, aetest
 from helper import key_populate, value_populate
 
 # Check to make sure we see the right versions of overflow keys and values
 # when they are deleted in reconciliation without having been instantiated
 # in the system.
-class test_bug004(wttest.WiredTigerTestCase):
+class test_bug004(aetest.ArchEngineTestCase):
     # This is a btree layer test, test files, ignore tables.
     uri = 'file:test_ovfl_key'
 
@@ -92,4 +92,4 @@ class test_bug004(wttest.WiredTigerTestCase):
 
 
 if __name__ == '__main__':
-    wttest.run()
+    aetest.run()

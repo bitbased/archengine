@@ -6,7 +6,7 @@
 #define STORAGE_LEVELDB_DB_FORMAT_H_
 
 #include <stdio.h>
-#include "leveldb_wt.h"
+#include "leveldb_ae.h"
 #include "util/coding.h"
 #include "util/logging.h"
 

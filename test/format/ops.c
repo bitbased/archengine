@@ -1,6 +1,6 @@
 /*-
  * Public Domain 2014-2015 MongoDB, Inc.
- * Public Domain 2008-2014 WiredTiger, Inc.
+ * Public Domain 2008-2014 ArchEngine, Inc.
  *
  * This is free and unencumbered software released into the public domain.
  *
@@ -28,37 +28,37 @@
 
 #include "format.h"
 
-static int   col_insert(TINFO *, WT_CURSOR *, WT_ITEM *, WT_ITEM *, uint64_t *);
-static int   col_remove(WT_CURSOR *, WT_ITEM *, uint64_t, int *);
-static int   col_update(TINFO *, WT_CURSOR *, WT_ITEM *, WT_ITEM *, uint64_t);
-static int   nextprev(WT_CURSOR *, int, int *);
+static int   col_insert(TINFO *, AE_CURSOR *, AE_ITEM *, AE_ITEM *, uint64_t *);
+static int   col_remove(AE_CURSOR *, AE_ITEM *, uint64_t, int *);
+static int   col_update(TINFO *, AE_CURSOR *, AE_ITEM *, AE_ITEM *, uint64_t);
+static int   nextprev(AE_CURSOR *, int, int *);
 static void *ops(void *);
-static int   row_insert(TINFO *, WT_CURSOR *, WT_ITEM *, WT_ITEM *, uint64_t);
-static int   row_remove(WT_CURSOR *, WT_ITEM *, uint64_t, int *);
-static int   row_update(TINFO *, WT_CURSOR *, WT_ITEM *, WT_ITEM *, uint64_t);
+static int   row_insert(TINFO *, AE_CURSOR *, AE_ITEM *, AE_ITEM *, uint64_t);
+static int   row_remove(AE_CURSOR *, AE_ITEM *, uint64_t, int *);
+static int   row_update(TINFO *, AE_CURSOR *, AE_ITEM *, AE_ITEM *, uint64_t);
 static void  table_append_init(void);
 
 #ifdef HAVE_BERKELEY_DB
 static int   notfound_chk(const char *, int, int, uint64_t);
-static void  print_item(const char *, WT_ITEM *);
+static void  print_item(const char *, AE_ITEM *);
 #endif
 
 /*
- * wts_ops --
+ * aes_ops --
  *	Perform a number of operations in a set of threads.
  */
 void
-wts_ops(int lastrun)
+aes_ops(int lastrun)
 {
 	TINFO *tinfo, total;
-	WT_CONNECTION *conn;
-	WT_SESSION *session;
+	AE_CONNECTION *conn;
+	AE_SESSION *session;
 	pthread_t backup_tid, compact_tid, lrt_tid;
 	int64_t fourths, thread_ops;
 	uint32_t i;
 	int ret, running;
 
-	conn = g.wts_conn;
+	conn = g.aes_conn;
 
 	session = NULL;			/* -Wconditional-uninitialized */
 	memset(&backup_tid, 0, sizeof(backup_tid));
@@ -99,7 +99,7 @@ wts_ops(int lastrun)
 	if (g.logging != 0) {
 		if ((ret = conn->open_session(conn, NULL, NULL, &session)) != 0)
 			die(ret, "connection.open_session");
-		(void)g.wt_api->msg_printf(g.wt_api, session,
+		(void)g.ae_api->msg_printf(g.ae_api, session,
 		    "=============== thread ops start ===============");
 	}
 
@@ -190,7 +190,7 @@ wts_ops(int lastrun)
 		(void)pthread_join(lrt_tid, NULL);
 
 	if (g.logging != 0) {
-		(void)g.wt_api->msg_printf(g.wt_api, session,
+		(void)g.ae_api->msg_printf(g.ae_api, session,
 		    "=============== thread ops stop ===============");
 		if ((ret = session->close(session, NULL)) != 0)
 			die(ret, "session.close");
@@ -202,7 +202,7 @@ wts_ops(int lastrun)
  *	Return the current session configuration.
  */
 static const char *
-ops_session_config(WT_RAND_STATE *rnd)
+ops_session_config(AE_RAND_STATE *rnd)
 {
 	u_int v;
 
@@ -226,10 +226,10 @@ static void *
 ops(void *arg)
 {
 	TINFO *tinfo;
-	WT_CONNECTION *conn;
-	WT_CURSOR *cursor, *cursor_insert;
-	WT_SESSION *session;
-	WT_ITEM key, value;
+	AE_CONNECTION *conn;
+	AE_CURSOR *cursor, *cursor_insert;
+	AE_SESSION *session;
+	AE_ITEM key, value;
 	uint64_t keyno, ckpt_op, reset_op, session_op;
 	uint32_t op;
 	uint8_t *keybuf, *valbuf;
@@ -239,12 +239,12 @@ ops(void *arg)
 
 	tinfo = arg;
 
-	conn = g.wts_conn;
+	conn = g.aes_conn;
 	keybuf = valbuf = NULL;
 	readonly = 0;			/* -Wconditional-uninitialized */
 
 	/* Initialize the per-thread random number generator. */
-	__wt_random_init(&tinfo->rnd);
+	__ae_random_init(&tinfo->rnd);
 
 	/* Set up the default key and value buffers. */
 	key_gen_setup(&keybuf);
@@ -377,7 +377,7 @@ ops(void *arg)
 			/* Rephrase the checkpoint name for cursor open. */
 			if (ckpt_config == NULL)
 				strcpy(ckpt_name,
-				    "checkpoint=WiredTigerCheckpoint");
+				    "checkpoint=ArchEngineCheckpoint");
 			else
 				(void)snprintf(ckpt_name, sizeof(ckpt_name),
 				    "checkpoint=thread-%d", tinfo->id);
@@ -561,21 +561,21 @@ deadlock:				++tinfo->deadlock;
 }
 
 /*
- * wts_read_scan --
+ * aes_read_scan --
  *	Read and verify all elements in a file.
  */
 void
-wts_read_scan(void)
+aes_read_scan(void)
 {
-	WT_CONNECTION *conn;
-	WT_CURSOR *cursor;
-	WT_ITEM key;
-	WT_SESSION *session;
+	AE_CONNECTION *conn;
+	AE_CURSOR *cursor;
+	AE_ITEM key;
+	AE_SESSION *session;
 	uint64_t cnt, last_cnt;
 	uint8_t *keybuf;
 	int ret;
 
-	conn = g.wts_conn;
+	conn = g.aes_conn;
 
 	/* Set up the default key buffer. */
 	key_gen_setup(&keybuf);
@@ -614,11 +614,11 @@ wts_read_scan(void)
  *	Read and verify a single element in a row- or column-store file.
  */
 int
-read_row(WT_CURSOR *cursor, WT_ITEM *key, uint64_t keyno, int notfound_err)
+read_row(AE_CURSOR *cursor, AE_ITEM *key, uint64_t keyno, int notfound_err)
 {
 	static int sn = 0;
-	WT_ITEM value;
-	WT_SESSION *session;
+	AE_ITEM value;
+	AE_SESSION *session;
 	int exact, ret;
 	uint8_t bitfield;
 
@@ -626,7 +626,7 @@ read_row(WT_CURSOR *cursor, WT_ITEM *key, uint64_t keyno, int notfound_err)
 
 	/* Log the operation */
 	if (g.logging == LOG_OPS)
-		(void)g.wt_api->msg_printf(g.wt_api,
+		(void)g.ae_api->msg_printf(g.ae_api,
 		    session, "%-10s%" PRIu64, "read", keyno);
 
 	/* Retrieve the key/value pair by key. */
@@ -644,7 +644,7 @@ read_row(WT_CURSOR *cursor, WT_ITEM *key, uint64_t keyno, int notfound_err)
 	if (sn) {
 		ret = cursor->search_near(cursor, &exact);
 		if (ret == 0 && exact != 0)
-			ret = WT_NOTFOUND;
+			ret = AE_NOTFOUND;
 		sn = 0;
 	} else {
 		ret = cursor->search(cursor);
@@ -659,11 +659,11 @@ read_row(WT_CURSOR *cursor, WT_ITEM *key, uint64_t keyno, int notfound_err)
 		} else
 			ret = cursor->get_value(cursor, &value);
 		break;
-	case WT_ROLLBACK:
-		return (WT_ROLLBACK);
-	case WT_NOTFOUND:
+	case AE_ROLLBACK:
+		return (AE_ROLLBACK);
+	case AE_NOTFOUND:
 		if (notfound_err)
-			return (WT_NOTFOUND);
+			return (AE_NOTFOUND);
 		break;
 	default:
 		die(ret, "read_row: read row %" PRIu64, keyno);
@@ -678,7 +678,7 @@ read_row(WT_CURSOR *cursor, WT_ITEM *key, uint64_t keyno, int notfound_err)
 	 * returned as not found.  Treat this the same as a zero value in the
 	 * key space, to match BDB's behavior.
 	 */
-	if (ret == WT_NOTFOUND && g.type == FIX) {
+	if (ret == AE_NOTFOUND && g.type == FIX) {
 		bitfield = 0;
 		value.data = &bitfield;
 		value.size = 1;
@@ -687,7 +687,7 @@ read_row(WT_CURSOR *cursor, WT_ITEM *key, uint64_t keyno, int notfound_err)
 
 	/* Retrieve the BDB value. */
 	{
-	WT_ITEM bdb_value;
+	AE_ITEM bdb_value;
 	int notfound;
 
 	bdb_read(keyno, &bdb_value.data, &bdb_value.size, &notfound);
@@ -702,7 +702,7 @@ read_row(WT_CURSOR *cursor, WT_ITEM *key, uint64_t keyno, int notfound_err)
 		fprintf(stderr,
 		    "read_row: value mismatch %" PRIu64 ":\n", keyno);
 		print_item("bdb", &bdb_value);
-		print_item(" wt", &value);
+		print_item(" ae", &value);
 		die(0, NULL);
 	}
 	}
@@ -715,9 +715,9 @@ read_row(WT_CURSOR *cursor, WT_ITEM *key, uint64_t keyno, int notfound_err)
  *	Read and verify the next/prev element in a row- or column-store file.
  */
 static int
-nextprev(WT_CURSOR *cursor, int next, int *notfoundp)
+nextprev(AE_CURSOR *cursor, int next, int *notfoundp)
 {
-	WT_ITEM key, value;
+	AE_ITEM key, value;
 	uint64_t keyno;
 	int ret;
 	uint8_t bitfield;
@@ -727,8 +727,8 @@ nextprev(WT_CURSOR *cursor, int next, int *notfoundp)
 
 	keyno = 0;
 	ret = next ? cursor->next(cursor) : cursor->prev(cursor);
-	if (ret == WT_ROLLBACK)
-		return (WT_ROLLBACK);
+	if (ret == AE_ROLLBACK)
+		return (AE_ROLLBACK);
 	if (ret == 0)
 		switch (g.type) {
 		case FIX:
@@ -747,17 +747,17 @@ nextprev(WT_CURSOR *cursor, int next, int *notfoundp)
 				ret = cursor->get_value(cursor, &value);
 			break;
 		}
-	if (ret != 0 && ret != WT_NOTFOUND)
+	if (ret != 0 && ret != AE_NOTFOUND)
 		die(ret, "%s", which);
-	*notfoundp = (ret == WT_NOTFOUND);
+	*notfoundp = (ret == AE_NOTFOUND);
 
 #ifdef HAVE_BERKELEY_DB
 	if (!SINGLETHREADED)
 		return (0);
 
 	{
-	WT_ITEM bdb_key, bdb_value;
-	WT_SESSION *session;
+	AE_ITEM bdb_key, bdb_value;
+	AE_SESSION *session;
 	int notfound;
 	char *p;
 
@@ -776,7 +776,7 @@ nextprev(WT_CURSOR *cursor, int next, int *notfoundp)
 		    memcmp(key.data, bdb_key.data, key.size) != 0) {
 			fprintf(stderr, "nextprev: %s key mismatch:\n", which);
 			print_item("bdb-key", &bdb_key);
-			print_item(" wt-key", &key);
+			print_item(" ae-key", &key);
 			die(0, NULL);
 		}
 	} else {
@@ -794,25 +794,25 @@ nextprev(WT_CURSOR *cursor, int next, int *notfoundp)
 	    memcmp(value.data, bdb_value.data, value.size) != 0) {
 		fprintf(stderr, "nextprev: %s value mismatch:\n", which);
 		print_item("bdb-value", &bdb_value);
-		print_item(" wt-value", &value);
+		print_item(" ae-value", &value);
 		die(0, NULL);
 	}
 
 	if (g.logging == LOG_OPS)
 		switch (g.type) {
 		case FIX:
-			(void)g.wt_api->msg_printf(g.wt_api,
+			(void)g.ae_api->msg_printf(g.ae_api,
 			    session, "%-10s%" PRIu64 " {0x%02x}", which,
 			    keyno, ((char *)value.data)[0]);
 			break;
 		case ROW:
-			(void)g.wt_api->msg_printf(
-			    g.wt_api, session, "%-10s{%.*s/%.*s}", which,
+			(void)g.ae_api->msg_printf(
+			    g.ae_api, session, "%-10s{%.*s/%.*s}", which,
 			    (int)key.size, (char *)key.data,
 			    (int)value.size, (char *)value.data);
 			break;
 		case VAR:
-			(void)g.wt_api->msg_printf(g.wt_api, session,
+			(void)g.ae_api->msg_printf(g.ae_api, session,
 			    "%-10s%" PRIu64 " {%.*s}", which,
 			    keyno, (int)value.size, (char *)value.data);
 			break;
@@ -828,9 +828,9 @@ nextprev(WT_CURSOR *cursor, int next, int *notfoundp)
  */
 static int
 row_update(TINFO *tinfo,
-    WT_CURSOR *cursor, WT_ITEM *key, WT_ITEM *value, uint64_t keyno)
+    AE_CURSOR *cursor, AE_ITEM *key, AE_ITEM *value, uint64_t keyno)
 {
-	WT_SESSION *session;
+	AE_SESSION *session;
 	int ret;
 
 	session = cursor->session;
@@ -840,7 +840,7 @@ row_update(TINFO *tinfo,
 
 	/* Log the operation */
 	if (g.logging == LOG_OPS)
-		(void)g.wt_api->msg_printf(g.wt_api, session,
+		(void)g.ae_api->msg_printf(g.ae_api, session,
 		    "%-10s{%.*s}\n%-10s{%.*s}",
 		    "putK", (int)key->size, (char *)key->data,
 		    "putV", (int)value->size, (char *)value->data);
@@ -848,9 +848,9 @@ row_update(TINFO *tinfo,
 	cursor->set_key(cursor, key);
 	cursor->set_value(cursor, value);
 	ret = cursor->update(cursor);
-	if (ret == WT_ROLLBACK)
-		return (WT_ROLLBACK);
-	if (ret != 0 && ret != WT_NOTFOUND)
+	if (ret == AE_ROLLBACK)
+		return (AE_ROLLBACK);
+	if (ret != 0 && ret != AE_NOTFOUND)
 		die(ret, "row_update: update row %" PRIu64 " by key", keyno);
 
 #ifdef HAVE_BERKELEY_DB
@@ -873,9 +873,9 @@ row_update(TINFO *tinfo,
  */
 static int
 col_update(TINFO *tinfo,
-    WT_CURSOR *cursor, WT_ITEM *key, WT_ITEM *value, uint64_t keyno)
+    AE_CURSOR *cursor, AE_ITEM *key, AE_ITEM *value, uint64_t keyno)
 {
-	WT_SESSION *session;
+	AE_SESSION *session;
 	int ret;
 
 	session = cursor->session;
@@ -885,12 +885,12 @@ col_update(TINFO *tinfo,
 	/* Log the operation */
 	if (g.logging == LOG_OPS) {
 		if (g.type == FIX)
-			(void)g.wt_api->msg_printf(g.wt_api, session,
+			(void)g.ae_api->msg_printf(g.ae_api, session,
 			    "%-10s%" PRIu64 " {0x%02" PRIx8 "}",
 			    "update", keyno,
 			    ((uint8_t *)value->data)[0]);
 		else
-			(void)g.wt_api->msg_printf(g.wt_api, session,
+			(void)g.ae_api->msg_printf(g.ae_api, session,
 			    "%-10s%" PRIu64 " {%.*s}",
 			    "update", keyno,
 			    (int)value->size, (char *)value->data);
@@ -902,9 +902,9 @@ col_update(TINFO *tinfo,
 	else
 		cursor->set_value(cursor, value);
 	ret = cursor->update(cursor);
-	if (ret == WT_ROLLBACK)
-		return (WT_ROLLBACK);
-	if (ret != 0 && ret != WT_NOTFOUND)
+	if (ret == AE_ROLLBACK)
+		return (AE_ROLLBACK);
+	if (ret != 0 && ret != AE_NOTFOUND)
 		die(ret, "col_update: %" PRIu64, keyno);
 
 #ifdef HAVE_BERKELEY_DB
@@ -1032,9 +1032,9 @@ table_append(uint64_t keyno)
  */
 static int
 row_insert(TINFO *tinfo,
-    WT_CURSOR *cursor, WT_ITEM *key, WT_ITEM *value, uint64_t keyno)
+    AE_CURSOR *cursor, AE_ITEM *key, AE_ITEM *value, uint64_t keyno)
 {
-	WT_SESSION *session;
+	AE_SESSION *session;
 	int ret;
 
 	session = cursor->session;
@@ -1044,7 +1044,7 @@ row_insert(TINFO *tinfo,
 
 	/* Log the operation */
 	if (g.logging == LOG_OPS)
-		(void)g.wt_api->msg_printf(g.wt_api, session,
+		(void)g.ae_api->msg_printf(g.ae_api, session,
 		    "%-10s{%.*s}\n%-10s{%.*s}",
 		    "insertK", (int)key->size, (char *)key->data,
 		    "insertV", (int)value->size, (char *)value->data);
@@ -1052,9 +1052,9 @@ row_insert(TINFO *tinfo,
 	cursor->set_key(cursor, key);
 	cursor->set_value(cursor, value);
 	ret = cursor->insert(cursor);
-	if (ret == WT_ROLLBACK)
-		return (WT_ROLLBACK);
-	if (ret != 0 && ret != WT_NOTFOUND)
+	if (ret == AE_ROLLBACK)
+		return (AE_ROLLBACK);
+	if (ret != 0 && ret != AE_NOTFOUND)
 		die(ret, "row_insert: insert row %" PRIu64 " by key", keyno);
 
 #ifdef HAVE_BERKELEY_DB
@@ -1077,9 +1077,9 @@ row_insert(TINFO *tinfo,
  */
 static int
 col_insert(TINFO *tinfo,
-    WT_CURSOR *cursor, WT_ITEM *key, WT_ITEM *value, uint64_t *keynop)
+    AE_CURSOR *cursor, AE_ITEM *key, AE_ITEM *value, uint64_t *keynop)
 {
-	WT_SESSION *session;
+	AE_SESSION *session;
 	uint64_t keyno;
 	int ret;
 
@@ -1092,8 +1092,8 @@ col_insert(TINFO *tinfo,
 	else
 		cursor->set_value(cursor, value);
 	if ((ret = cursor->insert(cursor)) != 0) {
-		if (ret == WT_ROLLBACK)
-			return (WT_ROLLBACK);
+		if (ret == AE_ROLLBACK)
+			return (AE_ROLLBACK);
 		die(ret, "cursor.insert");
 	}
 	if ((ret = cursor->get_key(cursor, &keyno)) != 0)
@@ -1104,12 +1104,12 @@ col_insert(TINFO *tinfo,
 
 	if (g.logging == LOG_OPS) {
 		if (g.type == FIX)
-			(void)g.wt_api->msg_printf(g.wt_api, session,
+			(void)g.ae_api->msg_printf(g.ae_api, session,
 			    "%-10s%" PRIu64 " {0x%02" PRIx8 "}",
 			    "insert", keyno,
 			    ((uint8_t *)value->data)[0]);
 		else
-			(void)g.wt_api->msg_printf(g.wt_api, session,
+			(void)g.ae_api->msg_printf(g.ae_api, session,
 			    "%-10s%" PRIu64 " {%.*s}",
 			    "insert", keyno,
 			    (int)value->size, (char *)value->data);
@@ -1136,9 +1136,9 @@ col_insert(TINFO *tinfo,
  *	Remove an row from a row-store file.
  */
 static int
-row_remove(WT_CURSOR *cursor, WT_ITEM *key, uint64_t keyno, int *notfoundp)
+row_remove(AE_CURSOR *cursor, AE_ITEM *key, uint64_t keyno, int *notfoundp)
 {
-	WT_SESSION *session;
+	AE_SESSION *session;
 	int ret;
 
 	session = cursor->session;
@@ -1147,18 +1147,18 @@ row_remove(WT_CURSOR *cursor, WT_ITEM *key, uint64_t keyno, int *notfoundp)
 
 	/* Log the operation */
 	if (g.logging == LOG_OPS)
-		(void)g.wt_api->msg_printf(
-		    g.wt_api, session, "%-10s%" PRIu64, "remove", keyno);
+		(void)g.ae_api->msg_printf(
+		    g.ae_api, session, "%-10s%" PRIu64, "remove", keyno);
 
 	cursor->set_key(cursor, key);
 	/* We use the cursor in overwrite mode, check for existence. */
 	if ((ret = cursor->search(cursor)) == 0)
 		ret = cursor->remove(cursor);
-	if (ret == WT_ROLLBACK)
-		return (WT_ROLLBACK);
-	if (ret != 0 && ret != WT_NOTFOUND)
+	if (ret == AE_ROLLBACK)
+		return (AE_ROLLBACK);
+	if (ret != 0 && ret != AE_NOTFOUND)
 		die(ret, "row_remove: remove %" PRIu64 " by key", keyno);
-	*notfoundp = (ret == WT_NOTFOUND);
+	*notfoundp = (ret == AE_NOTFOUND);
 
 #ifdef HAVE_BERKELEY_DB
 	if (!SINGLETHREADED)
@@ -1181,27 +1181,27 @@ row_remove(WT_CURSOR *cursor, WT_ITEM *key, uint64_t keyno, int *notfoundp)
  *	Remove a row from a column-store file.
  */
 static int
-col_remove(WT_CURSOR *cursor, WT_ITEM *key, uint64_t keyno, int *notfoundp)
+col_remove(AE_CURSOR *cursor, AE_ITEM *key, uint64_t keyno, int *notfoundp)
 {
-	WT_SESSION *session;
+	AE_SESSION *session;
 	int ret;
 
 	session = cursor->session;
 
 	/* Log the operation */
 	if (g.logging == LOG_OPS)
-		(void)g.wt_api->msg_printf(
-		    g.wt_api, session, "%-10s%" PRIu64, "remove", keyno);
+		(void)g.ae_api->msg_printf(
+		    g.ae_api, session, "%-10s%" PRIu64, "remove", keyno);
 
 	cursor->set_key(cursor, keyno);
 	/* We use the cursor in overwrite mode, check for existence. */
 	if ((ret = cursor->search(cursor)) == 0)
 		ret = cursor->remove(cursor);
-	if (ret == WT_ROLLBACK)
-		return (WT_ROLLBACK);
-	if (ret != 0 && ret != WT_NOTFOUND)
+	if (ret == AE_ROLLBACK)
+		return (AE_ROLLBACK);
+	if (ret != 0 && ret != AE_NOTFOUND)
 		die(ret, "col_remove: remove %" PRIu64 " by key", keyno);
-	*notfoundp = (ret == WT_NOTFOUND);
+	*notfoundp = (ret == AE_NOTFOUND);
 
 #ifdef HAVE_BERKELEY_DB
 	if (!SINGLETHREADED)
@@ -1233,10 +1233,10 @@ col_remove(WT_CURSOR *cursor, WT_ITEM *key, uint64_t keyno, int *notfoundp)
  *	Compare notfound returns for consistency.
  */
 static int
-notfound_chk(const char *f, int wt_ret, int bdb_notfound, uint64_t keyno)
+notfound_chk(const char *f, int ae_ret, int bdb_notfound, uint64_t keyno)
 {
 	/* Check for not found status. */
-	if (bdb_notfound && wt_ret == WT_NOTFOUND)
+	if (bdb_notfound && ae_ret == AE_NOTFOUND)
 		return (1);
 
 	if (bdb_notfound) {
@@ -1244,15 +1244,15 @@ notfound_chk(const char *f, int wt_ret, int bdb_notfound, uint64_t keyno)
 		if (keyno != 0)
 			fprintf(stderr, " row %" PRIu64 ":", keyno);
 		fprintf(stderr,
-		    " not found in Berkeley DB, found in WiredTiger\n");
+		    " not found in Berkeley DB, found in ArchEngine\n");
 		die(0, NULL);
 	}
-	if (wt_ret == WT_NOTFOUND) {
+	if (ae_ret == AE_NOTFOUND) {
 		fprintf(stderr, "%s: %s:", g.progname, f);
 		if (keyno != 0)
 			fprintf(stderr, " row %" PRIu64 ":", keyno);
 		fprintf(stderr,
-		    " found in Berkeley DB, not found in WiredTiger\n");
+		    " found in Berkeley DB, not found in ArchEngine\n");
 		die(0, NULL);
 	}
 	return (0);
@@ -1263,7 +1263,7 @@ notfound_chk(const char *f, int wt_ret, int bdb_notfound, uint64_t keyno)
  *	Display a single data/size pair, with a tag.
  */
 static void
-print_item(const char *tag, WT_ITEM *item)
+print_item(const char *tag, AE_ITEM *item)
 {
 	static const char hex[] = "0123456789abcdef";
 	const uint8_t *data;

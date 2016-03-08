@@ -1,40 +1,40 @@
 /*-
  * Copyright (c) 2014-2015 MongoDB, Inc.
- * Copyright (c) 2008-2014 WiredTiger, Inc.
+ * Copyright (c) 2008-2014 ArchEngine, Inc.
  *	All rights reserved.
  *
  * See the file LICENSE for redistribution information.
  */
 
-#include "wt_internal.h"
+#include "ae_internal.h"
 
 /*
  * __open_directory --
  *	Open up a file handle to a directory.
  */
 static int
-__open_directory(WT_SESSION_IMPL *session, char *path, int *fd)
+__open_directory(AE_SESSION_IMPL *session, char *path, int *fd)
 {
-	WT_DECL_RET;
+	AE_DECL_RET;
 
-	WT_SYSCALL_RETRY(((*fd =
+	AE_SYSCALL_RETRY(((*fd =
 	    open(path, O_RDONLY, 0444)) == -1 ? 1 : 0), ret);
 	if (ret != 0)
-		WT_RET_MSG(session, ret, "%s: open_directory", path);
+		AE_RET_MSG(session, ret, "%s: open_directory", path);
 	return (ret);
 }
 
 /*
- * __wt_open --
+ * __ae_open --
  *	Open a file handle.
  */
 int
-__wt_open(WT_SESSION_IMPL *session,
-    const char *name, bool ok_create, bool exclusive, int dio_type, WT_FH **fhp)
+__ae_open(AE_SESSION_IMPL *session,
+    const char *name, bool ok_create, bool exclusive, int dio_type, AE_FH **fhp)
 {
-	WT_CONNECTION_IMPL *conn;
-	WT_DECL_RET;
-	WT_FH *fh, *tfh;
+	AE_CONNECTION_IMPL *conn;
+	AE_DECL_RET;
+	AE_FH *fh, *tfh;
 	mode_t mode;
 	uint64_t bucket, hash;
 	int f, fd;
@@ -47,13 +47,13 @@ __wt_open(WT_SESSION_IMPL *session,
 	fd = -1;
 	path = NULL;
 
-	WT_RET(__wt_verbose(session, WT_VERB_FILEOPS, "%s: open", name));
+	AE_RET(__ae_verbose(session, AE_VERB_FILEOPS, "%s: open", name));
 
 	/* Increment the reference count if we already have the file open. */
 	matched = false;
-	hash = __wt_hash_city64(name, strlen(name));
-	bucket = hash % WT_HASH_ARRAY_SIZE;
-	__wt_spin_lock(session, &conn->fh_lock);
+	hash = __ae_hash_city64(name, strlen(name));
+	bucket = hash % AE_HASH_ARRAY_SIZE;
+	__ae_spin_lock(session, &conn->fh_lock);
 	TAILQ_FOREACH(tfh, &conn->fhhash[bucket], hashq) {
 		if (strcmp(name, tfh->name) == 0) {
 			++tfh->ref;
@@ -62,14 +62,14 @@ __wt_open(WT_SESSION_IMPL *session,
 			break;
 		}
 	}
-	__wt_spin_unlock(session, &conn->fh_lock);
+	__ae_spin_unlock(session, &conn->fh_lock);
 	if (matched)
 		return (0);
 
-	WT_RET(__wt_filename(session, name, &path));
+	AE_RET(__ae_filename(session, name, &path));
 
-	if (dio_type == WT_FILE_TYPE_DIRECTORY) {
-		WT_ERR(__open_directory(session, path, &fd));
+	if (dio_type == AE_FILE_TYPE_DIRECTORY) {
+		AE_ERR(__open_directory(session, path, &fd));
 		goto setupfh;
 	}
 
@@ -88,8 +88,8 @@ __wt_open(WT_SESSION_IMPL *session,
 #endif
 #ifdef O_NOATIME
 	/* Avoid updating metadata for read-only workloads. */
-	if (dio_type == WT_FILE_TYPE_DATA ||
-	    dio_type == WT_FILE_TYPE_CHECKPOINT)
+	if (dio_type == AE_FILE_TYPE_DATA ||
+	    dio_type == AE_FILE_TYPE_CHECKPOINT)
 		f |= O_NOATIME;
 #endif
 
@@ -107,19 +107,19 @@ __wt_open(WT_SESSION_IMPL *session,
 		direct_io = true;
 	}
 #endif
-	if (dio_type == WT_FILE_TYPE_LOG &&
-	    FLD_ISSET(conn->txn_logsync, WT_LOG_DSYNC))
+	if (dio_type == AE_FILE_TYPE_LOG &&
+	    FLD_ISSET(conn->txn_logsync, AE_LOG_DSYNC))
 #ifdef O_DSYNC
 		f |= O_DSYNC;
 #elif defined(O_SYNC)
 		f |= O_SYNC;
 #else
-		WT_ERR_MSG(session, ENOTSUP,
+		AE_ERR_MSG(session, ENOTSUP,
 		    "Unsupported log sync mode requested");
 #endif
-	WT_SYSCALL_RETRY(((fd = open(path, f, mode)) == -1 ? 1 : 0), ret);
+	AE_SYSCALL_RETRY(((fd = open(path, f, mode)) == -1 ? 1 : 0), ret);
 	if (ret != 0)
-		WT_ERR_MSG(session, ret,
+		AE_ERR_MSG(session, ret,
 		    direct_io ?
 		    "%s: open failed with direct I/O configured, some "
 		    "filesystem types do not support direct I/O" : "%s", path);
@@ -134,40 +134,40 @@ setupfh:
 	 */
 	if ((f = fcntl(fd, F_GETFD)) == -1 ||
 	    fcntl(fd, F_SETFD, f | FD_CLOEXEC) == -1)
-		WT_ERR_MSG(session, __wt_errno(), "%s: fcntl", name);
+		AE_ERR_MSG(session, __ae_errno(), "%s: fcntl", name);
 #endif
 
 #if defined(HAVE_POSIX_FADVISE)
 	/* Disable read-ahead on trees: it slows down random read workloads. */
-	if (dio_type == WT_FILE_TYPE_DATA ||
-	    dio_type == WT_FILE_TYPE_CHECKPOINT)
-		WT_ERR(posix_fadvise(fd, 0, 0, POSIX_FADV_RANDOM));
+	if (dio_type == AE_FILE_TYPE_DATA ||
+	    dio_type == AE_FILE_TYPE_CHECKPOINT)
+		AE_ERR(posix_fadvise(fd, 0, 0, POSIX_FADV_RANDOM));
 #endif
 
-	WT_ERR(__wt_calloc_one(session, &fh));
-	WT_ERR(__wt_strdup(session, name, &fh->name));
+	AE_ERR(__ae_calloc_one(session, &fh));
+	AE_ERR(__ae_strdup(session, name, &fh->name));
 	fh->name_hash = hash;
 	fh->fd = fd;
 	fh->ref = 1;
 	fh->direct_io = direct_io;
 
 	/* Set the file's size. */
-	WT_ERR(__wt_filesize(session, fh, &fh->size));
+	AE_ERR(__ae_filesize(session, fh, &fh->size));
 
 	/* Configure file extension. */
-	if (dio_type == WT_FILE_TYPE_DATA ||
-	    dio_type == WT_FILE_TYPE_CHECKPOINT)
+	if (dio_type == AE_FILE_TYPE_DATA ||
+	    dio_type == AE_FILE_TYPE_CHECKPOINT)
 		fh->extend_len = conn->data_extend_len;
 
 	/* Configure fallocate/posix_fallocate calls. */
-	__wt_fallocate_config(session, fh);
+	__ae_fallocate_config(session, fh);
 
 	/*
 	 * Repeat the check for a match, but then link onto the database's list
 	 * of files.
 	 */
 	matched = false;
-	__wt_spin_lock(session, &conn->fh_lock);
+	__ae_spin_lock(session, &conn->fh_lock);
 	TAILQ_FOREACH(tfh, &conn->fhhash[bucket], hashq) {
 		if (strcmp(name, tfh->name) == 0) {
 			++tfh->ref;
@@ -177,34 +177,34 @@ setupfh:
 		}
 	}
 	if (!matched) {
-		WT_CONN_FILE_INSERT(conn, fh, bucket);
-		(void)__wt_atomic_add32(&conn->open_file_count, 1);
+		AE_CONN_FILE_INSERT(conn, fh, bucket);
+		(void)__ae_atomic_add32(&conn->open_file_count, 1);
 		*fhp = fh;
 	}
-	__wt_spin_unlock(session, &conn->fh_lock);
+	__ae_spin_unlock(session, &conn->fh_lock);
 	if (matched) {
 err:		if (fh != NULL) {
-			__wt_free(session, fh->name);
-			__wt_free(session, fh);
+			__ae_free(session, fh->name);
+			__ae_free(session, fh);
 		}
 		if (fd != -1)
 			(void)close(fd);
 	}
 
-	__wt_free(session, path);
+	__ae_free(session, path);
 	return (ret);
 }
 
 /*
- * __wt_close --
+ * __ae_close --
  *	Close a file handle.
  */
 int
-__wt_close(WT_SESSION_IMPL *session, WT_FH **fhp)
+__ae_close(AE_SESSION_IMPL *session, AE_FH **fhp)
 {
-	WT_CONNECTION_IMPL *conn;
-	WT_DECL_RET;
-	WT_FH *fh;
+	AE_CONNECTION_IMPL *conn;
+	AE_DECL_RET;
+	AE_FH *fh;
 	uint64_t bucket;
 
 	conn = S2C(session);
@@ -214,28 +214,28 @@ __wt_close(WT_SESSION_IMPL *session, WT_FH **fhp)
 	fh = *fhp;
 	*fhp = NULL;
 
-	WT_RET(__wt_verbose(session, WT_VERB_FILEOPS, "%s: close", fh->name));
+	AE_RET(__ae_verbose(session, AE_VERB_FILEOPS, "%s: close", fh->name));
 
-	__wt_spin_lock(session, &conn->fh_lock);
+	__ae_spin_lock(session, &conn->fh_lock);
 	if (fh == NULL || fh->ref == 0 || --fh->ref > 0) {
-		__wt_spin_unlock(session, &conn->fh_lock);
+		__ae_spin_unlock(session, &conn->fh_lock);
 		return (0);
 	}
 
 	/* Remove from the list. */
-	bucket = fh->name_hash % WT_HASH_ARRAY_SIZE;
-	WT_CONN_FILE_REMOVE(conn, fh, bucket);
-	(void)__wt_atomic_sub32(&conn->open_file_count, 1);
+	bucket = fh->name_hash % AE_HASH_ARRAY_SIZE;
+	AE_CONN_FILE_REMOVE(conn, fh, bucket);
+	(void)__ae_atomic_sub32(&conn->open_file_count, 1);
 
-	__wt_spin_unlock(session, &conn->fh_lock);
+	__ae_spin_unlock(session, &conn->fh_lock);
 
 	/* Discard the memory. */
 	if (close(fh->fd) != 0) {
-		ret = __wt_errno();
-		__wt_err(session, ret, "close: %s", fh->name);
+		ret = __ae_errno();
+		__ae_err(session, ret, "close: %s", fh->name);
 	}
 
-	__wt_free(session, fh->name);
-	__wt_free(session, fh);
+	__ae_free(session, fh->name);
+	__ae_free(session, fh);
 	return (ret);
 }

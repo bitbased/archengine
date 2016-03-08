@@ -7,7 +7,7 @@ Show how to configure and use asynchronous operations.
 
 @example ex_call_center.c
 A more complex schema based on a call center example, showing how to map
-some SQL constructs onto the WiredTiger API.
+some SQL constructs onto the ArchEngine API.
 
 @example ex_config.c
 Shows how to configure some properties of the database and tables.
@@ -16,7 +16,7 @@ Shows how to configure some properties of the database and tables.
 Shows some common cursor types and operations.
 
 @example ex_encrypt.c
-Shows how to extend WiredTiger with a simple encryption algorithm.
+Shows how to extend ArchEngine with a simple encryption algorithm.
 
 @example nop_encrypt.c
 Shows the basic framework for building an encryptor as a plug in library.
@@ -25,11 +25,11 @@ Shows the basic framework for building an encryptor as a plug in library.
 Shows a simple encryptor as a plug in library.
 
 @example ex_extending.c
-Shows how to extend WiredTiger with application-specific collations,
+Shows how to extend ArchEngine with application-specific collations,
 extractors and cursor types.
 
 @example ex_extractor.c
-Shows how to extend WiredTiger with a more complex custom extractor.
+Shows how to extend ArchEngine with a more complex custom extractor.
 
 @example ex_hello.c
 This is an example of how to create and open a database.

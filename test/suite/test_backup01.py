@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Public Domain 2014-2015 MongoDB, Inc.
-# Public Domain 2008-2014 WiredTiger, Inc.
+# Public Domain 2008-2014 ArchEngine, Inc.
 #
 # This is free and unencumbered software released into the public domain.
 #
@@ -31,14 +31,14 @@ import os
 import shutil
 import string
 from suite_subprocess import suite_subprocess
-import wiredtiger, wttest
+import archengine, aetest
 from helper import compare_files,\
     complex_populate, complex_populate_lsm, simple_populate
 
 # test_backup.py
-#    Utilities: wt backup
-# Test backup (both backup cursors and the wt backup command).
-class test_backup(wttest.WiredTigerTestCase, suite_subprocess):
+#    Utilities: ae backup
+# Test backup (both backup cursors and the ae backup command).
+class test_backup(aetest.ArchEngineTestCase, suite_subprocess):
     dir='backup.dir'            # Backup directory name
 
     pfx = 'test_backup'
@@ -61,10 +61,10 @@ class test_backup(wttest.WiredTigerTestCase, suite_subprocess):
                         continue
             i[1](self, i[0], 'key_format=S', 100)
 
-    # Compare the original and backed-up files using the wt dump command.
+    # Compare the original and backed-up files using the ae dump command.
     def compare(self, uri):
-        self.runWt(['dump', uri], outfilename='orig')
-        self.runWt(['-h', self.dir, 'dump', uri], outfilename='backup')
+        self.runAe(['dump', uri], outfilename='orig')
+        self.runAe(['-h', self.dir, 'dump', uri], outfilename='backup')
         self.assertEqual(True, compare_files(self, 'orig', 'backup'))
 
     # Test simple backup cursor open/close.
@@ -76,19 +76,19 @@ class test_backup(wttest.WiredTigerTestCase, suite_subprocess):
     def test_cursor_single(self):
         cursor = self.session.open_cursor('backup:', None, None)
         msg = '/there is already a backup cursor open/'
-        self.assertRaisesWithMessage(wiredtiger.WiredTigerError,
+        self.assertRaisesWithMessage(archengine.ArchEngineError,
             lambda: self.session.open_cursor('backup:', None, None), msg)
         cursor.close()
 
-    # Test backup of a database using the wt backup command.
+    # Test backup of a database using the ae backup command.
     def test_backup_database(self):
         self.populate(0)
         os.mkdir(self.dir)
-        self.runWt(['backup', self.dir])
+        self.runAe(['backup', self.dir])
 
         # Make sure all the files were copied.
-        self.runWt(['list'], outfilename='outfile.orig')
-        self.runWt(['-h', self.dir, 'list'], outfilename='outfile.backup')
+        self.runAe(['list'], outfilename='outfile.orig')
+        self.runAe(['-h', self.dir, 'list'], outfilename='outfile.backup')
         self.assertEqual(
             True, compare_files(self, 'outfile.orig', 'outfile.backup'))
 
@@ -98,9 +98,9 @@ class test_backup(wttest.WiredTigerTestCase, suite_subprocess):
 
     # Check that a URI doesn't exist, both the meta-data and the file names.
     def confirmPathDoesNotExist(self, uri):
-        conn = wiredtiger.wiredtiger_open(self.dir)
+        conn = archengine.archengine_open(self.dir)
         session = conn.open_session()
-        self.assertRaises(wiredtiger.WiredTigerError,
+        self.assertRaises(archengine.ArchEngineError,
             lambda: session.open_cursor(uri, None, None))
         conn.close()
 
@@ -109,19 +109,19 @@ class test_backup(wttest.WiredTigerTestCase, suite_subprocess):
             'confirmPathDoesNotExist: URI exists, file name matching \"' +
             uri.split(":")[1] + '\" found')
 
-    # Backup a set of chosen tables/files using the wt backup command.
+    # Backup a set of chosen tables/files using the ae backup command.
     def backup_table(self, l):
         # Remove any previous backup directories.
         shutil.rmtree(self.dir, ignore_errors=True)
         os.mkdir(self.dir)
 
-        # Build a command line of objects to back up and run wt.
+        # Build a command line of objects to back up and run ae.
         o = 'backup'
         for i in range(0, len(self.objs)):
             if i in l:
                 o += ' -t ' + self.objs[i][0]
         o += ' ' + self.dir
-        self.runWt(o.split())
+        self.runAe(o.split())
 
         # Confirm the objects we backed up exist, with correct contents.
         for i in range(0, len(self.objs)):
@@ -152,7 +152,7 @@ class test_backup(wttest.WiredTigerTestCase, suite_subprocess):
             if ret != 0:
                 break
             i += 1
-        self.assertEqual(ret, wiredtiger.WT_NOTFOUND)
+        self.assertEqual(ret, archengine.AE_NOTFOUND)
         total = i * 2
         cursor.reset()
         while True:
@@ -160,7 +160,7 @@ class test_backup(wttest.WiredTigerTestCase, suite_subprocess):
             if ret != 0:
                 break
             i += 1
-        self.assertEqual(ret, wiredtiger.WT_NOTFOUND)
+        self.assertEqual(ret, archengine.AE_NOTFOUND)
         self.assertEqual(i, total)
 
     # Test that named checkpoints can't be deleted while backup cursors are
@@ -172,7 +172,7 @@ class test_backup(wttest.WiredTigerTestCase, suite_subprocess):
         # Confirm checkpoints are being deleted.
         self.session.checkpoint("name=one")
         self.session.checkpoint("name=two,drop=(one)")
-        self.assertRaises(wiredtiger.WiredTigerError,
+        self.assertRaises(archengine.ArchEngineError,
             lambda: self.session.open_cursor(
             self.objs[0][0], None, "checkpoint=one"))
 
@@ -181,13 +181,13 @@ class test_backup(wttest.WiredTigerTestCase, suite_subprocess):
         cursor = self.session.open_cursor('backup:', None, None)
         self.session.checkpoint()
         msg = '/checkpoints cannot be deleted during a hot backup/'
-        self.assertRaisesWithMessage(wiredtiger.WiredTigerError,
+        self.assertRaisesWithMessage(archengine.ArchEngineError,
             lambda: self.session.checkpoint("name=three,drop=(two)"), msg)
         self.session.checkpoint()
-        self.assertRaisesWithMessage(wiredtiger.WiredTigerError,
+        self.assertRaisesWithMessage(archengine.ArchEngineError,
             lambda: self.session.checkpoint("name=three,drop=(two)"), msg)
         self.session.checkpoint()
         cursor.close()
 
 if __name__ == '__main__':
-    wttest.run()
+    aetest.run()

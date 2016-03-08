@@ -1,6 +1,6 @@
 /*-
  * Public Domain 2014-2015 MongoDB, Inc.
- * Public Domain 2008-2014 WiredTiger, Inc.
+ * Public Domain 2008-2014 ArchEngine, Inc.
  *
  * This is free and unencumbered software released into the public domain.
  *
@@ -26,7 +26,7 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  *
  * ex_all.c
- *	Containing a call to every method in the WiredTiger API.
+ *	Containing a call to every method in the ArchEngine API.
  *
  *	It doesn't do anything very useful, just demonstrates how to call each
  *	method.  This file is used to populate the API reference with code
@@ -46,28 +46,28 @@
 #include "windows_shim.h"
 #endif
 
-#include <wiredtiger.h>
+#include <archengine.h>
 
-int add_collator(WT_CONNECTION *conn);
-int add_extractor(WT_CONNECTION *conn);
-int backup(WT_SESSION *session);
-int checkpoint_ops(WT_SESSION *session);
-int connection_ops(WT_CONNECTION *conn);
-int cursor_ops(WT_SESSION *session);
-int cursor_search_near(WT_CURSOR *cursor);
-int cursor_statistics(WT_SESSION *session);
-int pack_ops(WT_SESSION *session);
-int named_snapshot_ops(WT_SESSION *session);
-int session_ops(WT_SESSION *session);
-int transaction_ops(WT_CONNECTION *conn, WT_SESSION *session);
+int add_collator(AE_CONNECTION *conn);
+int add_extractor(AE_CONNECTION *conn);
+int backup(AE_SESSION *session);
+int checkpoint_ops(AE_SESSION *session);
+int connection_ops(AE_CONNECTION *conn);
+int cursor_ops(AE_SESSION *session);
+int cursor_search_near(AE_CURSOR *cursor);
+int cursor_statistics(AE_SESSION *session);
+int pack_ops(AE_SESSION *session);
+int named_snapshot_ops(AE_SESSION *session);
+int session_ops(AE_SESSION *session);
+int transaction_ops(AE_CONNECTION *conn, AE_SESSION *session);
 
 static const char * const progname = "ex_all";
 static const char *home;
 
 int
-cursor_ops(WT_SESSION *session)
+cursor_ops(AE_SESSION *session)
 {
-	WT_CURSOR *cursor;
+	AE_CURSOR *cursor;
 	int ret;
 
 	/*! [Open a cursor] */
@@ -81,7 +81,7 @@ cursor_ops(WT_SESSION *session)
 	/*! [Open a cursor on the metadata] */
 
 	{
-	WT_CURSOR *duplicate;
+	AE_CURSOR *duplicate;
 	const char *key = "some key";
 	/*! [Duplicate a cursor] */
 	ret = session->open_cursor(
@@ -129,7 +129,7 @@ cursor_ops(WT_SESSION *session)
 	{
 	/*! [open the default checkpoint] */
 	ret = session->open_cursor(session,
-	    "table:mytable", NULL, "checkpoint=WiredTigerCheckpoint", &cursor);
+	    "table:mytable", NULL, "checkpoint=ArchEngineCheckpoint", &cursor);
 	/*! [open the default checkpoint] */
 	}
 
@@ -196,14 +196,14 @@ cursor_ops(WT_SESSION *session)
 
 	{
 	/*! [Get the cursor's raw value] */
-	WT_ITEM value;		/* Get the cursor's raw value. */
+	AE_ITEM value;		/* Get the cursor's raw value. */
 	ret = cursor->get_value(cursor, &value);
 	/*! [Get the cursor's raw value] */
 	}
 
 	{
 	/*! [Set the cursor's raw value] */
-	WT_ITEM value;		/* Set the cursor's raw value. */
+	AE_ITEM value;		/* Set the cursor's raw value. */
 	value.data = "another value";
 	value.size = strlen("another value");
 	cursor->set_value(cursor, &value);
@@ -223,7 +223,7 @@ cursor_ops(WT_SESSION *session)
 	/*! [Reset the cursor] */
 
 	{
-	WT_CURSOR *other = NULL;
+	AE_CURSOR *other = NULL;
 	/*! [Cursor comparison] */
 	int compare;
 	ret = cursor->compare(cursor, other, &compare);
@@ -238,7 +238,7 @@ cursor_ops(WT_SESSION *session)
 	}
 
 	{
-	WT_CURSOR *other = NULL;
+	AE_CURSOR *other = NULL;
 	/*! [Cursor equality] */
 	int equal;
 	ret = cursor->equals(cursor, other, &equal);
@@ -373,7 +373,7 @@ cursor_ops(WT_SESSION *session)
 }
 
 int
-cursor_search_near(WT_CURSOR *cursor)
+cursor_search_near(AE_CURSOR *cursor)
 {
 	int exact, ret;
 	const char *key = "some key";
@@ -420,7 +420,7 @@ cursor_search_near(WT_CURSOR *cursor)
 }
 
 int
-checkpoint_ops(WT_SESSION *session)
+checkpoint_ops(AE_SESSION *session)
 {
 	int ret;
 
@@ -485,9 +485,9 @@ checkpoint_ops(WT_SESSION *session)
 }
 
 int
-cursor_statistics(WT_SESSION *session)
+cursor_statistics(AE_SESSION *session)
 {
-	WT_CURSOR *cursor;
+	AE_CURSOR *cursor;
 	int ret;
 
 	/*! [Statistics cursor database] */
@@ -520,7 +520,7 @@ cursor_statistics(WT_SESSION *session)
 }
 
 int
-named_snapshot_ops(WT_SESSION *session)
+named_snapshot_ops(AE_SESSION *session)
 {
 	int ret;
 
@@ -540,7 +540,7 @@ named_snapshot_ops(WT_SESSION *session)
 }
 
 int
-session_ops(WT_SESSION *session)
+session_ops(AE_SESSION *session)
 {
 	int ret;
 
@@ -697,7 +697,7 @@ session_ops(WT_SESSION *session)
 	/*
 	 * Insert a pair of keys so we can truncate a range.
 	 */
-	WT_CURSOR *cursor;
+	AE_CURSOR *cursor;
 	ret = session->open_cursor(
 	    session, "table:mytable", NULL, NULL, &cursor);
 	cursor->set_key(cursor, "June01");
@@ -710,7 +710,7 @@ session_ops(WT_SESSION *session)
 
 	{
 	/*! [Truncate a range] */
-	WT_CURSOR *start, *stop;
+	AE_CURSOR *start, *stop;
 
 	ret = session->open_cursor(
 	    session, "table:mytable", NULL, NULL, &start);
@@ -748,9 +748,9 @@ session_ops(WT_SESSION *session)
 }
 
 int
-transaction_ops(WT_CONNECTION *conn, WT_SESSION *session)
+transaction_ops(AE_CONNECTION *conn, AE_SESSION *session)
 {
-	WT_CURSOR *cursor;
+	AE_CURSOR *cursor;
 	int ret;
 
 	/*! [transaction commit/rollback] */
@@ -775,7 +775,7 @@ transaction_ops(WT_CONNECTION *conn, WT_SESSION *session)
 		 * and all cursors are reset.
 		 */
 		break;
-	case WT_ROLLBACK:			/* Update conflict */
+	case AE_ROLLBACK:			/* Update conflict */
 	default:				/* Other error */
 		ret = session->rollback_transaction(session, NULL);
 		/* The rollback_transaction call resets all cursors. */
@@ -822,13 +822,13 @@ transaction_ops(WT_CONNECTION *conn, WT_SESSION *session)
 	return (ret);
 }
 
-/*! [Implement WT_COLLATOR] */
+/*! [Implement AE_COLLATOR] */
 /*
  * A simple example of the collator API: compare the keys as strings.
  */
 static int
-my_compare(WT_COLLATOR *collator, WT_SESSION *session,
-    const WT_ITEM *value1, const WT_ITEM *value2, int *cmp)
+my_compare(AE_COLLATOR *collator, AE_SESSION *session,
+    const AE_ITEM *value1, const AE_ITEM *value2, int *cmp)
 {
 	const char *p1, *p2;
 
@@ -844,26 +844,26 @@ my_compare(WT_COLLATOR *collator, WT_SESSION *session,
 	*cmp = (int)*p2 - (int)*p1;
 	return (0);
 }
-/*! [Implement WT_COLLATOR] */
+/*! [Implement AE_COLLATOR] */
 
 int
-add_collator(WT_CONNECTION *conn)
+add_collator(AE_CONNECTION *conn)
 {
 	int ret;
 
-	/*! [WT_COLLATOR register] */
-	static WT_COLLATOR my_collator = { my_compare, NULL, NULL };
+	/*! [AE_COLLATOR register] */
+	static AE_COLLATOR my_collator = { my_compare, NULL, NULL };
 	ret = conn->add_collator(conn, "my_collator", &my_collator, NULL);
-	/*! [WT_COLLATOR register] */
+	/*! [AE_COLLATOR register] */
 
 	return (ret);
 }
 
-/*! [WT_EXTRACTOR] */
+/*! [AE_EXTRACTOR] */
 static int
-my_extract(WT_EXTRACTOR *extractor, WT_SESSION *session,
-    const WT_ITEM *key, const WT_ITEM *value,
-    WT_CURSOR *result_cursor)
+my_extract(AE_EXTRACTOR *extractor, AE_SESSION *session,
+    const AE_ITEM *key, const AE_ITEM *value,
+    AE_CURSOR *result_cursor)
 {
 	/* Unused parameters */
 	(void)extractor;
@@ -873,24 +873,24 @@ my_extract(WT_EXTRACTOR *extractor, WT_SESSION *session,
 	result_cursor->set_key(result_cursor, value);
 	return (result_cursor->insert(result_cursor));
 }
-/*! [WT_EXTRACTOR] */
+/*! [AE_EXTRACTOR] */
 
 int
-add_extractor(WT_CONNECTION *conn)
+add_extractor(AE_CONNECTION *conn)
 {
 	int ret;
 
-	/*! [WT_EXTRACTOR register] */
-	static WT_EXTRACTOR my_extractor = {my_extract, NULL, NULL};
+	/*! [AE_EXTRACTOR register] */
+	static AE_EXTRACTOR my_extractor = {my_extract, NULL, NULL};
 
 	ret = conn->add_extractor(conn, "my_extractor", &my_extractor, NULL);
-	/*! [WT_EXTRACTOR register] */
+	/*! [AE_EXTRACTOR register] */
 
 	return (ret);
 }
 
 int
-connection_ops(WT_CONNECTION *conn)
+connection_ops(AE_CONNECTION *conn)
 {
 	int ret;
 
@@ -923,21 +923,21 @@ connection_ops(WT_CONNECTION *conn)
 
 	/*! [Validate a configuration string] */
 	/*
-	 * Validate a configuration string for a WiredTiger function or method.
+	 * Validate a configuration string for a ArchEngine function or method.
 	 *
-	 * Functions are specified by name (for example, "wiredtiger_open").
+	 * Functions are specified by name (for example, "archengine_open").
 	 *
 	 * Methods are specified using a concatenation of the handle name, a
 	 * period and the method name (for example, session create would be
-	 * "WT_SESSION.create" and cursor close would be WT_CURSOR.close").
+	 * "AE_SESSION.create" and cursor close would be AE_CURSOR.close").
 	 */
-	ret = wiredtiger_config_validate(
-	    NULL, NULL, "WT_SESSION.create", "allocation_size=32KB");
+	ret = archengine_config_validate(
+	    NULL, NULL, "AE_SESSION.create", "allocation_size=32KB");
 	/*! [Validate a configuration string] */
 
 	{
 	/*! [Open a session] */
-	WT_SESSION *session;
+	AE_SESSION *session;
 	ret = conn->open_session(conn, NULL, NULL, &session);
 	/*! [Open a session] */
 
@@ -954,7 +954,7 @@ connection_ops(WT_CONNECTION *conn)
 	 * handle name, a period and the method name.
 	 */
 	ret = conn->configure_method(conn,
-	    "WT_SESSION.open_cursor",
+	    "AE_SESSION.open_cursor",
 	    "my_data:", "entries=5", "int", "min=1,max=10");
 
 	/*
@@ -963,7 +963,7 @@ connection_ops(WT_CONNECTION *conn)
 	 * of strings.
 	 */
 	ret = conn->configure_method(conn,
-	    "WT_SESSION.open_cursor", "my_data:", "devices", "list", NULL);
+	    "AE_SESSION.open_cursor", "my_data:", "devices", "list", NULL);
 	/*! [Configure method configuration] */
 
 	/*! [Close a connection] */
@@ -974,21 +974,21 @@ connection_ops(WT_CONNECTION *conn)
 }
 
 int
-pack_ops(WT_SESSION *session)
+pack_ops(AE_SESSION *session)
 {
 	int ret;
 
 	{
 	/*! [Get the packed size] */
 	size_t size;
-	ret = wiredtiger_struct_size(session, &size, "iSh", 42, "hello", -3);
+	ret = archengine_struct_size(session, &size, "iSh", 42, "hello", -3);
 	/*! [Get the packed size] */
 	}
 
 	{
 	/*! [Pack fields into a buffer] */
 	char buf[100];
-	ret = wiredtiger_struct_pack(
+	ret = archengine_struct_pack(
 	    session, buf, sizeof(buf), "iSh", 42, "hello", -3);
 	/*! [Pack fields into a buffer] */
 
@@ -997,7 +997,7 @@ pack_ops(WT_SESSION *session)
 	int i;
 	char *s;
 	short h;
-	ret = wiredtiger_struct_unpack(
+	ret = archengine_struct_unpack(
 	    session, buf, sizeof(buf), "iSh", &i, &s, &h);
 	/*! [Unpack fields from a buffer] */
 	}
@@ -1007,12 +1007,12 @@ pack_ops(WT_SESSION *session)
 }
 
 int
-backup(WT_SESSION *session)
+backup(AE_SESSION *session)
 {
 	char buf[1024];
 
 	/*! [backup]*/
-	WT_CURSOR *cursor;
+	AE_CURSOR *cursor;
 	const char *filename;
 	int ret;
 
@@ -1031,7 +1031,7 @@ backup(WT_SESSION *session)
 		    filename, filename);
 		ret = system(buf);
 	}
-	if (ret == WT_NOTFOUND)
+	if (ret == AE_NOTFOUND)
 		ret = 0;
 	if (ret != 0)
 		fprintf(stderr, "%s: cursor next(backup:) failed: %s\n",
@@ -1050,21 +1050,21 @@ backup(WT_SESSION *session)
 int
 main(void)
 {
-	WT_CONNECTION *conn;
+	AE_CONNECTION *conn;
 	int ret;
 
 	/*
 	 * Create a clean test directory for this run of the test program if the
 	 * environment variable isn't already set (as is done by make check).
 	 */
-	if (getenv("WIREDTIGER_HOME") == NULL) {
-		home = "WT_HOME";
-		ret = system("rm -rf WT_HOME && mkdir WT_HOME");
+	if (getenv("ARCHENGINE_HOME") == NULL) {
+		home = "AE_HOME";
+		ret = system("rm -rf AE_HOME && mkdir AE_HOME");
 	} else
 		home = NULL;
 
 	/*! [Open a connection] */
-	ret = wiredtiger_open(home, NULL,
+	ret = archengine_open(home, NULL,
 	    "create,cache_size=5GB,log=(enabled,recover=on)", &conn);
 	/*! [Open a connection] */
 
@@ -1081,33 +1081,33 @@ main(void)
 	 * the code snippets, use #ifdef's to avoid running it.
 	 */
 	/*! [Configure bzip2 extension] */
-	ret = wiredtiger_open(home, NULL,
+	ret = archengine_open(home, NULL,
 	    "create,"
-	    "extensions=[/usr/local/lib/libwiredtiger_bzip2.so]", &conn);
+	    "extensions=[/usr/local/lib/libarchengine_bzip2.so]", &conn);
 	/*! [Configure bzip2 extension] */
 	if (ret == 0)
 		(void)conn->close(conn, NULL);
 
 	/*! [Configure lz4 extension] */
-	ret = wiredtiger_open(home, NULL,
+	ret = archengine_open(home, NULL,
 	    "create,"
-	    "extensions=[/usr/local/lib/libwiredtiger_lz4.so]", &conn);
+	    "extensions=[/usr/local/lib/libarchengine_lz4.so]", &conn);
 	/*! [Configure lz4 extension] */
 	if (ret == 0)
 		(void)conn->close(conn, NULL);
 
 	/*! [Configure snappy extension] */
-	ret = wiredtiger_open(home, NULL,
+	ret = archengine_open(home, NULL,
 	    "create,"
-	    "extensions=[/usr/local/lib/libwiredtiger_snappy.so]", &conn);
+	    "extensions=[/usr/local/lib/libarchengine_snappy.so]", &conn);
 	/*! [Configure snappy extension] */
 	if (ret == 0)
 		(void)conn->close(conn, NULL);
 
 	/*! [Configure zlib extension] */
-	ret = wiredtiger_open(home, NULL,
+	ret = archengine_open(home, NULL,
 	    "create,"
-	    "extensions=[/usr/local/lib/libwiredtiger_zlib.so]", &conn);
+	    "extensions=[/usr/local/lib/libarchengine_zlib.so]", &conn);
 	/*! [Configure zlib extension] */
 	if (ret == 0)
 		(void)conn->close(conn, NULL);
@@ -1119,14 +1119,14 @@ main(void)
 	 */
 	/* Might Not Run: direct I/O may not be available. */
 	/*! [Configure direct_io for data files] */
-	ret = wiredtiger_open(home, NULL, "create,direct_io=[data]", &conn);
+	ret = archengine_open(home, NULL, "create,direct_io=[data]", &conn);
 	/*! [Configure direct_io for data files] */
 	if (ret == 0)
 		(void)conn->close(conn, NULL);
 #endif
 
 	/*! [Configure file_extend] */
-	ret = wiredtiger_open(
+	ret = archengine_open(
 	    home, NULL, "create,file_extend=(data=16MB)", &conn);
 	/*! [Configure file_extend] */
 	if (ret == 0)
@@ -1137,7 +1137,7 @@ main(void)
 	 * Configure eviction to begin at 90% full, and run until the cache
 	 * is only 75% dirty.
 	 */
-	ret = wiredtiger_open(home, NULL,
+	ret = archengine_open(home, NULL,
 	    "create,eviction_trigger=90,eviction_dirty_target=75", &conn);
 	/*! [Eviction configuration] */
 	if (ret == 0)
@@ -1145,27 +1145,27 @@ main(void)
 
 	/*! [Eviction worker configuration] */
 	/* Configure up to four eviction threads */
-	ret = wiredtiger_open(home, NULL,
+	ret = archengine_open(home, NULL,
 	    "create,eviction_trigger=90,eviction=(threads_max=4)", &conn);
 	/*! [Eviction worker configuration] */
 	if (ret == 0)
 		(void)conn->close(conn, NULL);
 
 	/*! [Statistics configuration] */
-	ret = wiredtiger_open(home, NULL, "create,statistics=(all)", &conn);
+	ret = archengine_open(home, NULL, "create,statistics=(all)", &conn);
 	/*! [Statistics configuration] */
 	if (ret == 0)
 		(void)conn->close(conn, NULL);
 
 	/*! [Statistics logging] */
-	ret = wiredtiger_open(
+	ret = archengine_open(
 	    home, NULL, "create,statistics_log=(wait=30)", &conn);
 	/*! [Statistics logging] */
 	if (ret == 0)
 		(void)conn->close(conn, NULL);
 
 	/*! [Statistics logging with a table] */
-	ret = wiredtiger_open(home, NULL,
+	ret = archengine_open(home, NULL,
 	    "create, statistics_log=("
 	    "sources=(\"lsm:table1\",\"lsm:table2\"), wait=5)",
 	    &conn);
@@ -1174,7 +1174,7 @@ main(void)
 		(void)conn->close(conn, NULL);
 
 	/*! [Statistics logging with all tables] */
-	ret = wiredtiger_open(home, NULL,
+	ret = archengine_open(home, NULL,
 	    "create, statistics_log=(sources=(\"lsm:\"), wait=5)",
 	    &conn);
 	/*! [Statistics logging with all tables] */
@@ -1188,7 +1188,7 @@ main(void)
 	 * use #ifdef's to avoid running it.
 	 */
 	/*! [Statistics logging with path] */
-	ret = wiredtiger_open(home, NULL,
+	ret = archengine_open(home, NULL,
 	    "create,"
 	    "statistics_log=(wait=120,path=/log/log.%m.%d.%y)", &conn);
 	/*! [Statistics logging with path] */
@@ -1199,23 +1199,23 @@ main(void)
 	 * Don't run this code, because memory checkers get very upset when we
 	 * leak memory.
 	 */
-	(void)wiredtiger_open(home, NULL, "create", &conn);
+	(void)archengine_open(home, NULL, "create", &conn);
 	/*! [Connection close leaking memory] */
 	ret = conn->close(conn, "leak_memory=true");
 	/*! [Connection close leaking memory] */
 #endif
 
-	/*! [Get the WiredTiger library version #1] */
-	printf("WiredTiger version %s\n", wiredtiger_version(NULL, NULL, NULL));
-	/*! [Get the WiredTiger library version #1] */
+	/*! [Get the ArchEngine library version #1] */
+	printf("ArchEngine version %s\n", archengine_version(NULL, NULL, NULL));
+	/*! [Get the ArchEngine library version #1] */
 
 	{
-	/*! [Get the WiredTiger library version #2] */
+	/*! [Get the ArchEngine library version #2] */
 	int major_v, minor_v, patch;
-	(void)wiredtiger_version(&major_v, &minor_v, &patch);
-	printf("WiredTiger version is %d, %d (patch %d)\n",
+	(void)archengine_version(&major_v, &minor_v, &patch);
+	printf("ArchEngine version is %d, %d (patch %d)\n",
 	    major_v, minor_v, patch);
-	/*! [Get the WiredTiger library version #2] */
+	/*! [Get the ArchEngine library version #2] */
 	}
 
 	return (ret);

@@ -1,29 +1,29 @@
 /*-
  * Copyright (c) 2014-2015 MongoDB, Inc.
- * Copyright (c) 2008-2014 WiredTiger, Inc.
+ * Copyright (c) 2008-2014 ArchEngine, Inc.
  *	All rights reserved.
  *
  * See the file LICENSE for redistribution information.
  */
 
 /*
- * WT_DATA_HANDLE_CACHE --
+ * AE_DATA_HANDLE_CACHE --
  *	Per-session cache of handles to avoid synchronization when opening
  *	cursors.
  */
-struct __wt_data_handle_cache {
-	WT_DATA_HANDLE *dhandle;
+struct __ae_data_handle_cache {
+	AE_DATA_HANDLE *dhandle;
 
-	TAILQ_ENTRY(__wt_data_handle_cache) q;
-	TAILQ_ENTRY(__wt_data_handle_cache) hashq;
+	TAILQ_ENTRY(__ae_data_handle_cache) q;
+	TAILQ_ENTRY(__ae_data_handle_cache) hashq;
 };
 
 /*
- * WT_HAZARD --
+ * AE_HAZARD --
  *	A hazard pointer.
  */
-struct __wt_hazard {
-	WT_PAGE *page;			/* Page address */
+struct __ae_hazard {
+	AE_PAGE *page;			/* Page address */
 #ifdef HAVE_DIAGNOSTIC
 	const char *file;		/* File/line where hazard acquired */
 	int	    line;
@@ -31,18 +31,18 @@ struct __wt_hazard {
 };
 
 /* Get the connection implementation for a session */
-#define	S2C(session)	  ((WT_CONNECTION_IMPL *)(session)->iface.connection)
+#define	S2C(session)	  ((AE_CONNECTION_IMPL *)(session)->iface.connection)
 
 /* Get the btree for a session */
-#define	S2BT(session)	   ((WT_BTREE *)(session)->dhandle->handle)
+#define	S2BT(session)	   ((AE_BTREE *)(session)->dhandle->handle)
 #define	S2BT_SAFE(session) ((session)->dhandle == NULL ? NULL : S2BT(session))
 
 /*
- * WT_SESSION_IMPL --
- *	Implementation of WT_SESSION.
+ * AE_SESSION_IMPL --
+ *	Implementation of AE_SESSION.
  */
-struct WT_COMPILER_TYPE_ALIGN(WT_CACHE_LINE_ALIGNMENT) __wt_session_impl {
-	WT_SESSION iface;
+struct AE_COMPILER_TYPE_ALIGN(AE_CACHE_LINE_ALIGNMENT) __ae_session_impl {
+	AE_SESSION iface;
 
 	void	*lang_private;		/* Language specific private storage */
 
@@ -52,11 +52,11 @@ struct WT_COMPILER_TYPE_ALIGN(WT_CACHE_LINE_ALIGNMENT) __wt_session_impl {
 	const char *lastop;		/* Last operation */
 	uint32_t id;			/* UID, offset in session array */
 
-	WT_CONDVAR *cond;		/* Condition variable */
+	AE_CONDVAR *cond;		/* Condition variable */
 
-	WT_EVENT_HANDLER *event_handler;/* Application's event handlers */
+	AE_EVENT_HANDLER *event_handler;/* Application's event handlers */
 
-	WT_DATA_HANDLE *dhandle;	/* Current data handle */
+	AE_DATA_HANDLE *dhandle;	/* Current data handle */
 
 	/*
 	 * Each session keeps a cache of data handles. The set of handles
@@ -66,28 +66,28 @@ struct WT_COMPILER_TYPE_ALIGN(WT_CACHE_LINE_ALIGNMENT) __wt_session_impl {
 	 * across session close - so it is declared further down.
 	 */
 					/* Session handle reference list */
-	TAILQ_HEAD(__dhandles, __wt_data_handle_cache) dhandles;
+	TAILQ_HEAD(__dhandles, __ae_data_handle_cache) dhandles;
 	time_t last_sweep;		/* Last sweep for dead handles */
 
-	WT_CURSOR *cursor;		/* Current cursor */
+	AE_CURSOR *cursor;		/* Current cursor */
 					/* Cursors closed with the session */
-	TAILQ_HEAD(__cursors, __wt_cursor) cursors;
+	TAILQ_HEAD(__cursors, __ae_cursor) cursors;
 
-	WT_CURSOR_BACKUP *bkp_cursor;	/* Hot backup cursor */
-	WT_COMPACT	 *compact;	/* Compact state */
+	AE_CURSOR_BACKUP *bkp_cursor;	/* Hot backup cursor */
+	AE_COMPACT	 *compact;	/* Compact state */
 
 	/*
 	 * Lookaside table cursor, sweep and eviction worker threads only.
 	 */
-	WT_CURSOR	*las_cursor;	/* Lookaside table cursor */
+	AE_CURSOR	*las_cursor;	/* Lookaside table cursor */
 
-	WT_DATA_HANDLE *meta_dhandle;	/* Metadata file */
+	AE_DATA_HANDLE *meta_dhandle;	/* Metadata file */
 	void	*meta_track;		/* Metadata operation tracking */
 	void	*meta_track_next;	/* Current position */
 	void	*meta_track_sub;	/* Child transaction / save point */
 	size_t	 meta_track_alloc;	/* Currently allocated */
 	int	 meta_track_nest;	/* Nesting level of meta transaction */
-#define	WT_META_TRACKING(session)	(session->meta_track_next != NULL)
+#define	AE_META_TRACKING(session)	(session->meta_track_next != NULL)
 
 	/*
 	 * Each session keeps a cache of table handles. The set of handles
@@ -95,44 +95,44 @@ struct WT_COMPILER_TYPE_ALIGN(WT_CACHE_LINE_ALIGNMENT) __wt_session_impl {
 	 * table of lists. The hash table list is kept in allocated memory
 	 * that lives across session close - so it is declared further down.
 	 */
-	TAILQ_HEAD(__tables, __wt_table) tables;
+	TAILQ_HEAD(__tables, __ae_table) tables;
 
-	WT_ITEM	**scratch;		/* Temporary memory for any function */
+	AE_ITEM	**scratch;		/* Temporary memory for any function */
 	u_int	  scratch_alloc;	/* Currently allocated */
 	size_t	  scratch_cached;	/* Scratch bytes cached */
 #ifdef HAVE_DIAGNOSTIC
 	/*
 	 * It's hard to figure out from where a buffer was allocated after it's
 	 * leaked, so in diagnostic mode we track them; DIAGNOSTIC can't simply
-	 * add additional fields to WT_ITEM structures because they are visible
+	 * add additional fields to AE_ITEM structures because they are visible
 	 * to applications, create a parallel structure instead.
 	 */
-	struct __wt_scratch_track {
+	struct __ae_scratch_track {
 		const char *file;	/* Allocating file, line */
 		int line;
 	} *scratch_track;
 #endif
 
-	WT_ITEM err;			/* Error buffer */
+	AE_ITEM err;			/* Error buffer */
 
-	WT_TXN_ISOLATION isolation;
-	WT_TXN	txn;			/* Transaction state */
-	WT_LSN	bg_sync_lsn;		/* Background sync operation LSN. */
+	AE_TXN_ISOLATION isolation;
+	AE_TXN	txn;			/* Transaction state */
+	AE_LSN	bg_sync_lsn;		/* Background sync operation LSN. */
 	u_int	ncursors;		/* Count of active file cursors. */
 
 	void	*block_manager;		/* Block-manager support */
-	int	(*block_manager_cleanup)(WT_SESSION_IMPL *);
+	int	(*block_manager_cleanup)(AE_SESSION_IMPL *);
 
 					/* Checkpoint support */
 	struct {
-		WT_DATA_HANDLE *dhandle;
+		AE_DATA_HANDLE *dhandle;
 		const char *name;
 	} *ckpt_handle;			/* Handle list */
 	u_int   ckpt_handle_next;	/* Next empty slot */
 	size_t  ckpt_handle_allocated;	/* Bytes allocated */
 
 	void	*reconcile;		/* Reconciliation support */
-	int	(*reconcile_cleanup)(WT_SESSION_IMPL *);
+	int	(*reconcile_cleanup)(AE_SESSION_IMPL *);
 
 	bool compaction;		/* Compaction did some work */
 
@@ -150,15 +150,15 @@ struct WT_COMPILER_TYPE_ALIGN(WT_CACHE_LINE_ALIGNMENT) __wt_session_impl {
 	 * All of these fields live at the end of the structure so it's easier
 	 * to clear everything but the fields that persist.
 	 */
-#define	WT_SESSION_CLEAR_SIZE(s)					\
-	(WT_PTRDIFF(&(s)->rnd, s))
+#define	AE_SESSION_CLEAR_SIZE(s)					\
+	(AE_PTRDIFF(&(s)->rnd, s))
 
-	WT_RAND_STATE rnd;		/* Random number generation state */
+	AE_RAND_STATE rnd;		/* Random number generation state */
 
 					/* Hashed handle reference list array */
-	TAILQ_HEAD(__dhandles_hash, __wt_data_handle_cache) *dhhash;
+	TAILQ_HEAD(__dhandles_hash, __ae_data_handle_cache) *dhhash;
 					/* Hashed table reference list array */
-	TAILQ_HEAD(__tables_hash, __wt_table) *tablehash;
+	TAILQ_HEAD(__tables_hash, __ae_table) *tablehash;
 
 	/*
 	 * Splits can "free" memory that may still be in use, and we use a
@@ -167,7 +167,7 @@ struct WT_COMPILER_TYPE_ALIGN(WT_CACHE_LINE_ALIGNMENT) __wt_session_impl {
 	 * session is reading from that split generation, the memory can be
 	 * freed for real.
 	 */
-	struct __wt_split_stash {
+	struct __ae_split_stash {
 		uint64_t    split_gen;	/* Split generation */
 		void       *p;		/* Memory, length */
 		size_t	    len;
@@ -183,12 +183,12 @@ struct WT_COMPILER_TYPE_ALIGN(WT_CACHE_LINE_ALIGNMENT) __wt_session_impl {
 	 * Use the non-NULL state of the hazard field to know if the session has
 	 * previously been initialized.
 	 */
-#define	WT_SESSION_FIRST_USE(s)						\
+#define	AE_SESSION_FIRST_USE(s)						\
 	((s)->hazard == NULL)
 
 	/* The number of hazard pointers grows dynamically. */
-#define	WT_HAZARD_INCR		10
+#define	AE_HAZARD_INCR		10
 	uint32_t   hazard_size;		/* Allocated slots in hazard array. */
 	uint32_t   nhazard;		/* Count of active hazard pointers */
-	WT_HAZARD *hazard;		/* Hazard pointer array */
+	AE_HAZARD *hazard;		/* Hazard pointer array */
 };

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Public Domain 2014-2015 MongoDB, Inc.
-# Public Domain 2008-2014 WiredTiger, Inc.
+# Public Domain 2008-2014 ArchEngine, Inc.
 #
 # This is free and unencumbered software released into the public domain.
 #
@@ -27,21 +27,21 @@
 # OTHER DEALINGS IN THE SOFTWARE.
 
 from suite_subprocess import suite_subprocess
-import wiredtiger, wttest
+import archengine, aetest
 
 # test_util08.py
-#    Utilities: wt copyright
-class test_util08(wttest.WiredTigerTestCase, suite_subprocess):
+#    Utilities: ae copyright
+class test_util08(aetest.ArchEngineTestCase, suite_subprocess):
     def test_copyright(self):
         """
-        Test copyright in a 'wt' process
+        Test copyright in a 'ae' process
         """
         outfile = "copyrightout.txt"
-        self.runWt(["copyright"], outfilename=outfile)
+        self.runAe(["copyright"], outfilename=outfile)
         with open(outfile, 'r') as f:
             text = f.read(1000)
             self.assertTrue('Copyright' in text)
 
 
 if __name__ == '__main__':
-    wttest.run()
+    aetest.run()

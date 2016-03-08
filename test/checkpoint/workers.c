@@ -1,6 +1,6 @@
 /*-
  * Public Domain 2014-2015 MongoDB, Inc.
- * Public Domain 2008-2014 WiredTiger, Inc.
+ * Public Domain 2008-2014 ArchEngine, Inc.
  *
  * This is free and unencumbered software released into the public domain.
  *
@@ -33,10 +33,10 @@ static void *worker(void *);
 
 /*
  * create_table --
- *     Create a WiredTiger table of the configured type for this cookie.
+ *     Create a ArchEngine table of the configured type for this cookie.
  */
 static int
-create_table(WT_SESSION *session, COOKIE *cookie)
+create_table(AE_SESSION *session, COOKIE *cookie)
 {
 	int ret;
 	char *p, *end, config[128];
@@ -63,7 +63,7 @@ create_table(WT_SESSION *session, COOKIE *cookie)
 int
 start_workers(table_type type)
 {
-	WT_SESSION *session;
+	AE_SESSION *session;
 	struct timeval start, stop;
 	double seconds;
 	pthread_t *tids;
@@ -126,7 +126,7 @@ err:	free(tids);
  *	Write operation.
  */
 static inline int
-worker_op(WT_CURSOR *cursor, uint64_t keyno, u_int new_val)
+worker_op(AE_CURSOR *cursor, uint64_t keyno, u_int new_val)
 {
 	int ret;
 	char valuebuf[64];
@@ -135,8 +135,8 @@ worker_op(WT_CURSOR *cursor, uint64_t keyno, u_int new_val)
 	(void)snprintf(valuebuf, sizeof(valuebuf), "%037u", new_val);
 	cursor->set_value(cursor, valuebuf);
 	if ((ret = cursor->insert(cursor)) != 0) {
-		if (ret == WT_ROLLBACK)
-			return (WT_ROLLBACK);
+		if (ret == AE_ROLLBACK)
+			return (AE_ROLLBACK);
 		return (log_print_err("cursor.insert", ret, 1));
 	}
 	return (0);
@@ -151,9 +151,9 @@ worker(void *arg)
 {
 	char tid[128];
 
-	WT_UNUSED(arg);
+	AE_UNUSED(arg);
 
-	__wt_thread_id(tid, sizeof(tid));
+	__ae_thread_id(tid, sizeof(tid));
 	printf("worker thread starting: tid: %s\n", tid);
 
 	(void)real_worker();
@@ -168,18 +168,18 @@ worker(void *arg)
 static int
 real_worker(void)
 {
-	WT_CURSOR **cursors;
-	WT_SESSION *session;
-	WT_RAND_STATE rnd;
+	AE_CURSOR **cursors;
+	AE_SESSION *session;
+	AE_RAND_STATE rnd;
 	u_int i, keyno;
 	int j, ret, t_ret;
 
 	ret = t_ret = 0;
 
-	__wt_random_init(&rnd);
+	__ae_random_init(&rnd);
 
 	if ((cursors = calloc(
-	    (size_t)(g.ntables), sizeof(WT_CURSOR *))) == NULL)
+	    (size_t)(g.ntables), sizeof(AE_CURSOR *))) == NULL)
 		return (log_print_err("malloc", ENOMEM, 1));
 
 	if ((ret = g.conn->open_session(
@@ -201,7 +201,7 @@ real_worker(void)
 			    "real_worker:begin_transaction", ret, 1);
 			goto err;
 		}
-		keyno = __wt_random(&rnd) % g.nkeys + 1;
+		keyno = __ae_random(&rnd) % g.nkeys + 1;
 		for (j = 0; j < g.ntables; j++) {
 			if ((ret = worker_op(cursors[j], keyno, i)) != 0)
 				break;
@@ -213,7 +213,7 @@ real_worker(void)
 				    "real_worker:commit_transaction", ret, 1);
 				goto err;
 			    }
-		} else if (ret == WT_ROLLBACK) {
+		} else if (ret == AE_ROLLBACK) {
 			if ((ret = session->rollback_transaction(
 			   session, NULL)) != 0) {
 				(void)log_print_err(

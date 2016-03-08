@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Public Domain 2014-2015 MongoDB, Inc.
-# Public Domain 2008-2014 WiredTiger, Inc.
+# Public Domain 2008-2014 ArchEngine, Inc.
 #
 # This is free and unencumbered software released into the public domain.
 #
@@ -26,12 +26,12 @@
 # ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 # OTHER DEALINGS IN THE SOFTWARE.
 
-import wiredtiger, wttest
-from wtscenario import check_scenarios
+import archengine, aetest
+from aescenario import check_scenarios
 
 # test_txn01.py
 #    Transactions: basic functionality
-class test_txn01(wttest.WiredTigerTestCase):
+class test_txn01(aetest.ArchEngineTestCase):
     nentries = 1000
     scenarios = check_scenarios([
         ('col-f', dict(uri='file:text_txn01',key_format='r',value_format='S')),
@@ -42,9 +42,9 @@ class test_txn01(wttest.WiredTigerTestCase):
         ('row-t', dict(uri='table:text_txn01',key_format='S',value_format='S')),
     ])
 
-    # Overrides WiredTigerTestCase
+    # Overrides ArchEngineTestCase
     def setUpConnectionOpen(self, dir):
-        conn = wiredtiger.wiredtiger_open(dir, 'create,' +
+        conn = archengine.archengine_open(dir, 'create,' +
                 ('error_prefix="%s: ",' % self.shortid()))
         self.pr(`conn`)
         return conn
@@ -140,7 +140,7 @@ class test_txn01(wttest.WiredTigerTestCase):
 
 
 # Test that read-committed is the default isolation level.
-class test_read_committed_default(wttest.WiredTigerTestCase):
+class test_read_committed_default(aetest.ArchEngineTestCase):
     uri = 'table:test_txn'
 
     # Return the number of records visible to the cursor.
@@ -171,4 +171,4 @@ class test_read_committed_default(wttest.WiredTigerTestCase):
 
 
 if __name__ == '__main__':
-    wttest.run()
+    aetest.run()

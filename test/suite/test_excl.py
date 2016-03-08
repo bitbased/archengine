@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Public Domain 2014-2015 MongoDB, Inc.
-# Public Domain 2008-2014 WiredTiger, Inc.
+# Public Domain 2008-2014 ArchEngine, Inc.
 #
 # This is free and unencumbered software released into the public domain.
 #
@@ -26,11 +26,11 @@
 # ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 # OTHER DEALINGS IN THE SOFTWARE.
 
-import wiredtiger, wttest
-from wtscenario import check_scenarios
+import archengine, aetest
+from aescenario import check_scenarios
 
 # Test session.create with the exclusive configuration.
-class test_create_excl(wttest.WiredTigerTestCase):
+class test_create_excl(aetest.ArchEngineTestCase):
     scenarios = check_scenarios([
         ('file', dict(type='file:')),
         ('table', dict(type='table:'))
@@ -41,9 +41,9 @@ class test_create_excl(wttest.WiredTigerTestCase):
     def test_create_excl(self):
         uri = self.type + 'create_excl'
         self.session.create(uri, "exclusive")
-        self.assertRaises(wiredtiger.WiredTigerError,
+        self.assertRaises(archengine.ArchEngineError,
             lambda: self.session.create(uri, "exclusive"))
 
 
 if __name__ == '__main__':
-    wttest.run()
+    aetest.run()

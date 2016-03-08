@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Public Domain 2014-2015 MongoDB, Inc.
-# Public Domain 2008-2014 WiredTiger, Inc.
+# Public Domain 2008-2014 ArchEngine, Inc.
 #
 # This is free and unencumbered software released into the public domain.
 #
@@ -32,11 +32,11 @@
 
 import fnmatch, os, shutil, run, time
 from suite_subprocess import suite_subprocess
-from wiredtiger import wiredtiger_open, stat, WiredTigerError
-from wtscenario import multiply_scenarios, number_scenarios, check_scenarios
-import wttest
+from archengine import archengine_open, stat, ArchEngineError
+from aescenario import multiply_scenarios, number_scenarios, check_scenarios
+import aetest
 
-class test_cursor08(wttest.WiredTigerTestCase, suite_subprocess):
+class test_cursor08(aetest.ArchEngineTestCase, suite_subprocess):
     logmax = "100K"
     tablename = 'test_cursor08'
     uri = 'table:' + tablename
@@ -55,20 +55,20 @@ class test_cursor08(wttest.WiredTigerTestCase, suite_subprocess):
     ])
     scenarios = number_scenarios(multiply_scenarios('.', reopens, compress))
 
-    # Return the wiredtiger_open extension argument for a shared library.
+    # Return the archengine_open extension argument for a shared library.
     def extensionArg(self, name):
         if name == None or name == 'none':
             return ''
 
         testdir = os.path.dirname(__file__)
-        extdir = os.path.join(run.wt_builddir, 'ext/compressors')
+        extdir = os.path.join(run.ae_builddir, 'ext/compressors')
         extfile = os.path.join(
-            extdir, name, '.libs', 'libwiredtiger_' + name + '.so')
+            extdir, name, '.libs', 'libarchengine_' + name + '.so')
         if not os.path.exists(extfile):
             self.skipTest('compression extension "' + extfile + '" not built')
         return ',extensions=["' + extfile + '"]'
 
-    # Overrides WiredTigerTestCase - add logging
+    # Overrides ArchEngineTestCase - add logging
     def setUpConnectionOpen(self, dir):
         self.home = dir
         self.txn_sync = '(method=dsync,enabled)'
@@ -80,8 +80,8 @@ class test_cursor08(wttest.WiredTigerTestCase, suite_subprocess):
                 self.extensionArg(self.compress)
         # print "Creating conn at '%s' with config '%s'" % (dir, conn_params)
         try:
-            conn = wiredtiger_open(dir, conn_params)
-        except WiredTigerError as e:
+            conn = archengine_open(dir, conn_params)
+        except ArchEngineError as e:
             print "Failed conn at '%s' with config '%s'" % (dir, conn_params)
         self.pr(`conn`)
         self.session2 = conn.open_session()
@@ -122,4 +122,4 @@ class test_cursor08(wttest.WiredTigerTestCase, suite_subprocess):
         self.assertEqual(count, self.nkeys)
 
 if __name__ == '__main__':
-    wttest.run()
+    aetest.run()

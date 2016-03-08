@@ -12,8 +12,8 @@ def print_struct(title, name, base, stats):
     f.write('/*\n')
     f.write(' * Statistics entries for ' + title + '.\n')
     f.write(' */\n')
-    f.write('#define\tWT_' + name.upper() + '_STATS_BASE\t' + str(base) + '\n')
-    f.write('struct __wt_' + name + '_stats {\n')
+    f.write('#define\tAE_' + name.upper() + '_STATS_BASE\t' + str(base) + '\n')
+    f.write('struct __ae_' + name + '_stats {\n')
 
     for l in stats:
         f.write('\tint64_t ' + l.name + ';\n')
@@ -42,12 +42,12 @@ compare_srcfile(tmp_file, '../src/include/stat.h')
 def print_defines_one(capname, base, stats):
     for v, l in enumerate(stats, base):
         f.write('/*! %s */\n' % '\n * '.join(textwrap.wrap(l.desc, 70)))
-        f.write('#define\tWT_STAT_' + capname + '_' + l.name.upper() + "\t" *
-            max(1, 6 - int((len('WT_STAT_' + capname + '_' + l.name)) / 8)) +
+        f.write('#define\tAE_STAT_' + capname + '_' + l.name.upper() + "\t" *
+            max(1, 6 - int((len('AE_STAT_' + capname + '_' + l.name)) / 8)) +
             str(v) + '\n')
 
 def print_defines():
-    '''Print the #defines for the wiredtiger.in file.'''
+    '''Print the #defines for the archengine.in file.'''
     f.write('''
 /*!
  * @name Connection statistics
@@ -80,11 +80,11 @@ def print_defines():
     print_defines_one('JOIN', 3000, join_stats)
     f.write('/*! @} */\n')
 
-# Update the #defines in the wiredtiger.in file.
+# Update the #defines in the archengine.in file.
 tmp_file = '__tmp'
 f = open(tmp_file, 'w')
 skip = 0
-for line in open('../src/include/wiredtiger.in', 'r'):
+for line in open('../src/include/archengine.in', 'r'):
     if not skip:
         f.write(line)
     if line.count('Statistics section: END'):
@@ -96,7 +96,7 @@ for line in open('../src/include/wiredtiger.in', 'r'):
         print_defines()
         f.write('/*\n')
 f.close()
-compare_srcfile(tmp_file, '../src/include/wiredtiger.in')
+compare_srcfile(tmp_file, '../src/include/archengine.in')
 
 def print_func(name, handle, list):
     '''Print the structures/functions for the stat.c file.'''
@@ -108,9 +108,9 @@ def print_func(name, handle, list):
 
     f.write('''
 int
-__wt_stat_''' + name + '''_desc(WT_CURSOR_STAT *cst, int slot, const char **p)
+__ae_stat_''' + name + '''_desc(AE_CURSOR_STAT *cst, int slot, const char **p)
 {
-\tWT_UNUSED(cst);
+\tAE_UNUSED(cst);
 \t*p = __stats_''' + name + '''_desc[slot];
 \treturn (0);
 }
@@ -118,7 +118,7 @@ __wt_stat_''' + name + '''_desc(WT_CURSOR_STAT *cst, int slot, const char **p)
 
     f.write('''
 void
-__wt_stat_''' + name + '_init_single(WT_' + name.upper() + '''_STATS *stats)
+__ae_stat_''' + name + '_init_single(AE_' + name.upper() + '''_STATS *stats)
 {
 \tmemset(stats, 0, sizeof(*stats));
 }
@@ -127,20 +127,20 @@ __wt_stat_''' + name + '_init_single(WT_' + name.upper() + '''_STATS *stats)
     if handle != None:
         f.write('''
 void
-__wt_stat_''' + name + '_init(' + handle + ''' *handle)
+__ae_stat_''' + name + '_init(' + handle + ''' *handle)
 {
 \tint i;
 
-\tfor (i = 0; i < WT_COUNTER_SLOTS; ++i) {
+\tfor (i = 0; i < AE_COUNTER_SLOTS; ++i) {
 \t\thandle->stats[i] = &handle->stat_array[i];
-\t\t__wt_stat_''' + name + '''_init_single(handle->stats[i]);
+\t\t__ae_stat_''' + name + '''_init_single(handle->stats[i]);
 \t}
 }
 ''')
 
     f.write('''
 void
-__wt_stat_''' + name + '_clear_single(WT_' + name.upper() + '''_STATS *stats)
+__ae_stat_''' + name + '_clear_single(AE_' + name.upper() + '''_STATS *stats)
 {
 ''')
     for l in sorted(list):
@@ -153,12 +153,12 @@ __wt_stat_''' + name + '_clear_single(WT_' + name.upper() + '''_STATS *stats)
 
     f.write('''
 void
-__wt_stat_''' + name + '_clear_all(WT_' + name.upper() + '''_STATS **stats)
+__ae_stat_''' + name + '_clear_all(AE_' + name.upper() + '''_STATS **stats)
 {
 \tu_int i;
 
-\tfor (i = 0; i < WT_COUNTER_SLOTS; ++i)
-\t\t__wt_stat_''' + name + '''_clear_single(stats[i]);
+\tfor (i = 0; i < AE_COUNTER_SLOTS; ++i)
+\t\t__ae_stat_''' + name + '''_clear_single(stats[i]);
 }
 ''')
 
@@ -166,8 +166,8 @@ __wt_stat_''' + name + '_clear_all(WT_' + name.upper() + '''_STATS **stats)
     if name == 'dsrc':
         f.write('''
 void
-__wt_stat_''' + name + '''_aggregate_single(
-    WT_''' + name.upper() + '_STATS *from, WT_' + name.upper() + '''_STATS *to)
+__ae_stat_''' + name + '''_aggregate_single(
+    AE_''' + name.upper() + '_STATS *from, AE_' + name.upper() + '''_STATS *to)
 {
 ''')
         for l in sorted(list):
@@ -185,8 +185,8 @@ __wt_stat_''' + name + '''_aggregate_single(
 
     f.write('''
 void
-__wt_stat_''' + name + '''_aggregate(
-    WT_''' + name.upper() + '_STATS **from, WT_' + name.upper() + '''_STATS *to)
+__ae_stat_''' + name + '''_aggregate(
+    AE_''' + name.upper() + '_STATS **from, AE_' + name.upper() + '''_STATS *to)
 {
 ''')
     # Connection level aggregation does not currently have any computation
@@ -200,11 +200,11 @@ __wt_stat_''' + name + '''_aggregate(
         if 'no_aggregate' in l.flags:
             o = '\tto->' + l.name + ' = from[0]->' + l.name + ';\n'
         elif 'max_aggregate' in l.flags:
-            o = '\tif ((v = WT_STAT_READ(from, ' + l.name + ')) >\n' +\
+            o = '\tif ((v = AE_STAT_READ(from, ' + l.name + ')) >\n' +\
                 '\t    to->' + l.name + ')\n' +\
                 '\t\tto->' + l.name + ' = v;\n'
         else:
-            o = '\tto->' + l.name + ' += WT_STAT_READ(from, ' + l.name + ');\n'
+            o = '\tto->' + l.name + ' += AE_STAT_READ(from, ' + l.name + ');\n'
             if len(o) > 72:             # Account for the leading tab.
                 o = o.replace(' += ', ' +=\n\t    ')
         f.write(o)
@@ -213,10 +213,10 @@ __wt_stat_''' + name + '''_aggregate(
 # Write the stat initialization and refresh routines to the stat.c file.
 f = open(tmp_file, 'w')
 f.write('/* DO NOT EDIT: automatically built by dist/stat.py. */\n\n')
-f.write('#include "wt_internal.h"\n')
+f.write('#include "ae_internal.h"\n')
 
-print_func('dsrc', 'WT_DATA_HANDLE', dsrc_stats)
-print_func('connection', 'WT_CONNECTION_IMPL', connection_stats)
+print_func('dsrc', 'AE_DATA_HANDLE', dsrc_stats)
+print_func('connection', 'AE_CONNECTION_IMPL', connection_stats)
 print_func('join', None, join_stats)
 f.close()
 compare_srcfile(tmp_file, '../src/support/stat.c')
@@ -237,7 +237,7 @@ for l in sorted(dsrc_stats):
         scale_info += '    \'' + l.desc + '\',\n'
     if 'no_clear' in l.flags:
         clear_info += '    \'' + l.desc + '\',\n'
-# No join statistics can be captured in wtstats
+# No join statistics can be captured in aestats
 scale_info += ']\n'
 clear_info += ']\n'
 prefix_info = 'prefix_list = [\n'
@@ -255,4 +255,4 @@ f.write(clear_info)
 f.write(prefix_info)
 f.write(group_info)
 f.close()
-compare_srcfile(tmp_file, '../tools/wtstats/stat_data.py')
+compare_srcfile(tmp_file, '../tools/aestats/stat_data.py')

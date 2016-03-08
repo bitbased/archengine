@@ -1,6 +1,6 @@
 /*-
  * Copyright (c) 2014-2015 MongoDB, Inc.
- * Copyright (c) 2008-2014 WiredTiger, Inc.
+ * Copyright (c) 2008-2014 ArchEngine, Inc.
  *	All rights reserved.
  *
  * See the file LICENSE for redistribution information.
@@ -18,33 +18,33 @@ typedef struct {
 		int64_t i;
 		uint64_t u;
 		const char *s;
-		WT_ITEM item;
+		AE_ITEM item;
 	} u;
 	uint32_t size;
 	int8_t havesize;
 	char type;
-} WT_PACK_VALUE;
+} AE_PACK_VALUE;
 
-#define	WT_PACK_VALUE_INIT  { { 0 }, 0, 0, 0 }
-#define	WT_DECL_PACK_VALUE(pv)  WT_PACK_VALUE pv = WT_PACK_VALUE_INIT
+#define	AE_PACK_VALUE_INIT  { { 0 }, 0, 0, 0 }
+#define	AE_DECL_PACK_VALUE(pv)  AE_PACK_VALUE pv = AE_PACK_VALUE_INIT
 
 typedef struct {
-	WT_SESSION_IMPL *session;
+	AE_SESSION_IMPL *session;
 	const char *cur, *end, *orig;
 	unsigned long repeats;
-	WT_PACK_VALUE lastv;
-} WT_PACK;
+	AE_PACK_VALUE lastv;
+} AE_PACK;
 
-#define	WT_PACK_INIT    { NULL, NULL, NULL, NULL, 0, WT_PACK_VALUE_INIT }
-#define	WT_DECL_PACK(pack)  WT_PACK pack = WT_PACK_INIT
+#define	AE_PACK_INIT    { NULL, NULL, NULL, NULL, 0, AE_PACK_VALUE_INIT }
+#define	AE_DECL_PACK(pack)  AE_PACK pack = AE_PACK_INIT
 
 typedef struct {
-	WT_CONFIG config;
+	AE_CONFIG config;
 	char buf[20];
 	int count;
 	bool iskey;
 	int genname;
-} WT_PACK_NAME;
+} AE_PACK_NAME;
 
 /*
  * __pack_initn --
@@ -52,7 +52,7 @@ typedef struct {
  */
 static inline int
 __pack_initn(
-    WT_SESSION_IMPL *session, WT_PACK *pack, const char *fmt, size_t len)
+    AE_SESSION_IMPL *session, AE_PACK *pack, const char *fmt, size_t len)
 {
 	if (*fmt == '@' || *fmt == '<' || *fmt == '>')
 		return (EINVAL);
@@ -71,7 +71,7 @@ __pack_initn(
  *      Initialize a pack iterator with the specified string.
  */
 static inline int
-__pack_init(WT_SESSION_IMPL *session, WT_PACK *pack, const char *fmt)
+__pack_init(AE_SESSION_IMPL *session, AE_PACK *pack, const char *fmt)
 {
 	return (__pack_initn(session, pack, fmt, strlen(fmt)));
 }
@@ -81,14 +81,14 @@ __pack_init(WT_SESSION_IMPL *session, WT_PACK *pack, const char *fmt)
  *      Initialize the name of a pack iterator.
  */
 static inline int
-__pack_name_init(WT_SESSION_IMPL *session, WT_CONFIG_ITEM *names,
-    bool iskey, WT_PACK_NAME *pn)
+__pack_name_init(AE_SESSION_IMPL *session, AE_CONFIG_ITEM *names,
+    bool iskey, AE_PACK_NAME *pn)
 {
-	WT_CLEAR(*pn);
+	AE_CLEAR(*pn);
 	pn->iskey = iskey;
 
 	if (names->str != NULL)
-		WT_RET(__wt_config_subinit(session, &pn->config, names));
+		AE_RET(__ae_config_subinit(session, &pn->config, names));
 	else
 		pn->genname = 1;
 
@@ -100,21 +100,21 @@ __pack_name_init(WT_SESSION_IMPL *session, WT_CONFIG_ITEM *names,
  *      Get the next field type from a pack iterator.
  */
 static inline int
-__pack_name_next(WT_PACK_NAME *pn, WT_CONFIG_ITEM *name)
+__pack_name_next(AE_PACK_NAME *pn, AE_CONFIG_ITEM *name)
 {
-	WT_CONFIG_ITEM ignore;
+	AE_CONFIG_ITEM ignore;
 
 	if (pn->genname) {
 		(void)snprintf(pn->buf, sizeof(pn->buf),
 		    (pn->iskey ? "key%d" : "value%d"), pn->count);
-		WT_CLEAR(*name);
+		AE_CLEAR(*name);
 		name->str = pn->buf;
 		name->len = strlen(pn->buf);
-		name->type = WT_CONFIG_ITEM_STRING;
+		name->type = AE_CONFIG_ITEM_STRING;
 		pn->count++;
 	}
 	else
-		WT_RET(__wt_config_next(&pn->config, name, &ignore));
+		AE_RET(__ae_config_next(&pn->config, name, &ignore));
 
 	return (0);
 }
@@ -124,7 +124,7 @@ __pack_name_next(WT_PACK_NAME *pn, WT_CONFIG_ITEM *name)
  *      Next pack iterator.
  */
 static inline int
-__pack_next(WT_PACK *pack, WT_PACK_VALUE *pv)
+__pack_next(AE_PACK *pack, AE_PACK_VALUE *pv)
 {
 	char *endsize;
 
@@ -135,11 +135,11 @@ __pack_next(WT_PACK *pack, WT_PACK_VALUE *pv)
 	}
 
 next:	if (pack->cur == pack->end)
-		return (WT_NOTFOUND);
+		return (AE_NOTFOUND);
 
 	if (isdigit(*pack->cur)) {
 		pv->havesize = 1;
-		pv->size = WT_STORE_SIZE(strtoul(pack->cur, &endsize, 10));
+		pv->size = AE_STORE_SIZE(strtoul(pack->cur, &endsize, 10));
 		pack->cur = endsize;
 	} else {
 		pv->havesize = 0;
@@ -156,7 +156,7 @@ next:	if (pack->cur == pack->end)
 		return (0);
 	case 't':
 		if (pv->size < 1 || pv->size > 8)
-			WT_RET_MSG(pack->session, EINVAL,
+			AE_RET_MSG(pack->session, EINVAL,
 			    "Bitfield sizes must be between 1 and 8 bits "
 			    "in format '%.*s'",
 			    (int)(pack->end - pack->orig), pack->orig);
@@ -186,15 +186,15 @@ next:	if (pack->cur == pack->end)
 		pack->lastv = *pv;
 		return (0);
 	default:
-		WT_RET_MSG(pack->session, EINVAL,
+		AE_RET_MSG(pack->session, EINVAL,
 		   "Invalid type '%c' found in format '%.*s'",
 		    pv->type, (int)(pack->end - pack->orig), pack->orig);
 	}
 
 }
 
-#define	WT_PACK_GET(session, pv, ap) do {				\
-	WT_ITEM *__item;						\
+#define	AE_PACK_GET(session, pv, ap) do {				\
+	AE_ITEM *__item;						\
 	switch (pv.type) {						\
 	case 'x':							\
 		break;							\
@@ -204,7 +204,7 @@ next:	if (pack->cur == pack->end)
 		break;							\
 	case 'U':							\
 	case 'u':							\
-		__item = va_arg(ap, WT_ITEM *);				\
+		__item = va_arg(ap, AE_ITEM *);				\
 		pv.u.item.data = __item->data;				\
 		pv.u.item.size = __item->size;				\
 		break;							\
@@ -234,7 +234,7 @@ next:	if (pack->cur == pack->end)
 		pv.u.u = va_arg(ap, uint64_t);				\
 		break;							\
 	/* User format strings have already been validated. */		\
-	WT_ILLEGAL_VALUE(session);					\
+	AE_ILLEGAL_VALUE(session);					\
 	}								\
 } while (0)
 
@@ -243,7 +243,7 @@ next:	if (pack->cur == pack->end)
  *      Get the size of a packed value.
  */
 static inline size_t
-__pack_size(WT_SESSION_IMPL *session, WT_PACK_VALUE *pv)
+__pack_size(AE_SESSION_IMPL *session, AE_PACK_VALUE *pv)
 {
 	size_t s, pad;
 
@@ -258,9 +258,9 @@ __pack_size(WT_SESSION_IMPL *session, WT_PACK_VALUE *pv)
 			ssize_t len;
 
 			/* The string was previously validated. */
-			len = __wt_json_strlen(pv->u.item.data,
+			len = __ae_json_strlen(pv->u.item.data,
 			    pv->u.item.size);
-			WT_ASSERT(session, len >= 0);
+			AE_ASSERT(session, len >= 0);
 			s = (size_t)len + 1;
 		}
 		return (s);
@@ -280,7 +280,7 @@ __pack_size(WT_SESSION_IMPL *session, WT_PACK_VALUE *pv)
 		else if (pv->havesize)
 			pad = pv->size - s;
 		if (pv->type == 'U')
-			s += __wt_vsize_uint(s + pad);
+			s += __ae_vsize_uint(s + pad);
 		return (s + pad);
 	case 'b':
 	case 'B':
@@ -290,18 +290,18 @@ __pack_size(WT_SESSION_IMPL *session, WT_PACK_VALUE *pv)
 	case 'i':
 	case 'l':
 	case 'q':
-		return (__wt_vsize_int(pv->u.i));
+		return (__ae_vsize_int(pv->u.i));
 	case 'H':
 	case 'I':
 	case 'L':
 	case 'Q':
 	case 'r':
-		return (__wt_vsize_uint(pv->u.u));
+		return (__ae_vsize_uint(pv->u.u));
 	case 'R':
 		return (sizeof(uint64_t));
 	}
 
-	__wt_err(session, EINVAL, "unknown pack-value type: %c", (int)pv->type);
+	__ae_err(session, EINVAL, "unknown pack-value type: %c", (int)pv->type);
 	return ((size_t)-1);
 }
 
@@ -311,19 +311,19 @@ __pack_size(WT_SESSION_IMPL *session, WT_PACK_VALUE *pv)
  */
 static inline int
 __pack_write(
-    WT_SESSION_IMPL *session, WT_PACK_VALUE *pv, uint8_t **pp, size_t maxlen)
+    AE_SESSION_IMPL *session, AE_PACK_VALUE *pv, uint8_t **pp, size_t maxlen)
 {
 	uint8_t *oldp;
 	size_t s, pad;
 
 	switch (pv->type) {
 	case 'x':
-		WT_SIZE_CHECK_PACK(pv->size, maxlen);
+		AE_SIZE_CHECK_PACK(pv->size, maxlen);
 		memset(*pp, 0, pv->size);
 		*pp += pv->size;
 		break;
 	case 's':
-		WT_SIZE_CHECK_PACK(pv->size, maxlen);
+		AE_SIZE_CHECK_PACK(pv->size, maxlen);
 		memcpy(*pp, pv->u.s, pv->size);
 		*pp += pv->size;
 		break;
@@ -337,7 +337,7 @@ __pack_write(
 				pad = pv->size - s;
 		} else
 			pad = 1;
-		WT_SIZE_CHECK_PACK(s + pad, maxlen);
+		AE_SIZE_CHECK_PACK(s + pad, maxlen);
 		if (s > 0)
 			memcpy(*pp, pv->u.s, s);
 		*pp += s;
@@ -358,12 +358,12 @@ __pack_write(
 			pad = 1;
 		if (s > 0) {
 			oldp = *pp;
-			WT_RET(__wt_json_strncpy((char **)pp, maxlen,
+			AE_RET(__ae_json_strncpy((char **)pp, maxlen,
 			    pv->u.item.data, s));
 			maxlen -= (size_t)(*pp - oldp);
 		}
 		if (pad > 0) {
-			WT_SIZE_CHECK_PACK(pad, maxlen);
+			AE_SIZE_CHECK_PACK(pad, maxlen);
 			memset(*pp, 0, pad);
 			*pp += pad;
 		}
@@ -382,11 +382,11 @@ __pack_write(
 			 * Check that there is at least one byte available: the
 			 * low-level routines treat zero length as unchecked.
 			 */
-			WT_SIZE_CHECK_PACK(1, maxlen);
-			WT_RET(__wt_vpack_uint(pp, maxlen, s + pad));
+			AE_SIZE_CHECK_PACK(1, maxlen);
+			AE_RET(__ae_vpack_uint(pp, maxlen, s + pad));
 			maxlen -= (size_t)(*pp - oldp);
 		}
-		WT_SIZE_CHECK_PACK(s + pad, maxlen);
+		AE_SIZE_CHECK_PACK(s + pad, maxlen);
 		if (s > 0)
 			memcpy(*pp, pv->u.item.data, s);
 		*pp += s;
@@ -397,13 +397,13 @@ __pack_write(
 		break;
 	case 'b':
 		/* Translate to maintain ordering with the sign bit. */
-		WT_SIZE_CHECK_PACK(1, maxlen);
+		AE_SIZE_CHECK_PACK(1, maxlen);
 		**pp = (uint8_t)(pv->u.i + 0x80);
 		*pp += 1;
 		break;
 	case 'B':
 	case 't':
-		WT_SIZE_CHECK_PACK(1, maxlen);
+		AE_SIZE_CHECK_PACK(1, maxlen);
 		**pp = (uint8_t)pv->u.u;
 		*pp += 1;
 		break;
@@ -415,8 +415,8 @@ __pack_write(
 		 * Check that there is at least one byte available: the
 		 * low-level routines treat zero length as unchecked.
 		 */
-		WT_SIZE_CHECK_PACK(1, maxlen);
-		WT_RET(__wt_vpack_int(pp, maxlen, pv->u.i));
+		AE_SIZE_CHECK_PACK(1, maxlen);
+		AE_RET(__ae_vpack_int(pp, maxlen, pv->u.i));
 		break;
 	case 'H':
 	case 'I':
@@ -427,16 +427,16 @@ __pack_write(
 		 * Check that there is at least one byte available: the
 		 * low-level routines treat zero length as unchecked.
 		 */
-		WT_SIZE_CHECK_PACK(1, maxlen);
-		WT_RET(__wt_vpack_uint(pp, maxlen, pv->u.u));
+		AE_SIZE_CHECK_PACK(1, maxlen);
+		AE_RET(__ae_vpack_uint(pp, maxlen, pv->u.u));
 		break;
 	case 'R':
-		WT_SIZE_CHECK_PACK(sizeof(uint64_t), maxlen);
+		AE_SIZE_CHECK_PACK(sizeof(uint64_t), maxlen);
 		*(uint64_t *)*pp = pv->u.u;
 		*pp += sizeof(uint64_t);
 		break;
 	default:
-		WT_RET_MSG(session, EINVAL,
+		AE_RET_MSG(session, EINVAL,
 		    "unknown pack-value type: %c", (int)pv->type);
 	}
 
@@ -448,14 +448,14 @@ __pack_write(
  *      Read a packed value from a buffer.
  */
 static inline int
-__unpack_read(WT_SESSION_IMPL *session,
-    WT_PACK_VALUE *pv, const uint8_t **pp, size_t maxlen)
+__unpack_read(AE_SESSION_IMPL *session,
+    AE_PACK_VALUE *pv, const uint8_t **pp, size_t maxlen)
 {
 	size_t s;
 
 	switch (pv->type) {
 	case 'x':
-		WT_SIZE_CHECK_UNPACK(pv->size, maxlen);
+		AE_SIZE_CHECK_UNPACK(pv->size, maxlen);
 		*pp += pv->size;
 		break;
 	case 's':
@@ -466,7 +466,7 @@ __unpack_read(WT_SESSION_IMPL *session,
 			s = strlen((const char *)*pp) + 1;
 		if (s > 0)
 			pv->u.s = (const char *)*pp;
-		WT_SIZE_CHECK_UNPACK(s, maxlen);
+		AE_SIZE_CHECK_UNPACK(s, maxlen);
 		*pp += s;
 		break;
 	case 'U':
@@ -474,8 +474,8 @@ __unpack_read(WT_SESSION_IMPL *session,
 		 * Check that there is at least one byte available: the
 		 * low-level routines treat zero length as unchecked.
 		 */
-		WT_SIZE_CHECK_UNPACK(1, maxlen);
-		WT_RET(__wt_vunpack_uint(pp, maxlen, &pv->u.u));
+		AE_SIZE_CHECK_UNPACK(1, maxlen);
+		AE_RET(__ae_vunpack_uint(pp, maxlen, &pv->u.u));
 		/* FALLTHROUGH */
 	case 'u':
 		if (pv->havesize)
@@ -484,19 +484,19 @@ __unpack_read(WT_SESSION_IMPL *session,
 			s = (size_t)pv->u.u;
 		else
 			s = maxlen;
-		WT_SIZE_CHECK_UNPACK(s, maxlen);
+		AE_SIZE_CHECK_UNPACK(s, maxlen);
 		pv->u.item.data = *pp;
 		pv->u.item.size = s;
 		*pp += s;
 		break;
 	case 'b':
 		/* Translate to maintain ordering with the sign bit. */
-		WT_SIZE_CHECK_UNPACK(1, maxlen);
+		AE_SIZE_CHECK_UNPACK(1, maxlen);
 		pv->u.i = (int8_t)(*(*pp)++ - 0x80);
 		break;
 	case 'B':
 	case 't':
-		WT_SIZE_CHECK_UNPACK(1, maxlen);
+		AE_SIZE_CHECK_UNPACK(1, maxlen);
 		pv->u.u = *(*pp)++;
 		break;
 	case 'h':
@@ -507,8 +507,8 @@ __unpack_read(WT_SESSION_IMPL *session,
 		 * Check that there is at least one byte available: the
 		 * low-level routines treat zero length as unchecked.
 		 */
-		WT_SIZE_CHECK_UNPACK(1, maxlen);
-		WT_RET(__wt_vunpack_int(pp, maxlen, &pv->u.i));
+		AE_SIZE_CHECK_UNPACK(1, maxlen);
+		AE_RET(__ae_vunpack_int(pp, maxlen, &pv->u.i));
 		break;
 	case 'H':
 	case 'I':
@@ -519,24 +519,24 @@ __unpack_read(WT_SESSION_IMPL *session,
 		 * Check that there is at least one byte available: the
 		 * low-level routines treat zero length as unchecked.
 		 */
-		WT_SIZE_CHECK_UNPACK(1, maxlen);
-		WT_RET(__wt_vunpack_uint(pp, maxlen, &pv->u.u));
+		AE_SIZE_CHECK_UNPACK(1, maxlen);
+		AE_RET(__ae_vunpack_uint(pp, maxlen, &pv->u.u));
 		break;
 	case 'R':
-		WT_SIZE_CHECK_UNPACK(sizeof(uint64_t), maxlen);
+		AE_SIZE_CHECK_UNPACK(sizeof(uint64_t), maxlen);
 		pv->u.u = *(uint64_t *)*pp;
 		*pp += sizeof(uint64_t);
 		break;
 	default:
-		WT_RET_MSG(session, EINVAL,
+		AE_RET_MSG(session, EINVAL,
 		    "unknown pack-value type: %c", (int)pv->type);
 	}
 
 	return (0);
 }
 
-#define	WT_UNPACK_PUT(session, pv, ap) do {				\
-	WT_ITEM *__item;						\
+#define	AE_UNPACK_PUT(session, pv, ap) do {				\
+	AE_ITEM *__item;						\
 	switch (pv.type) {						\
 	case 'x':							\
 		break;							\
@@ -546,7 +546,7 @@ __unpack_read(WT_SESSION_IMPL *session,
 		break;							\
 	case 'U':							\
 	case 'u':							\
-		__item = va_arg(ap, WT_ITEM *);				\
+		__item = va_arg(ap, AE_ITEM *);				\
 		__item->data = pv.u.item.data;				\
 		__item->size = pv.u.item.size;				\
 		break;							\
@@ -580,21 +580,21 @@ __unpack_read(WT_SESSION_IMPL *session,
 		*va_arg(ap, uint64_t *) = pv.u.u;			\
 		break;							\
 	/* User format strings have already been validated. */		\
-	WT_ILLEGAL_VALUE(session);					\
+	AE_ILLEGAL_VALUE(session);					\
 	}								\
 } while (0)
 
 /*
- * __wt_struct_packv --
+ * __ae_struct_packv --
  *	Pack a byte string (va_list version).
  */
 static inline int
-__wt_struct_packv(WT_SESSION_IMPL *session,
+__ae_struct_packv(AE_SESSION_IMPL *session,
     void *buffer, size_t size, const char *fmt, va_list ap)
 {
-	WT_DECL_PACK_VALUE(pv);
-	WT_DECL_RET;
-	WT_PACK pack;
+	AE_DECL_PACK_VALUE(pv);
+	AE_DECL_RET;
+	AE_PACK pack;
 	uint8_t *p, *end;
 
 	p = buffer;
@@ -602,47 +602,47 @@ __wt_struct_packv(WT_SESSION_IMPL *session,
 
 	if (fmt[0] != '\0' && fmt[1] == '\0') {
 		pv.type = fmt[0];
-		WT_PACK_GET(session, pv, ap);
+		AE_PACK_GET(session, pv, ap);
 		return (__pack_write(session, &pv, &p, size));
 	}
 
-	WT_RET(__pack_init(session, &pack, fmt));
+	AE_RET(__pack_init(session, &pack, fmt));
 	while ((ret = __pack_next(&pack, &pv)) == 0) {
-		WT_PACK_GET(session, pv, ap);
-		WT_RET(__pack_write(session, &pv, &p, (size_t)(end - p)));
+		AE_PACK_GET(session, pv, ap);
+		AE_RET(__pack_write(session, &pv, &p, (size_t)(end - p)));
 	}
 
 	/* Be paranoid - __pack_write should never overflow. */
-	WT_ASSERT(session, p <= end);
+	AE_ASSERT(session, p <= end);
 
-	if (ret != WT_NOTFOUND)
+	if (ret != AE_NOTFOUND)
 		return (ret);
 
 	return (0);
 }
 
 /*
- * __wt_struct_sizev --
+ * __ae_struct_sizev --
  *	Calculate the size of a packed byte string (va_list version).
  */
 static inline int
-__wt_struct_sizev(
-    WT_SESSION_IMPL *session, size_t *sizep, const char *fmt, va_list ap)
+__ae_struct_sizev(
+    AE_SESSION_IMPL *session, size_t *sizep, const char *fmt, va_list ap)
 {
-	WT_DECL_PACK_VALUE(pv);
-	WT_PACK pack;
+	AE_DECL_PACK_VALUE(pv);
+	AE_PACK pack;
 	size_t total;
 
 	if (fmt[0] != '\0' && fmt[1] == '\0') {
 		pv.type = fmt[0];
-		WT_PACK_GET(session, pv, ap);
+		AE_PACK_GET(session, pv, ap);
 		*sizep = __pack_size(session, &pv);
 		return (0);
 	}
 
-	WT_RET(__pack_init(session, &pack, fmt));
+	AE_RET(__pack_init(session, &pack, fmt));
 	for (total = 0; __pack_next(&pack, &pv) == 0;) {
-		WT_PACK_GET(session, pv, ap);
+		AE_PACK_GET(session, pv, ap);
 		total += __pack_size(session, &pv);
 	}
 	*sizep = total;
@@ -650,16 +650,16 @@ __wt_struct_sizev(
 }
 
 /*
- * __wt_struct_unpackv --
+ * __ae_struct_unpackv --
  *	Unpack a byte string (va_list version).
  */
 static inline int
-__wt_struct_unpackv(WT_SESSION_IMPL *session,
+__ae_struct_unpackv(AE_SESSION_IMPL *session,
     const void *buffer, size_t size, const char *fmt, va_list ap)
 {
-	WT_DECL_PACK_VALUE(pv);
-	WT_DECL_RET;
-	WT_PACK pack;
+	AE_DECL_PACK_VALUE(pv);
+	AE_DECL_RET;
+	AE_PACK pack;
 	const uint8_t *p, *end;
 
 	p = buffer;
@@ -669,48 +669,48 @@ __wt_struct_unpackv(WT_SESSION_IMPL *session,
 		pv.type = fmt[0];
 		pv.size = 1;
 		if ((ret = __unpack_read(session, &pv, &p, size)) == 0)
-			WT_UNPACK_PUT(session, pv, ap);
+			AE_UNPACK_PUT(session, pv, ap);
 		return (0);
 	}
 
-	WT_RET(__pack_init(session, &pack, fmt));
+	AE_RET(__pack_init(session, &pack, fmt));
 	while ((ret = __pack_next(&pack, &pv)) == 0) {
-		WT_RET(__unpack_read(session, &pv, &p, (size_t)(end - p)));
-		WT_UNPACK_PUT(session, pv, ap);
+		AE_RET(__unpack_read(session, &pv, &p, (size_t)(end - p)));
+		AE_UNPACK_PUT(session, pv, ap);
 	}
 
 	/* Be paranoid - __pack_write should never overflow. */
-	WT_ASSERT(session, p <= end);
+	AE_ASSERT(session, p <= end);
 
-	if (ret != WT_NOTFOUND)
+	if (ret != AE_NOTFOUND)
 		return (ret);
 
 	return (0);
 }
 
 /*
- * __wt_struct_size_adjust --
+ * __ae_struct_size_adjust --
  *	Adjust the size field for a packed structure.
  *
  *      Sometimes we want to include the size as a field in a packed structure.
- *      This is done by calling __wt_struct_size with the expected format and
+ *      This is done by calling __ae_struct_size with the expected format and
  *      a size of zero.  Then we want to pack the structure using the final
  *      size.  This function adjusts the size appropriately (taking into
  *      account the size of the final size or the size field itself).
  */
 static inline void
-__wt_struct_size_adjust(WT_SESSION_IMPL *session, size_t *sizep)
+__ae_struct_size_adjust(AE_SESSION_IMPL *session, size_t *sizep)
 {
 	size_t curr_size = *sizep;
 	size_t field_size, prev_field_size = 1;
 
-	while ((field_size = __wt_vsize_uint(curr_size)) != prev_field_size) {
+	while ((field_size = __ae_vsize_uint(curr_size)) != prev_field_size) {
 		curr_size += field_size - prev_field_size;
 		prev_field_size = field_size;
 	}
 
 	/* Make sure the field size we calculated matches the adjusted size. */
-	WT_ASSERT(session, field_size == __wt_vsize_uint(curr_size));
+	AE_ASSERT(session, field_size == __ae_vsize_uint(curr_size));
 
 	*sizep = curr_size;
 }

@@ -1,6 +1,6 @@
 /*-
  * Copyright (c) 2014-2015 MongoDB, Inc.
- * Copyright (c) 2008-2014 WiredTiger, Inc.
+ * Copyright (c) 2008-2014 ArchEngine, Inc.
  *	All rights reserved.
  *
  * See the file LICENSE for redistribution information.
@@ -11,7 +11,7 @@
  *	Confirm the page's write generation number won't wrap.
  */
 static inline int
-__page_write_gen_wrapped_check(WT_PAGE *page)
+__page_write_gen_wrapped_check(AE_PAGE *page)
 {
 	/*
 	 * Check to see if the page's write generation is about to wrap (wildly
@@ -26,23 +26,23 @@ __page_write_gen_wrapped_check(WT_PAGE *page)
 	 * completed their modification.
 	 */
 	return (page->modify->write_gen >
-	    UINT32_MAX - WT_MILLION ? WT_RESTART : 0);
+	    UINT32_MAX - AE_MILLION ? AE_RESTART : 0);
 }
 
 /*
  * __insert_simple_func --
- *	Worker function to add a WT_INSERT entry to the middle of a skiplist.
+ *	Worker function to add a AE_INSERT entry to the middle of a skiplist.
  */
 static inline int
-__insert_simple_func(WT_SESSION_IMPL *session,
-    WT_INSERT ***ins_stack, WT_INSERT *new_ins, u_int skipdepth)
+__insert_simple_func(AE_SESSION_IMPL *session,
+    AE_INSERT ***ins_stack, AE_INSERT *new_ins, u_int skipdepth)
 {
 	u_int i;
 
-	WT_UNUSED(session);
+	AE_UNUSED(session);
 
 	/*
-	 * Update the skiplist elements referencing the new WT_INSERT item.
+	 * Update the skiplist elements referencing the new AE_INSERT item.
 	 * If we fail connecting one of the upper levels in the skiplist,
 	 * return success: the levels we updated are correct and sufficient.
 	 * Even though we don't get the benefit of the memory we allocated,
@@ -54,10 +54,10 @@ __insert_simple_func(WT_SESSION_IMPL *session,
 	 * read the old value multiple times.
 	 */
 	for (i = 0; i < skipdepth; i++) {
-		WT_INSERT *old_ins = *ins_stack[i];
+		AE_INSERT *old_ins = *ins_stack[i];
 		if (old_ins != new_ins->next[i] ||
-		    !__wt_atomic_cas_ptr(ins_stack[i], old_ins, new_ins))
-			return (i == 0 ? WT_RESTART : 0);
+		    !__ae_atomic_cas_ptr(ins_stack[i], old_ins, new_ins))
+			return (i == 0 ? AE_RESTART : 0);
 	}
 
 	return (0);
@@ -65,19 +65,19 @@ __insert_simple_func(WT_SESSION_IMPL *session,
 
 /*
  * __insert_serial_func --
- *	Worker function to add a WT_INSERT entry to a skiplist.
+ *	Worker function to add a AE_INSERT entry to a skiplist.
  */
 static inline int
-__insert_serial_func(WT_SESSION_IMPL *session, WT_INSERT_HEAD *ins_head,
-    WT_INSERT ***ins_stack, WT_INSERT *new_ins, u_int skipdepth)
+__insert_serial_func(AE_SESSION_IMPL *session, AE_INSERT_HEAD *ins_head,
+    AE_INSERT ***ins_stack, AE_INSERT *new_ins, u_int skipdepth)
 {
 	u_int i;
 
 	/* The cursor should be positioned. */
-	WT_ASSERT(session, ins_stack[0] != NULL);
+	AE_ASSERT(session, ins_stack[0] != NULL);
 
 	/*
-	 * Update the skiplist elements referencing the new WT_INSERT item.
+	 * Update the skiplist elements referencing the new AE_INSERT item.
 	 *
 	 * Confirm we are still in the expected position, and no item has been
 	 * added where our insert belongs.  If we fail connecting one of the
@@ -91,10 +91,10 @@ __insert_serial_func(WT_SESSION_IMPL *session, WT_INSERT_HEAD *ins_head,
 	 * read the old value multiple times.
 	 */
 	for (i = 0; i < skipdepth; i++) {
-		WT_INSERT *old_ins = *ins_stack[i];
+		AE_INSERT *old_ins = *ins_stack[i];
 		if (old_ins != new_ins->next[i] ||
-		    !__wt_atomic_cas_ptr(ins_stack[i], old_ins, new_ins))
-			return (i == 0 ? WT_RESTART : 0);
+		    !__ae_atomic_cas_ptr(ins_stack[i], old_ins, new_ins))
+			return (i == 0 ? AE_RESTART : 0);
 		if (ins_head->tail[i] == NULL ||
 		    ins_stack[i] == &ins_head->tail[i]->next[i])
 			ins_head->tail[i] = new_ins;
@@ -106,14 +106,14 @@ __insert_serial_func(WT_SESSION_IMPL *session, WT_INSERT_HEAD *ins_head,
 /*
  * __col_append_serial_func --
  *	Worker function to allocate a record number as necessary, then add a
- * WT_INSERT entry to a skiplist.
+ * AE_INSERT entry to a skiplist.
  */
 static inline int
-__col_append_serial_func(WT_SESSION_IMPL *session, WT_INSERT_HEAD *ins_head,
-    WT_INSERT ***ins_stack, WT_INSERT *new_ins, uint64_t *recnop,
+__col_append_serial_func(AE_SESSION_IMPL *session, AE_INSERT_HEAD *ins_head,
+    AE_INSERT ***ins_stack, AE_INSERT *new_ins, uint64_t *recnop,
     u_int skipdepth)
 {
-	WT_BTREE *btree;
+	AE_BTREE *btree;
 	uint64_t recno;
 	u_int i;
 
@@ -123,17 +123,17 @@ __col_append_serial_func(WT_SESSION_IMPL *session, WT_INSERT_HEAD *ins_head,
 	 * If the application didn't specify a record number, allocate a new one
 	 * and set up for an append.
 	 */
-	if ((recno = WT_INSERT_RECNO(new_ins)) == WT_RECNO_OOB) {
-		recno = WT_INSERT_RECNO(new_ins) = btree->last_recno + 1;
-		WT_ASSERT(session, WT_SKIP_LAST(ins_head) == NULL ||
-		    recno > WT_INSERT_RECNO(WT_SKIP_LAST(ins_head)));
+	if ((recno = AE_INSERT_RECNO(new_ins)) == AE_RECNO_OOB) {
+		recno = AE_INSERT_RECNO(new_ins) = btree->last_recno + 1;
+		AE_ASSERT(session, AE_SKIP_LAST(ins_head) == NULL ||
+		    recno > AE_INSERT_RECNO(AE_SKIP_LAST(ins_head)));
 		for (i = 0; i < skipdepth; i++)
 			ins_stack[i] = ins_head->tail[i] == NULL ?
 			    &ins_head->head[i] : &ins_head->tail[i]->next[i];
 	}
 
-	/* Confirm position and insert the new WT_INSERT item. */
-	WT_RET(__insert_serial_func(
+	/* Confirm position and insert the new AE_INSERT item. */
+	AE_RET(__insert_serial_func(
 	    session, ins_head, ins_stack, new_ins, skipdepth));
 
 	/*
@@ -148,32 +148,32 @@ __col_append_serial_func(WT_SESSION_IMPL *session, WT_INSERT_HEAD *ins_head,
 }
 
 /*
- * __wt_col_append_serial --
+ * __ae_col_append_serial --
  *	Append a new column-store entry.
  */
 static inline int
-__wt_col_append_serial(WT_SESSION_IMPL *session, WT_PAGE *page,
-    WT_INSERT_HEAD *ins_head, WT_INSERT ***ins_stack, WT_INSERT **new_insp,
+__ae_col_append_serial(AE_SESSION_IMPL *session, AE_PAGE *page,
+    AE_INSERT_HEAD *ins_head, AE_INSERT ***ins_stack, AE_INSERT **new_insp,
     size_t new_ins_size, uint64_t *recnop, u_int skipdepth)
 {
-	WT_INSERT *new_ins = *new_insp;
-	WT_DECL_RET;
+	AE_INSERT *new_ins = *new_insp;
+	AE_DECL_RET;
 
 	/* Check for page write generation wrap. */
-	WT_RET(__page_write_gen_wrapped_check(page));
+	AE_RET(__page_write_gen_wrapped_check(page));
 
 	/* Clear references to memory we now own and must free on error. */
 	*new_insp = NULL;
 
 	/* Acquire the page's spinlock, call the worker function. */
-	WT_PAGE_LOCK(session, page);
+	AE_PAGE_LOCK(session, page);
 	ret = __col_append_serial_func(
 	    session, ins_head, ins_stack, new_ins, recnop, skipdepth);
-	WT_PAGE_UNLOCK(session, page);
+	AE_PAGE_UNLOCK(session, page);
 
 	if (ret != 0) {
 		/* Free unused memory on error. */
-		__wt_free(session, new_ins);
+		__ae_free(session, new_ins);
 		return (ret);
 	}
 
@@ -183,30 +183,30 @@ __wt_col_append_serial(WT_SESSION_IMPL *session, WT_PAGE *page,
 	 * any running transaction, and we're a running transaction, which means
 	 * there can be no corresponding delete until we complete.
 	 */
-	__wt_cache_page_inmem_incr(session, page, new_ins_size);
+	__ae_cache_page_inmem_incr(session, page, new_ins_size);
 
 	/* Mark the page dirty after updating the footprint. */
-	__wt_page_modify_set(session, page);
+	__ae_page_modify_set(session, page);
 
 	return (0);
 }
 
 /*
- * __wt_insert_serial --
+ * __ae_insert_serial --
  *	Insert a row or column-store entry.
  */
 static inline int
-__wt_insert_serial(WT_SESSION_IMPL *session, WT_PAGE *page,
-    WT_INSERT_HEAD *ins_head, WT_INSERT ***ins_stack, WT_INSERT **new_insp,
+__ae_insert_serial(AE_SESSION_IMPL *session, AE_PAGE *page,
+    AE_INSERT_HEAD *ins_head, AE_INSERT ***ins_stack, AE_INSERT **new_insp,
     size_t new_ins_size, u_int skipdepth)
 {
-	WT_INSERT *new_ins = *new_insp;
-	WT_DECL_RET;
+	AE_INSERT *new_ins = *new_insp;
+	AE_DECL_RET;
 	u_int i;
 	bool simple;
 
 	/* Check for page write generation wrap. */
-	WT_RET(__page_write_gen_wrapped_check(page));
+	AE_RET(__page_write_gen_wrapped_check(page));
 
 	/* Clear references to memory we now own and must free on error. */
 	*new_insp = NULL;
@@ -220,15 +220,15 @@ __wt_insert_serial(WT_SESSION_IMPL *session, WT_PAGE *page,
 		ret = __insert_simple_func(
 		    session, ins_stack, new_ins, skipdepth);
 	else {
-		WT_PAGE_LOCK(session, page);
+		AE_PAGE_LOCK(session, page);
 		ret = __insert_serial_func(
 		    session, ins_head, ins_stack, new_ins, skipdepth);
-		WT_PAGE_UNLOCK(session, page);
+		AE_PAGE_UNLOCK(session, page);
 	}
 
 	if (ret != 0) {
 		/* Free unused memory on error. */
-		__wt_free(session, new_ins);
+		__ae_free(session, new_ins);
 		return (ret);
 	}
 
@@ -238,28 +238,28 @@ __wt_insert_serial(WT_SESSION_IMPL *session, WT_PAGE *page,
 	 * any running transaction, and we're a running transaction, which means
 	 * there can be no corresponding delete until we complete.
 	 */
-	__wt_cache_page_inmem_incr(session, page, new_ins_size);
+	__ae_cache_page_inmem_incr(session, page, new_ins_size);
 
 	/* Mark the page dirty after updating the footprint. */
-	__wt_page_modify_set(session, page);
+	__ae_page_modify_set(session, page);
 
 	return (0);
 }
 
 /*
- * __wt_update_serial --
+ * __ae_update_serial --
  *	Update a row or column-store entry.
  */
 static inline int
-__wt_update_serial(WT_SESSION_IMPL *session, WT_PAGE *page,
-    WT_UPDATE **srch_upd, WT_UPDATE **updp, size_t upd_size)
+__ae_update_serial(AE_SESSION_IMPL *session, AE_PAGE *page,
+    AE_UPDATE **srch_upd, AE_UPDATE **updp, size_t upd_size)
 {
-	WT_DECL_RET;
-	WT_UPDATE *obsolete, *upd = *updp;
+	AE_DECL_RET;
+	AE_UPDATE *obsolete, *upd = *updp;
 	uint64_t txn;
 
 	/* Check for page write generation wrap. */
-	WT_RET(__page_write_gen_wrapped_check(page));
+	AE_RET(__page_write_gen_wrapped_check(page));
 
 	/* Clear references to memory we now own and must free on error. */
 	*updp = NULL;
@@ -272,11 +272,11 @@ __wt_update_serial(WT_SESSION_IMPL *session, WT_PAGE *page,
 	 * Swap the update into place.  If that fails, a new update was added
 	 * after our search, we raced.  Check if our update is still permitted.
 	 */
-	while (!__wt_atomic_cas_ptr(srch_upd, upd->next, upd)) {
-		if ((ret = __wt_txn_update_check(
+	while (!__ae_atomic_cas_ptr(srch_upd, upd->next, upd)) {
+		if ((ret = __ae_txn_update_check(
 		    session, upd->next = *srch_upd)) != 0) {
 			/* Free unused memory on error. */
-			__wt_free(session, upd);
+			__ae_free(session, upd);
 			return (ret);
 		}
 	}
@@ -287,42 +287,42 @@ __wt_update_serial(WT_SESSION_IMPL *session, WT_PAGE *page,
 	 * any running transaction, and we're a running transaction, which means
 	 * there can be no corresponding delete until we complete.
 	 */
-	__wt_cache_page_inmem_incr(session, page, upd_size);
+	__ae_cache_page_inmem_incr(session, page, upd_size);
 
 	/* Mark the page dirty after updating the footprint. */
-	__wt_page_modify_set(session, page);
+	__ae_page_modify_set(session, page);
 
 	/*
-	 * If there are no subsequent WT_UPDATE structures we are done here.
+	 * If there are no subsequent AE_UPDATE structures we are done here.
 	 */
 	if (upd->next == NULL)
 		return (0);
 
 	/*
-	 * We would like to call __wt_txn_update_oldest only in the event that
-	 * there are further updates to this page, the check against WT_TXN_NONE
+	 * We would like to call __ae_txn_update_oldest only in the event that
+	 * there are further updates to this page, the check against AE_TXN_NONE
 	 * is used as an indicator of there being further updates on this page.
 	 */
-	if ((txn = page->modify->obsolete_check_txn) != WT_TXN_NONE) {
-		if (!__wt_txn_visible_all(session, txn)) {
+	if ((txn = page->modify->obsolete_check_txn) != AE_TXN_NONE) {
+		if (!__ae_txn_visible_all(session, txn)) {
 			/* Try to move the oldest ID forward and re-check. */
-			__wt_txn_update_oldest(session, false);
+			__ae_txn_update_oldest(session, false);
 
-			if (!__wt_txn_visible_all(session, txn))
+			if (!__ae_txn_visible_all(session, txn))
 				return (0);
 		}
 
-		page->modify->obsolete_check_txn = WT_TXN_NONE;
+		page->modify->obsolete_check_txn = AE_TXN_NONE;
 	}
 
 	/* If we can't lock it, don't scan, that's okay. */
-	if (__wt_fair_trylock(session, &page->page_lock) != 0)
+	if (__ae_fair_trylock(session, &page->page_lock) != 0)
 		return (0);
 
-	obsolete = __wt_update_obsolete_check(session, page, upd->next);
-	WT_RET(__wt_fair_unlock(session, &page->page_lock));
+	obsolete = __ae_update_obsolete_check(session, page, upd->next);
+	AE_RET(__ae_fair_unlock(session, &page->page_lock));
 	if (obsolete != NULL)
-		__wt_update_obsolete_free(session, page, obsolete);
+		__ae_update_obsolete_free(session, page, obsolete);
 
 	return (0);
 }

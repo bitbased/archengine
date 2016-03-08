@@ -1,6 +1,6 @@
 /*-
  * Public Domain 2014-2015 MongoDB, Inc.
- * Public Domain 2008-2014 WiredTiger, Inc.
+ * Public Domain 2008-2014 ArchEngine, Inc.
  *
  * This is free and unencumbered software released into the public domain.
  *
@@ -46,7 +46,7 @@
 
 #include "test_util.i"
 
-extern WT_CONNECTION *conn;			/* WiredTiger connection */
+extern AE_CONNECTION *conn;			/* ArchEngine connection */
 
 extern u_int nops;				/* Operations per thread */
 

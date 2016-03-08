@@ -7,6 +7,6 @@ CLASSPATH=$THRIFT_HOME/libthrift.jar:$SLF4J_JAR javadoc -public -d $DOCS/java \
 	-sourcepath $TOP/lang/java/src:$TOP/src/server/gen-java \
 	-stylesheetfile $DOCS/style/javadoc.css \
 	-use -link http://java.sun.com/j2se/1.5.0/docs/api/ \
-	-header '<b>WiredTiger API</b><br><font size="-1"> version '$WT_VERSION'</font>' \
-	-windowtitle 'WiredTiger Java API' -bottom '<font size=1>Copyright (c) 2008-2015 MongoDB, Inc.  All rights reserved.</font>' \
-	com.wiredtiger com.wiredtiger.util
+	-header '<b>ArchEngine API</b><br><font size="-1"> version '$AE_VERSION'</font>' \
+	-windowtitle 'ArchEngine Java API' -bottom '<font size=1>Copyright (c) 2008-2015 MongoDB, Inc.  All rights reserved.</font>' \
+	com.archengine com.archengine.util

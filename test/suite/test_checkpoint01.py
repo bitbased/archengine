@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Public Domain 2014-2015 MongoDB, Inc.
-# Public Domain 2008-2014 WiredTiger, Inc.
+# Public Domain 2008-2014 ArchEngine, Inc.
 #
 # This is free and unencumbered software released into the public domain.
 #
@@ -26,16 +26,16 @@
 # ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 # OTHER DEALINGS IN THE SOFTWARE.
 
-import wiredtiger, wttest
+import archengine, aetest
 from helper import key_populate, complex_populate_lsm, simple_populate
-from wtscenario import check_scenarios
+from aescenario import check_scenarios
 
 # test_checkpoint01.py
 #    Checkpoint tests
 # General checkpoint test: create an object containing sets of data associated
 # with a set of checkpoints, then confirm the checkpoint's values are correct,
 # including after other checkpoints are dropped.
-class test_checkpoint(wttest.WiredTigerTestCase):
+class test_checkpoint(aetest.ArchEngineTestCase):
     scenarios = check_scenarios([
         ('file', dict(uri='file:checkpoint',fmt='S')),
         ('table', dict(uri='table:checkpoint',fmt='S'))
@@ -100,7 +100,7 @@ class test_checkpoint(wttest.WiredTigerTestCase):
 
         for checkpoint_name, entry in self.checkpoints.iteritems():
             if entry[1] == 0:
-                self.assertRaises(wiredtiger.WiredTigerError,
+                self.assertRaises(archengine.ArchEngineError,
                     lambda: self.session.open_cursor(
                     self.uri, None, "checkpoint=" + checkpoint_name))
             else:
@@ -138,7 +138,7 @@ class test_checkpoint(wttest.WiredTigerTestCase):
 
 
 # Check some specific cursor checkpoint combinations.
-class test_checkpoint_cursor(wttest.WiredTigerTestCase):
+class test_checkpoint_cursor(aetest.ArchEngineTestCase):
     scenarios = check_scenarios([
         ('file', dict(uri='file:checkpoint',fmt='S')),
         ('table', dict(uri='table:checkpoint',fmt='S'))
@@ -147,12 +147,12 @@ class test_checkpoint_cursor(wttest.WiredTigerTestCase):
     # Check that you cannot open a checkpoint that doesn't exist.
     def test_checkpoint_dne(self):
         simple_populate(self, self.uri, 'key_format=' + self.fmt, 100)
-        self.assertRaises(wiredtiger.WiredTigerError,
+        self.assertRaises(archengine.ArchEngineError,
             lambda: self.session.open_cursor(
             self.uri, None, "checkpoint=checkpoint-1"))
-        self.assertRaises(wiredtiger.WiredTigerError,
+        self.assertRaises(archengine.ArchEngineError,
             lambda: self.session.open_cursor(
-            self.uri, None, "checkpoint=WiredTigerCheckpoint"))
+            self.uri, None, "checkpoint=ArchEngineCheckpoint"))
 
     # Check that you can open checkpoints more than once.
     def test_checkpoint_multiple_open(self):
@@ -184,11 +184,11 @@ class test_checkpoint_cursor(wttest.WiredTigerTestCase):
         # Check dropping the specific checkpoint fails.
         # Check dropping all checkpoints fails.
         msg = '/checkpoints cannot be dropped/'
-        self.assertRaisesWithMessage(wiredtiger.WiredTigerError,
+        self.assertRaisesWithMessage(archengine.ArchEngineError,
             lambda: self.session.checkpoint("name=checkpoint-2"), msg)
-        self.assertRaisesWithMessage(wiredtiger.WiredTigerError,
+        self.assertRaisesWithMessage(archengine.ArchEngineError,
             lambda: self.session.checkpoint("drop=(checkpoint-2)"), msg)
-        self.assertRaisesWithMessage(wiredtiger.WiredTigerError,
+        self.assertRaisesWithMessage(archengine.ArchEngineError,
             lambda: self.session.checkpoint("drop=(from=all)"), msg)
 
         # Check dropping other checkpoints succeeds (which also tests that you
@@ -204,7 +204,7 @@ class test_checkpoint_cursor(wttest.WiredTigerTestCase):
 
 
 # Check that you can checkpoint targets.
-class test_checkpoint_target(wttest.WiredTigerTestCase):
+class test_checkpoint_target(aetest.ArchEngineTestCase):
     scenarios = check_scenarios([
         ('file', dict(uri='file:checkpoint',fmt='S')),
         ('table', dict(uri='table:checkpoint',fmt='S'))
@@ -251,7 +251,7 @@ class test_checkpoint_target(wttest.WiredTigerTestCase):
 
 
 # Check that you can't write checkpoint cursors.
-class test_checkpoint_cursor_update(wttest.WiredTigerTestCase):
+class test_checkpoint_cursor_update(aetest.ArchEngineTestCase):
     scenarios = check_scenarios([
         ('file-r', dict(uri='file:checkpoint',fmt='r')),
         ('file-S', dict(uri='file:checkpoint',fmt='S')),
@@ -265,14 +265,14 @@ class test_checkpoint_cursor_update(wttest.WiredTigerTestCase):
         cursor = self.session.open_cursor(self.uri, None, "checkpoint=ckpt")
         cursor.set_key(key_populate(cursor, 10))
         cursor.set_value("XXX")
-        self.assertRaises(wiredtiger.WiredTigerError, lambda: cursor.insert())
-        self.assertRaises(wiredtiger.WiredTigerError, lambda: cursor.remove())
-        self.assertRaises(wiredtiger.WiredTigerError, lambda: cursor.update())
+        self.assertRaises(archengine.ArchEngineError, lambda: cursor.insert())
+        self.assertRaises(archengine.ArchEngineError, lambda: cursor.remove())
+        self.assertRaises(archengine.ArchEngineError, lambda: cursor.update())
         cursor.close()
 
 
-# Check that WiredTigerCheckpoint works as a checkpoint specifier.
-class test_checkpoint_last(wttest.WiredTigerTestCase):
+# Check that ArchEngineCheckpoint works as a checkpoint specifier.
+class test_checkpoint_last(aetest.ArchEngineTestCase):
     scenarios = check_scenarios([
         ('file', dict(uri='file:checkpoint',fmt='S')),
         ('table', dict(uri='table:checkpoint',fmt='S'))
@@ -297,48 +297,48 @@ class test_checkpoint_last(wttest.WiredTigerTestCase):
 
             # Verify the "last" checkpoint sees the correct value.
             cursor = self.session.open_cursor(
-                uri, None, "checkpoint=WiredTigerCheckpoint")
+                uri, None, "checkpoint=ArchEngineCheckpoint")
             self.assertEquals(cursor[key_populate(cursor, 10)], value)
             # Don't close the checkpoint cursor, we want it to remain open until
             # the test completes.
 
 
 # Check we can't use the reserved name as an application checkpoint name.
-class test_checkpoint_illegal_name(wttest.WiredTigerTestCase):
+class test_checkpoint_illegal_name(aetest.ArchEngineTestCase):
     def test_checkpoint_illegal_name(self):
         simple_populate(self, "file:checkpoint", 'key_format=S', 100)
         msg = '/the checkpoint name.*is reserved/'
         for conf in (
-            'name=WiredTigerCheckpoint',
-            'name=WiredTigerCheckpoint.',
-            'name=WiredTigerCheckpointX',
-            'drop=(from=WiredTigerCheckpoint)',
-            'drop=(from=WiredTigerCheckpoint.)',
-            'drop=(from=WiredTigerCheckpointX)',
-            'drop=(to=WiredTigerCheckpoint)',
-            'drop=(to=WiredTigerCheckpoint.)',
-            'drop=(to=WiredTigerCheckpointX)'):
-                self.assertRaisesWithMessage(wiredtiger.WiredTigerError,
+            'name=ArchEngineCheckpoint',
+            'name=ArchEngineCheckpoint.',
+            'name=ArchEngineCheckpointX',
+            'drop=(from=ArchEngineCheckpoint)',
+            'drop=(from=ArchEngineCheckpoint.)',
+            'drop=(from=ArchEngineCheckpointX)',
+            'drop=(to=ArchEngineCheckpoint)',
+            'drop=(to=ArchEngineCheckpoint.)',
+            'drop=(to=ArchEngineCheckpointX)'):
+                self.assertRaisesWithMessage(archengine.ArchEngineError,
                     lambda: self.session.checkpoint(conf), msg)
-        msg = '/WiredTiger objects should not include grouping/'
+        msg = '/ArchEngine objects should not include grouping/'
         for conf in (
             'name=check{point',
             'name=check\\point'):
-                self.assertRaisesWithMessage(wiredtiger.WiredTigerError,
+                self.assertRaisesWithMessage(archengine.ArchEngineError,
                     lambda: self.session.checkpoint(conf), msg)
 
 
 # Check we can't name checkpoints that include LSM tables.
-class test_checkpoint_lsm_name(wttest.WiredTigerTestCase):
+class test_checkpoint_lsm_name(aetest.ArchEngineTestCase):
     def test_checkpoint_lsm_name(self):
         complex_populate_lsm(self,
             "table:checkpoint", 'type=lsm,key_format=S', 1000)
         msg = '/object does not support named checkpoints/'
-        self.assertRaisesWithMessage(wiredtiger.WiredTigerError,
+        self.assertRaisesWithMessage(archengine.ArchEngineError,
             lambda: self.session.checkpoint("name=ckpt"), msg)
 
 
-class test_checkpoint_empty(wttest.WiredTigerTestCase):
+class test_checkpoint_empty(aetest.ArchEngineTestCase):
     scenarios = check_scenarios([
         ('file', dict(uri='file:checkpoint')),
         ('table', dict(uri='table:checkpoint')),
@@ -360,7 +360,7 @@ class test_checkpoint_empty(wttest.WiredTigerTestCase):
         self.session.create(self.uri, "key_format=S,value_format=S")
         self.session.checkpoint()
         cursor = self.session.open_cursor(
-            self.uri, None, "checkpoint=WiredTigerCheckpoint")
+            self.uri, None, "checkpoint=ArchEngineCheckpoint")
 
     # Case 3: a named checkpoint, then an internal checkpoint
     def test_checkpoint_empty_three(self):
@@ -369,7 +369,7 @@ class test_checkpoint_empty(wttest.WiredTigerTestCase):
         self.session.checkpoint()
         cursor = self.session.open_cursor(self.uri, None, "checkpoint=ckpt")
         cursor = self.session.open_cursor(
-            self.uri, None, "checkpoint=WiredTigerCheckpoint")
+            self.uri, None, "checkpoint=ArchEngineCheckpoint")
 
     # Case 4: an internal checkpoint, then a named checkpoint
     def test_checkpoint_empty_four(self):
@@ -378,7 +378,7 @@ class test_checkpoint_empty(wttest.WiredTigerTestCase):
         self.session.checkpoint('name=ckpt')
         cursor = self.session.open_cursor(self.uri, None, "checkpoint=ckpt")
         cursor = self.session.open_cursor(
-            self.uri, None, "checkpoint=WiredTigerCheckpoint")
+            self.uri, None, "checkpoint=ArchEngineCheckpoint")
 
     # Check that we can create an empty checkpoint, change the underlying
     # object, checkpoint again, and still see the original empty tree, for
@@ -387,7 +387,7 @@ class test_checkpoint_empty(wttest.WiredTigerTestCase):
         self.session.create(self.uri, "key_format=S,value_format=S")
         self.session.checkpoint('name=ckpt')
         cursor = self.session.open_cursor(self.uri, None, "checkpoint=ckpt")
-        self.assertEquals(cursor.next(), wiredtiger.WT_NOTFOUND)
+        self.assertEquals(cursor.next(), archengine.AE_NOTFOUND)
         cursor.close()
 
         cursor = self.session.open_cursor(self.uri, None)
@@ -395,14 +395,14 @@ class test_checkpoint_empty(wttest.WiredTigerTestCase):
         self.session.checkpoint()
 
         cursor = self.session.open_cursor(self.uri, None, "checkpoint=ckpt")
-        self.assertEquals(cursor.next(), wiredtiger.WT_NOTFOUND)
+        self.assertEquals(cursor.next(), archengine.AE_NOTFOUND)
 
     def test_checkpoint_empty_six(self):
         self.session.create(self.uri, "key_format=S,value_format=S")
         self.session.checkpoint()
         cursor = self.session.open_cursor(
-            self.uri, None, "checkpoint=WiredTigerCheckpoint")
-        self.assertEquals(cursor.next(), wiredtiger.WT_NOTFOUND)
+            self.uri, None, "checkpoint=ArchEngineCheckpoint")
+        self.assertEquals(cursor.next(), archengine.AE_NOTFOUND)
         cursor.close()
 
         cursor = self.session.open_cursor(self.uri, None)
@@ -410,9 +410,9 @@ class test_checkpoint_empty(wttest.WiredTigerTestCase):
         self.session.checkpoint('name=ckpt')
 
         cursor = self.session.open_cursor(
-            self.uri, None, "checkpoint=WiredTigerCheckpoint")
-        self.assertEquals(cursor.next(), wiredtiger.WT_NOTFOUND)
+            self.uri, None, "checkpoint=ArchEngineCheckpoint")
+        self.assertEquals(cursor.next(), archengine.AE_NOTFOUND)
 
 
 if __name__ == '__main__':
-    wttest.run()
+    aetest.run()

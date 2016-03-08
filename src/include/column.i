@@ -1,6 +1,6 @@
 /*-
  * Copyright (c) 2014-2015 MongoDB, Inc.
- * Copyright (c) 2008-2014 WiredTiger, Inc.
+ * Copyright (c) 2008-2014 ArchEngine, Inc.
  *	All rights reserved.
  *
  * See the file LICENSE for redistribution information.
@@ -10,18 +10,18 @@
  * __col_insert_search_gt --
  *	Search a column-store insert list for the next larger record.
  */
-static inline WT_INSERT *
-__col_insert_search_gt(WT_INSERT_HEAD *inshead, uint64_t recno)
+static inline AE_INSERT *
+__col_insert_search_gt(AE_INSERT_HEAD *inshead, uint64_t recno)
 {
-	WT_INSERT *ins, **insp;
+	AE_INSERT *ins, **insp;
 	int i;
 
 	/* If there's no insert chain to search, we're done. */
-	if ((ins = WT_SKIP_LAST(inshead)) == NULL)
+	if ((ins = AE_SKIP_LAST(inshead)) == NULL)
 		return (NULL);
 
 	/* Fast path check for targets past the end of the skiplist. */
-	if (recno >= WT_INSERT_RECNO(ins))
+	if (recno >= AE_INSERT_RECNO(ins))
 		return (NULL);
 
 	/*
@@ -29,8 +29,8 @@ __col_insert_search_gt(WT_INSERT_HEAD *inshead, uint64_t recno)
 	 * go as far as possible at each level before stepping down to the next.
 	 */
 	ins = NULL;
-	for (i = WT_SKIP_MAXDEPTH - 1, insp = &inshead->head[i]; i >= 0;)
-		if (*insp != NULL && recno >= WT_INSERT_RECNO(*insp)) {
+	for (i = AE_SKIP_MAXDEPTH - 1, insp = &inshead->head[i]; i >= 0;)
+		if (*insp != NULL && recno >= AE_INSERT_RECNO(*insp)) {
 			ins = *insp;	/* GTE: keep going at this level */
 			insp = &(*insp)->next[i];
 		} else {
@@ -50,9 +50,9 @@ __col_insert_search_gt(WT_INSERT_HEAD *inshead, uint64_t recno)
 	 * such a record exists before searching.
 	 */
 	if (ins == NULL)
-		ins = WT_SKIP_FIRST(inshead);
-	while (recno >= WT_INSERT_RECNO(ins))
-		ins = WT_SKIP_NEXT(ins);
+		ins = AE_SKIP_FIRST(inshead);
+	while (recno >= AE_INSERT_RECNO(ins))
+		ins = AE_SKIP_NEXT(ins);
 	return (ins);
 }
 
@@ -60,26 +60,26 @@ __col_insert_search_gt(WT_INSERT_HEAD *inshead, uint64_t recno)
  * __col_insert_search_lt --
  *	Search a column-store insert list for the next smaller record.
  */
-static inline WT_INSERT *
-__col_insert_search_lt(WT_INSERT_HEAD *inshead, uint64_t recno)
+static inline AE_INSERT *
+__col_insert_search_lt(AE_INSERT_HEAD *inshead, uint64_t recno)
 {
-	WT_INSERT *ins, **insp;
+	AE_INSERT *ins, **insp;
 	int i;
 
 	/* If there's no insert chain to search, we're done. */
-	if ((ins = WT_SKIP_FIRST(inshead)) == NULL)
+	if ((ins = AE_SKIP_FIRST(inshead)) == NULL)
 		return (NULL);
 
 	/* Fast path check for targets before the skiplist. */
-	if (recno <= WT_INSERT_RECNO(ins))
+	if (recno <= AE_INSERT_RECNO(ins))
 		return (NULL);
 
 	/*
 	 * The insert list is a skip list: start at the highest skip level, then
 	 * go as far as possible at each level before stepping down to the next.
 	 */
-	for (i = WT_SKIP_MAXDEPTH - 1, insp = &inshead->head[i]; i >= 0;)
-		if (*insp != NULL && recno > WT_INSERT_RECNO(*insp)) {
+	for (i = AE_SKIP_MAXDEPTH - 1, insp = &inshead->head[i]; i >= 0;)
+		if (*insp != NULL && recno > AE_INSERT_RECNO(*insp)) {
 			ins = *insp;	/* GT: keep going at this level */
 			insp = &(*insp)->next[i];
 		} else  {
@@ -94,35 +94,35 @@ __col_insert_search_lt(WT_INSERT_HEAD *inshead, uint64_t recno)
  * __col_insert_search_match --
  *	Search a column-store insert list for an exact match.
  */
-static inline WT_INSERT *
-__col_insert_search_match(WT_INSERT_HEAD *inshead, uint64_t recno)
+static inline AE_INSERT *
+__col_insert_search_match(AE_INSERT_HEAD *inshead, uint64_t recno)
 {
-	WT_INSERT **insp, *ret_ins;
+	AE_INSERT **insp, *ret_ins;
 	uint64_t ins_recno;
 	int cmp, i;
 
 	/* If there's no insert chain to search, we're done. */
-	if ((ret_ins = WT_SKIP_LAST(inshead)) == NULL)
+	if ((ret_ins = AE_SKIP_LAST(inshead)) == NULL)
 		return (NULL);
 
 	/* Fast path the check for values at the end of the skiplist. */
-	if (recno > WT_INSERT_RECNO(ret_ins))
+	if (recno > AE_INSERT_RECNO(ret_ins))
 		return (NULL);
-	else if (recno == WT_INSERT_RECNO(ret_ins))
+	else if (recno == AE_INSERT_RECNO(ret_ins))
 		return (ret_ins);
 
 	/*
 	 * The insert list is a skip list: start at the highest skip level, then
 	 * go as far as possible at each level before stepping down to the next.
 	 */
-	for (i = WT_SKIP_MAXDEPTH - 1, insp = &inshead->head[i]; i >= 0; ) {
+	for (i = AE_SKIP_MAXDEPTH - 1, insp = &inshead->head[i]; i >= 0; ) {
 		if (*insp == NULL) {
 			--i;
 			--insp;
 			continue;
 		}
 
-		ins_recno = WT_INSERT_RECNO(*insp);
+		ins_recno = AE_INSERT_RECNO(*insp);
 		cmp = (recno == ins_recno) ? 0 : (recno < ins_recno) ? -1 : 1;
 
 		if (cmp == 0)			/* Exact match: return */
@@ -142,21 +142,21 @@ __col_insert_search_match(WT_INSERT_HEAD *inshead, uint64_t recno)
  * __col_insert_search --
  *	Search a column-store insert list, creating a skiplist stack as we go.
  */
-static inline WT_INSERT *
-__col_insert_search(WT_INSERT_HEAD *inshead,
-    WT_INSERT ***ins_stack, WT_INSERT **next_stack, uint64_t recno)
+static inline AE_INSERT *
+__col_insert_search(AE_INSERT_HEAD *inshead,
+    AE_INSERT ***ins_stack, AE_INSERT **next_stack, uint64_t recno)
 {
-	WT_INSERT **insp, *ret_ins;
+	AE_INSERT **insp, *ret_ins;
 	uint64_t ins_recno;
 	int cmp, i;
 
 	/* If there's no insert chain to search, we're done. */
-	if ((ret_ins = WT_SKIP_LAST(inshead)) == NULL)
+	if ((ret_ins = AE_SKIP_LAST(inshead)) == NULL)
 		return (NULL);
 
 	/* Fast path appends. */
-	if (recno >= WT_INSERT_RECNO(ret_ins)) {
-		for (i = 0; i < WT_SKIP_MAXDEPTH; i++) {
+	if (recno >= AE_INSERT_RECNO(ret_ins)) {
+		for (i = 0; i < AE_SKIP_MAXDEPTH; i++) {
 			ins_stack[i] = (i == 0) ? &ret_ins->next[0] :
 			    (inshead->tail[i] != NULL) ?
 			    &inshead->tail[i]->next[i] : &inshead->head[i];
@@ -169,14 +169,14 @@ __col_insert_search(WT_INSERT_HEAD *inshead,
 	 * The insert list is a skip list: start at the highest skip level, then
 	 * go as far as possible at each level before stepping down to the next.
 	 */
-	for (i = WT_SKIP_MAXDEPTH - 1, insp = &inshead->head[i]; i >= 0; ) {
+	for (i = AE_SKIP_MAXDEPTH - 1, insp = &inshead->head[i]; i >= 0; ) {
 		if ((ret_ins = *insp) == NULL) {
 			next_stack[i] = NULL;
 			ins_stack[i--] = insp--;
 			continue;
 		}
 
-		ins_recno = WT_INSERT_RECNO(ret_ins);
+		ins_recno = AE_INSERT_RECNO(ret_ins);
 		cmp = (recno == ins_recno) ? 0 : (recno < ins_recno) ? -1 : 1;
 
 		if (cmp > 0)			/* Keep going at this level */
@@ -199,9 +199,9 @@ __col_insert_search(WT_INSERT_HEAD *inshead,
  *	Return the last record number for a variable-length column-store page.
  */
 static inline uint64_t
-__col_var_last_recno(WT_PAGE *page)
+__col_var_last_recno(AE_PAGE *page)
 {
-	WT_COL_RLE *repeat;
+	AE_COL_RLE *repeat;
 
 	/*
 	 * If there's an append list (the last page), then there may be more
@@ -222,7 +222,7 @@ __col_var_last_recno(WT_PAGE *page)
  *	Return the last record number for a fixed-length column-store page.
  */
 static inline uint64_t
-__col_fix_last_recno(WT_PAGE *page)
+__col_fix_last_recno(AE_PAGE *page)
 {
 	/*
 	 * If there's an append list (the last page), then there may be more
@@ -237,10 +237,10 @@ __col_fix_last_recno(WT_PAGE *page)
  * __col_var_search --
  *	Search a variable-length column-store page for a record.
  */
-static inline WT_COL *
-__col_var_search(WT_PAGE *page, uint64_t recno, uint64_t *start_recnop)
+static inline AE_COL *
+__col_var_search(AE_PAGE *page, uint64_t recno, uint64_t *start_recnop)
 {
-	WT_COL_RLE *repeat;
+	AE_COL_RLE *repeat;
 	uint64_t start_recno;
 	uint32_t base, indx, limit, start_indx;
 

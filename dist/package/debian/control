@@ -1,36 +1,36 @@
-Source: wiredtiger
+Source: archengine
 Priority: extra
-Maintainer: Alex Gorrod <alexg@wiredtiger.com>
+Maintainer: Alex Gorrod <alexg@archengine.com>
 Build-Depends: debhelper (>= 8.0.0), autotools-dev
 Standards-Version: 3.9.4
 Section: libs
-Homepage: http://www.wiredtiger.com
-#Vcs-Git: git://git.debian.org/collab-maint/wiredtiger.git
-#Vcs-Browser: http://git.debian.org/?p=collab-maint/wiredtiger.git;a=summary
+Homepage: http://www.archengine.com
+#Vcs-Git: git://git.debian.org/collab-maint/archengine.git
+#Vcs-Browser: http://git.debian.org/?p=collab-maint/archengine.git;a=summary
 
-Package: libwiredtiger-dev
+Package: libarchengine-dev
 Architecture: any
 Section: libdevel
 Priority: extra
 Depends: ${misc:Depends}
-Description: WiredTiger Database Libraries [development]
+Description: ArchEngine Database Libraries [development]
  This is the development package which contains headers and static
- libraries for the WiredTiger database library.
+ libraries for the ArchEngine database library.
 
-Package: libwiredtiger
+Package: libarchengine
 Architecture: any
 Depends: ${shlibs:Depends},
 	 ${misc:Depends}
-Description: WiredTiger Database Libraries [runtime]
- This is the runtime package for programs that use the WiredTiger
+Description: ArchEngine Database Libraries [runtime]
+ This is the runtime package for programs that use the ArchEngine
  database library.
 
-Package: wiredtiger-util
+Package: archengine-util
 Architecture: any
 Section: database
 Priority: extra
 Depends: ${shlibs:Depends},
 	 ${misc:Depends}
-Description: WiredTiger Database Utilities
- This package provides tools for manipulating WiredTiger databases
+Description: ArchEngine Database Utilities
+ This package provides tools for manipulating ArchEngine databases
 

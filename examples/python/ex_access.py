@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Public Domain 2014-2015 MongoDB, Inc.
-# Public Domain 2008-2014 WiredTiger, Inc.
+# Public Domain 2008-2014 ArchEngine, Inc.
 #
 # This is free and unencumbered software released into the public domain.
 #
@@ -28,13 +28,13 @@
 #
 
 import os
-from wiredtiger import wiredtiger_open
+from archengine import archengine_open
 
 # Connect to the database and open a session
-os.system('rm -rf WT_HOME')
-os.makedirs('WT_HOME')
+os.system('rm -rf AE_HOME')
+os.makedirs('AE_HOME')
 
-conn = wiredtiger_open('WT_HOME', 'create')
+conn = archengine_open('AE_HOME', 'create')
 session = conn.open_session()
 
 # Create a simple table

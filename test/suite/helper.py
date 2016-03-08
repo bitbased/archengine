@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Public Domain 2014-2015 MongoDB, Inc.
-# Public Domain 2008-2014 WiredTiger, Inc.
+# Public Domain 2008-2014 ArchEngine, Inc.
 #
 # This is free and unencumbered software released into the public domain.
 #
@@ -28,7 +28,7 @@
 #
 
 import glob, os, shutil, string, subprocess
-import wiredtiger
+import archengine
 
 # python has a filecmp.cmp function, but different versions of python approach
 # file comparison differently.  To make sure we get byte for byte comparison,
@@ -63,7 +63,7 @@ def compare_tables(self, session, uris, config=None):
         while not done:
             keys = list()
             for next_cursor in cursors:
-                if (next_cursor.next() == wiredtiger.WT_NOTFOUND):
+                if (next_cursor.next() == archengine.AE_NOTFOUND):
                     done = True
                     break
                 keys.append(next_cursor.get_value())
@@ -79,7 +79,7 @@ def compare_tables(self, session, uris, config=None):
 # confirm a URI doesn't exist.
 def confirm_does_not_exist(self, uri):
     self.pr('confirm_does_not_exist: ' + uri)
-    self.assertRaises(wiredtiger.WiredTigerError,
+    self.assertRaises(archengine.ArchEngineError,
         lambda: self.session.open_cursor(uri, None))
     self.assertEqual(glob.glob('*' + uri.split(":")[-1] + '*'), [],
         'confirm_does_not_exist: URI exists, file name matching \"' +
@@ -93,21 +93,21 @@ def confirm_empty(self, uri):
         for key,val in cursor:
             self.assertEqual(val, 0)
     else:
-        self.assertEqual(cursor.next(), wiredtiger.WT_NOTFOUND)
+        self.assertEqual(cursor.next(), archengine.AE_NOTFOUND)
     cursor.close()
 
-# copy a WT home directory
-def copy_wiredtiger_home(olddir, newdir, aligned=True):
+# copy a AE home directory
+def copy_archengine_home(olddir, newdir, aligned=True):
     # unaligned copy requires 'dd', which may not be available on Windows
     if not aligned and os.name == "nt":
         raise AssertionError(
-            'copy_wiredtiger_home: unaligned copy impossible on Windows')
+            'copy_archengine_home: unaligned copy impossible on Windows')
     shutil.rmtree(newdir, ignore_errors=True)
     os.mkdir(newdir)
     for fname in os.listdir(olddir):
         fullname = os.path.join(olddir, fname)
         # Skip lock file, on Windows it is locked.
-        if os.path.isfile(fullname) and "WiredTiger.lock" not in fullname:
+        if os.path.isfile(fullname) and "ArchEngine.lock" not in fullname:
             # Use a dd command that does not align on a block boundary.
             if aligned:
                 shutil.copy(fullname, newdir)

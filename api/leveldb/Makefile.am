@@ -1,22 +1,22 @@
 AM_CPPFLAGS = -I$(top_builddir) -I$(srcdir)/leveldb -I$(srcdir)/leveldb/include
 
-lib_LTLIBRARIES = libwiredtiger_leveldb.la
+lib_LTLIBRARIES = libarchengine_leveldb.la
 
 noinst_PROGRAMS = leveldb_test
 
-# Setup the LevelDB headers to be installed in a wiredtiger/leveldb
+# Setup the LevelDB headers to be installed in a archengine/leveldb
 # subdirectory, so we don't interfere with other LevelDB installs.
 if HAVE_HYPERLEVELDB
-leveldbincludedir = $(includedir)/wiredtiger/hyperleveldb
+leveldbincludedir = $(includedir)/archengine/hyperleveldb
 else
 if HAVE_ROCKSDB
-leveldbincludedir = $(includedir)/wiredtiger/rocksdb
+leveldbincludedir = $(includedir)/archengine/rocksdb
 else
-leveldbincludedir = $(includedir)/wiredtiger/leveldb
+leveldbincludedir = $(includedir)/archengine/leveldb
 endif
 endif
 leveldbinclude_HEADERS = \
-	leveldb_wt_config.h \
+	leveldb_ae_config.h \
 	leveldb/include/leveldb/cache.h \
 	leveldb/include/leveldb/comparator.h\
 	leveldb/include/leveldb/db.h \
@@ -39,23 +39,23 @@ leveldbinclude_HEADERS += \
 	 hyperleveldb/replay_iterator.h
 endif
 
-libwiredtiger_leveldb_la_LDFLAGS = -release @VERSION@
-libwiredtiger_leveldb_la_LIBADD = $(top_builddir)/libwiredtiger_static.la
-libwiredtiger_leveldb_la_SOURCES = \
-	leveldb_wt.cc \
+libarchengine_leveldb_la_LDFLAGS = -release @VERSION@
+libarchengine_leveldb_la_LIBADD = $(top_builddir)/libarchengine_static.la
+libarchengine_leveldb_la_SOURCES = \
+	leveldb_ae.cc \
 	leveldb/util/coding.cc leveldb/util/comparator.cc leveldb/util/env.cc leveldb/util/env_posix.cc \
 	leveldb/util/logging.cc leveldb/util/options.cc leveldb/util/status.cc
 
 if HAVE_BASHOLEVELDB
-libwiredtiger_leveldb_la_SOURCES += basho/perf_count.cc
+libarchengine_leveldb_la_SOURCES += basho/perf_count.cc
 endif
 if HAVE_HYPERLEVELDB
-libwiredtiger_leveldb_la_SOURCES += hyper_wt.cc
+libarchengine_leveldb_la_SOURCES += hyper_ae.cc
 endif
 if HAVE_ROCKSDB
-libwiredtiger_leveldb_la_SOURCES += rocks_wt.cc rocksdb/write_batch.cc
+libarchengine_leveldb_la_SOURCES += rocks_ae.cc rocksdb/write_batch.cc
 else
-libwiredtiger_leveldb_la_SOURCES += leveldb/db/write_batch.cc
+libarchengine_leveldb_la_SOURCES += leveldb/db/write_batch.cc
 endif
 
 if HAVE_ROCKSDB
@@ -65,17 +65,17 @@ pkglib_LTLIBRARIES = libleveldb.la
 endif
 
 libleveldb_la_LDFLAGS = -release @VERSION@
-libleveldb_la_LIBADD = $(top_builddir)/libwiredtiger_static.la
-libleveldb_la_SOURCES = $(libwiredtiger_leveldb_la_SOURCES)
+libleveldb_la_LIBADD = $(top_builddir)/libarchengine_static.la
+libleveldb_la_SOURCES = $(libarchengine_leveldb_la_SOURCES)
 
 librocksdb_la_LDFLAGS = -release @VERSION@
-librocksdb_la_LIBADD = $(top_builddir)/libwiredtiger_static.la
-librocksdb_la_SOURCES = $(libwiredtiger_leveldb_la_SOURCES)
+librocksdb_la_LIBADD = $(top_builddir)/libarchengine_static.la
+librocksdb_la_SOURCES = $(libarchengine_leveldb_la_SOURCES)
 
 leveldb_test_SOURCES = leveldb_test.cc
-leveldb_test_LDADD = libwiredtiger_leveldb.la
+leveldb_test_LDADD = libarchengine_leveldb.la
 
 TESTS = $(noinst_PROGRAMS)
 
 clean-local:
-	rm -rf WTLDB_HOME
+	rm -rf AELDB_HOME

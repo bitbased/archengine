@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Public Domain 2014-2015 MongoDB, Inc.
-# Public Domain 2008-2014 WiredTiger, Inc.
+# Public Domain 2008-2014 ArchEngine, Inc.
 #
 # This is free and unencumbered software released into the public domain.
 #
@@ -42,17 +42,17 @@ dir = os.path.dirname(__file__)
 
 # Read the version information from the RELEASE_INFO file
 for l in open(os.path.join(dir, '..', '..', 'RELEASE_INFO')):
-    if re.match(r'WIREDTIGER_VERSION_(?:MAJOR|MINOR|PATCH)=', l):
+    if re.match(r'ARCHENGINE_VERSION_(?:MAJOR|MINOR|PATCH)=', l):
         exec(l)
 
-wt_ver = '%d.%d' % (WIREDTIGER_VERSION_MAJOR, WIREDTIGER_VERSION_MINOR)
+ae_ver = '%d.%d' % (ARCHENGINE_VERSION_MAJOR, ARCHENGINE_VERSION_MINOR)
 
-setup(name='wiredtiger', version=wt_ver,
-    ext_modules=[Extension('_wiredtiger',
-                [os.path.join(dir, 'wiredtiger_wrap.c')],
-        libraries=['wiredtiger'],
+setup(name='archengine', version=ae_ver,
+    ext_modules=[Extension('_archengine',
+                [os.path.join(dir, 'archengine_wrap.c')],
+        libraries=['archengine'],
         extra_compile_args=extra_cflags,
     )],
     package_dir={'' : dir},
-    packages=['wiredtiger'],
+    packages=['archengine'],
 )

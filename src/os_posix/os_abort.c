@@ -1,25 +1,25 @@
 /*-
  * Copyright (c) 2014-2015 MongoDB, Inc.
- * Copyright (c) 2008-2014 WiredTiger, Inc.
+ * Copyright (c) 2008-2014 ArchEngine, Inc.
  *	All rights reserved.
  *
  * See the file LICENSE for redistribution information.
  */
 
-#include "wt_internal.h"
+#include "ae_internal.h"
 
 /*
- * __wt_abort --
+ * __ae_abort --
  *	Abort the process, dropping core.
  */
 void
-__wt_abort(WT_SESSION_IMPL *session)
-    WT_GCC_FUNC_ATTRIBUTE((noreturn))
+__ae_abort(AE_SESSION_IMPL *session)
+    AE_GCC_FUNC_ATTRIBUTE((noreturn))
 {
-	__wt_errx(session, "aborting WiredTiger library");
+	__ae_errx(session, "aborting ArchEngine library");
 
 #ifdef HAVE_DIAGNOSTIC
-	__wt_attach(session);
+	__ae_attach(session);
 #endif
 
 	abort();

@@ -1,35 +1,35 @@
 /*-
  * Copyright (c) 2014-2015 MongoDB, Inc.
- * Copyright (c) 2008-2014 WiredTiger, Inc.
+ * Copyright (c) 2008-2014 ArchEngine, Inc.
  *	All rights reserved.
  *
  * See the file LICENSE for redistribution information.
  */
 
-#include "wt_internal.h"
+#include "ae_internal.h"
 
 /*
  * __find_next_col --
  *	Find the next column to use for a plan.
  */
 static int
-__find_next_col(WT_SESSION_IMPL *session, WT_TABLE *table,
-    WT_CONFIG_ITEM *colname, u_int *cgnump, u_int *colnump, char *coltype)
+__find_next_col(AE_SESSION_IMPL *session, AE_TABLE *table,
+    AE_CONFIG_ITEM *colname, u_int *cgnump, u_int *colnump, char *coltype)
 {
-	WT_COLGROUP *colgroup;
-	WT_CONFIG conf;
-	WT_CONFIG_ITEM cval, k, v;
-	WT_DECL_RET;
+	AE_COLGROUP *colgroup;
+	AE_CONFIG conf;
+	AE_CONFIG_ITEM cval, k, v;
+	AE_DECL_RET;
 	u_int cg, col, foundcg, foundcol, matchcg, matchcol;
 	bool getnext;
 
 	foundcg = foundcol = UINT_MAX;
 	matchcg = *cgnump;
-	matchcol = (*coltype == WT_PROJ_KEY) ?
+	matchcol = (*coltype == AE_PROJ_KEY) ?
 	    *colnump : *colnump + table->nkey_columns;
 
 	getnext = true;
-	for (colgroup = NULL, cg = 0; cg < WT_COLGROUPS(table); cg++) {
+	for (colgroup = NULL, cg = 0; cg < AE_COLGROUPS(table); cg++) {
 		colgroup = table->cgroups[cg];
 
 		/*
@@ -45,8 +45,8 @@ __find_next_col(WT_SESSION_IMPL *session, WT_TABLE *table,
 cgcols:			cval = colgroup->colconf;
 			col = table->nkey_columns;
 		}
-		WT_RET(__wt_config_subinit(session, &conf, &cval));
-		for (; (ret = __wt_config_next(&conf, &k, &v)) == 0; col++) {
+		AE_RET(__ae_config_subinit(session, &conf, &cval));
+		for (; (ret = __ae_config_next(&conf, &k, &v)) == 0; col++) {
 			if (k.len == colname->len &&
 			    strncmp(colname->str, k.str, k.len) == 0) {
 				if (getnext) {
@@ -59,59 +59,59 @@ cgcols:			cval = colgroup->colconf;
 			    col == table->nkey_columns - 1)
 				goto cgcols;
 		}
-		WT_RET_TEST(ret != WT_NOTFOUND, ret);
+		AE_RET_TEST(ret != AE_NOTFOUND, ret);
 
 		colgroup = NULL;
 	}
 
 	if (foundcg == UINT_MAX)
-		return (WT_NOTFOUND);
+		return (AE_NOTFOUND);
 
 	*cgnump = foundcg;
 	if (foundcol < table->nkey_columns) {
-		*coltype = WT_PROJ_KEY;
+		*coltype = AE_PROJ_KEY;
 		*colnump = foundcol;
 	} else {
-		*coltype = WT_PROJ_VALUE;
+		*coltype = AE_PROJ_VALUE;
 		*colnump = foundcol - table->nkey_columns;
 	}
 	return (0);
 }
 
 /*
- * __wt_schema_colcheck --
+ * __ae_schema_colcheck --
  *	Check that a list of columns matches a (key,value) format pair.
  */
 int
-__wt_schema_colcheck(WT_SESSION_IMPL *session,
-    const char *key_format, const char *value_format, WT_CONFIG_ITEM *colconf,
+__ae_schema_colcheck(AE_SESSION_IMPL *session,
+    const char *key_format, const char *value_format, AE_CONFIG_ITEM *colconf,
     u_int *kcolsp, u_int *vcolsp)
 {
-	WT_CONFIG conf;
-	WT_CONFIG_ITEM k, v;
-	WT_DECL_PACK_VALUE(pv);
-	WT_DECL_RET;
-	WT_PACK pack;
+	AE_CONFIG conf;
+	AE_CONFIG_ITEM k, v;
+	AE_DECL_PACK_VALUE(pv);
+	AE_DECL_RET;
+	AE_PACK pack;
 	u_int kcols, ncols, vcols;
 
-	WT_RET(__pack_init(session, &pack, key_format));
+	AE_RET(__pack_init(session, &pack, key_format));
 	for (kcols = 0; (ret = __pack_next(&pack, &pv)) == 0; kcols++)
 		;
-	WT_RET_TEST(ret != WT_NOTFOUND, ret);
+	AE_RET_TEST(ret != AE_NOTFOUND, ret);
 
-	WT_RET(__pack_init(session, &pack, value_format));
+	AE_RET(__pack_init(session, &pack, value_format));
 	for (vcols = 0; (ret = __pack_next(&pack, &pv)) == 0; vcols++)
 		;
-	WT_RET_TEST(ret != WT_NOTFOUND, ret);
+	AE_RET_TEST(ret != AE_NOTFOUND, ret);
 
 	/* Walk through the named columns. */
-	WT_RET(__wt_config_subinit(session, &conf, colconf));
-	for (ncols = 0; (ret = __wt_config_next(&conf, &k, &v)) == 0; ncols++)
+	AE_RET(__ae_config_subinit(session, &conf, colconf));
+	for (ncols = 0; (ret = __ae_config_next(&conf, &k, &v)) == 0; ncols++)
 		;
-	WT_RET_TEST(ret != WT_NOTFOUND, ret);
+	AE_RET_TEST(ret != AE_NOTFOUND, ret);
 
 	if (ncols != 0 && ncols != kcols + vcols)
-		WT_RET_MSG(session, EINVAL, "Number of columns in '%.*s' "
+		AE_RET_MSG(session, EINVAL, "Number of columns in '%.*s' "
 		    "does not match key format '%s' plus value format '%s'",
 		    (int)colconf->len, colconf->str, key_format, value_format);
 
@@ -124,15 +124,15 @@ __wt_schema_colcheck(WT_SESSION_IMPL *session,
 }
 
 /*
- * __wt_table_check --
+ * __ae_table_check --
  *	Make sure all columns appear in a column group.
  */
 int
-__wt_table_check(WT_SESSION_IMPL *session, WT_TABLE *table)
+__ae_table_check(AE_SESSION_IMPL *session, AE_TABLE *table)
 {
-	WT_CONFIG conf;
-	WT_CONFIG_ITEM k, v;
-	WT_DECL_RET;
+	AE_CONFIG conf;
+	AE_CONFIG_ITEM k, v;
+	AE_DECL_RET;
 	u_int cg, col, i;
 	char coltype;
 
@@ -140,45 +140,45 @@ __wt_table_check(WT_SESSION_IMPL *session, WT_TABLE *table)
 		return (0);
 
 	/* Walk through the columns. */
-	WT_RET(__wt_config_subinit(session, &conf, &table->colconf));
+	AE_RET(__ae_config_subinit(session, &conf, &table->colconf));
 
 	/* Skip over the key columns. */
 	for (i = 0; i < table->nkey_columns; i++)
-		WT_RET(__wt_config_next(&conf, &k, &v));
+		AE_RET(__ae_config_next(&conf, &k, &v));
 	cg = col = 0;
 	coltype = 0;
-	while ((ret = __wt_config_next(&conf, &k, &v)) == 0) {
+	while ((ret = __ae_config_next(&conf, &k, &v)) == 0) {
 		if (__find_next_col(
 		    session, table, &k, &cg, &col, &coltype) != 0)
-			WT_RET_MSG(session, EINVAL,
+			AE_RET_MSG(session, EINVAL,
 			    "Column '%.*s' in '%s' does not appear in a "
 			    "column group",
 			    (int)k.len, k.str, table->name);
 		/*
 		 * Column groups can't store key columns in their value:
-		 * __wt_struct_reformat should have already detected this case.
+		 * __ae_struct_reformat should have already detected this case.
 		 */
-		WT_ASSERT(session, coltype == WT_PROJ_VALUE);
+		AE_ASSERT(session, coltype == AE_PROJ_VALUE);
 
 	}
-	WT_RET_TEST(ret != WT_NOTFOUND, ret);
+	AE_RET_TEST(ret != AE_NOTFOUND, ret);
 
 	return (0);
 }
 
 /*
- * __wt_struct_plan --
+ * __ae_struct_plan --
  *	Given a table cursor containing a complete table, build the "projection
  *	plan" to distribute the columns to dependent stores.  A string
  *	representing the plan will be appended to the plan buffer.
  */
 int
-__wt_struct_plan(WT_SESSION_IMPL *session, WT_TABLE *table,
-    const char *columns, size_t len, bool value_only, WT_ITEM *plan)
+__ae_struct_plan(AE_SESSION_IMPL *session, AE_TABLE *table,
+    const char *columns, size_t len, bool value_only, AE_ITEM *plan)
 {
-	WT_CONFIG conf;
-	WT_CONFIG_ITEM k, v;
-	WT_DECL_RET;
+	AE_CONFIG conf;
+	AE_CONFIG_ITEM k, v;
+	AE_DECL_RET;
 	u_int cg, col, current_cg, current_col, i, start_cg, start_col;
 	bool have_it;
 	char coltype, current_coltype;
@@ -186,15 +186,15 @@ __wt_struct_plan(WT_SESSION_IMPL *session, WT_TABLE *table,
 	start_cg = start_col = UINT_MAX;	/* -Wuninitialized */
 
 	/* Work through the value columns by skipping over the key columns. */
-	WT_RET(__wt_config_initn(session, &conf, columns, len));
+	AE_RET(__ae_config_initn(session, &conf, columns, len));
 	if (value_only)
 		for (i = 0; i < table->nkey_columns; i++)
-			WT_RET(__wt_config_next(&conf, &k, &v));
+			AE_RET(__ae_config_next(&conf, &k, &v));
 
 	current_cg = cg = 0;
 	current_col = col = INT_MAX;
-	current_coltype = coltype = WT_PROJ_KEY; /* Keep lint quiet. */
-	for (i = 0; (ret = __wt_config_next(&conf, &k, &v)) == 0; i++) {
+	current_coltype = coltype = AE_PROJ_KEY; /* Keep lint quiet. */
+	for (i = 0; (ret = __ae_config_next(&conf, &k, &v)) == 0; i++) {
 		have_it = false;
 
 		while ((ret = __find_next_col(session, table,
@@ -209,9 +209,9 @@ __wt_struct_plan(WT_SESSION_IMPL *session, WT_TABLE *table,
 			 */
 			if (current_cg != cg || current_col > col ||
 			    current_coltype != coltype) {
-				WT_ASSERT(session, !value_only ||
-				    coltype == WT_PROJ_VALUE);
-				WT_RET(__wt_buf_catfmt(
+				AE_ASSERT(session, !value_only ||
+				    coltype == AE_PROJ_VALUE);
+				AE_RET(__ae_buf_catfmt(
 				    session, plan, "%d%c", cg, coltype));
 
 				/*
@@ -225,10 +225,10 @@ __wt_struct_plan(WT_SESSION_IMPL *session, WT_TABLE *table,
 			/* Now move to the column we want. */
 			if (current_col < col) {
 				if (col - current_col > 1)
-					WT_RET(__wt_buf_catfmt(session,
+					AE_RET(__ae_buf_catfmt(session,
 					    plan, "%d", col - current_col));
-				WT_RET(__wt_buf_catfmt(session,
-				    plan, "%c", WT_PROJ_SKIP));
+				AE_RET(__ae_buf_catfmt(session,
+				    plan, "%c", AE_PROJ_SKIP));
 			}
 			/*
 			 * Now copy the value in / out.  In the common case,
@@ -237,15 +237,15 @@ __wt_struct_plan(WT_SESSION_IMPL *session, WT_TABLE *table,
 			 * a "reuse" operation to avoid making another copy.
 			 */
 			if (!have_it) {
-				WT_RET(__wt_buf_catfmt(session,
-				    plan, "%c", WT_PROJ_NEXT));
+				AE_RET(__ae_buf_catfmt(session,
+				    plan, "%c", AE_PROJ_NEXT));
 
 				start_cg = cg;
 				start_col = col;
 				have_it = true;
 			} else
-				WT_RET(__wt_buf_catfmt(session,
-				    plan, "%c", WT_PROJ_REUSE));
+				AE_RET(__ae_buf_catfmt(session,
+				    plan, "%c", AE_PROJ_REUSE));
 			current_col = col + 1;
 		}
 		/*
@@ -254,15 +254,15 @@ __wt_struct_plan(WT_SESSION_IMPL *session, WT_TABLE *table,
 		 * ever use such plans to extract the primary key from the
 		 * index.
 		 */
-		if (ret == WT_NOTFOUND)
-			WT_RET(__wt_buf_catfmt(session, plan,
-			    "0%c%c", WT_PROJ_VALUE, WT_PROJ_NEXT));
+		if (ret == AE_NOTFOUND)
+			AE_RET(__ae_buf_catfmt(session, plan,
+			    "0%c%c", AE_PROJ_VALUE, AE_PROJ_NEXT));
 	}
-	WT_RET_TEST(ret != WT_NOTFOUND, ret);
+	AE_RET_TEST(ret != AE_NOTFOUND, ret);
 
 	/* Special case empty plans. */
 	if (i == 0 && plan->size == 0)
-		WT_RET(__wt_buf_set(session, plan, "", 1));
+		AE_RET(__ae_buf_set(session, plan, "", 1));
 
 	return (0);
 }
@@ -272,21 +272,21 @@ __wt_struct_plan(WT_SESSION_IMPL *session, WT_TABLE *table,
  *	Find the format of the named column.
  */
 static int
-__find_column_format(WT_SESSION_IMPL *session, WT_TABLE *table,
-    WT_CONFIG_ITEM *colname, bool value_only, WT_PACK_VALUE *pv)
+__find_column_format(AE_SESSION_IMPL *session, AE_TABLE *table,
+    AE_CONFIG_ITEM *colname, bool value_only, AE_PACK_VALUE *pv)
 {
-	WT_CONFIG conf;
-	WT_CONFIG_ITEM k, v;
-	WT_DECL_RET;
-	WT_PACK pack;
+	AE_CONFIG conf;
+	AE_CONFIG_ITEM k, v;
+	AE_DECL_RET;
+	AE_PACK pack;
 	bool inkey;
 
-	WT_RET(__wt_config_subinit(session, &conf, &table->colconf));
-	WT_RET(__pack_init(session, &pack, table->key_format));
+	AE_RET(__ae_config_subinit(session, &conf, &table->colconf));
+	AE_RET(__pack_init(session, &pack, table->key_format));
 	inkey = true;
 
-	while ((ret = __wt_config_next(&conf, &k, &v)) == 0) {
-		if ((ret = __pack_next(&pack, pv)) == WT_NOTFOUND && inkey) {
+	while ((ret = __ae_config_next(&conf, &k, &v)) == 0) {
+		if ((ret = __pack_next(&pack, pv)) == AE_NOTFOUND && inkey) {
 			ret = __pack_init(session, &pack, table->value_format);
 			if (ret == 0)
 				ret = __pack_next(&pack, pv);
@@ -307,48 +307,48 @@ __find_column_format(WT_SESSION_IMPL *session, WT_TABLE *table,
 }
 
 /*
- * __wt_struct_reformat --
+ * __ae_struct_reformat --
  *	Given a table and a list of columns (which could be values in a column
  *	group or index keys), calculate the resulting new format string.
  *	The result will be appended to the format buffer.
  */
 int
-__wt_struct_reformat(WT_SESSION_IMPL *session, WT_TABLE *table,
+__ae_struct_reformat(AE_SESSION_IMPL *session, AE_TABLE *table,
     const char *columns, size_t len, const char *extra_cols, bool value_only,
-    WT_ITEM *format)
+    AE_ITEM *format)
 {
-	WT_CONFIG config;
-	WT_CONFIG_ITEM k, next_k, next_v;
-	WT_DECL_PACK_VALUE(pv);
-	WT_DECL_RET;
+	AE_CONFIG config;
+	AE_CONFIG_ITEM k, next_k, next_v;
+	AE_DECL_PACK_VALUE(pv);
+	AE_DECL_RET;
 	bool have_next;
 
-	WT_RET(__wt_config_initn(session, &config, columns, len));
+	AE_RET(__ae_config_initn(session, &config, columns, len));
 	/*
 	 * If an empty column list is specified, this will fail with
-	 * WT_NOTFOUND, that's okay.
+	 * AE_NOTFOUND, that's okay.
 	 */
-	WT_RET_NOTFOUND_OK(ret = __wt_config_next(&config, &next_k, &next_v));
-	if (ret == WT_NOTFOUND) {
+	AE_RET_NOTFOUND_OK(ret = __ae_config_next(&config, &next_k, &next_v));
+	if (ret == AE_NOTFOUND) {
 		if (extra_cols != NULL) {
-			WT_RET(__wt_config_init(session, &config, extra_cols));
-			WT_RET(__wt_config_next(&config, &next_k, &next_v));
+			AE_RET(__ae_config_init(session, &config, extra_cols));
+			AE_RET(__ae_config_next(&config, &next_k, &next_v));
 			extra_cols = NULL;
 		} else if (format->size == 0) {
-			WT_RET(__wt_buf_set(session, format, "", 1));
+			AE_RET(__ae_buf_set(session, format, "", 1));
 			return (0);
 		}
 	}
 	do {
 		k = next_k;
-		ret = __wt_config_next(&config, &next_k, &next_v);
-		if (ret != 0 && ret != WT_NOTFOUND)
+		ret = __ae_config_next(&config, &next_k, &next_v);
+		if (ret != 0 && ret != AE_NOTFOUND)
 			return (ret);
 		have_next = ret == 0;
 
 		if (!have_next && extra_cols != NULL) {
-			WT_RET(__wt_config_init(session, &config, extra_cols));
-			WT_RET(__wt_config_next(&config, &next_k, &next_v));
+			AE_RET(__ae_config_init(session, &config, extra_cols));
+			AE_RET(__ae_config_next(&config, &next_k, &next_v));
 			have_next = true;
 			extra_cols = NULL;
 		}
@@ -356,15 +356,15 @@ __wt_struct_reformat(WT_SESSION_IMPL *session, WT_TABLE *table,
 		if ((ret = __find_column_format(session,
 		    table, &k, value_only, &pv)) != 0) {
 			if (value_only && ret == EINVAL)
-				WT_RET_MSG(session, EINVAL,
+				AE_RET_MSG(session, EINVAL,
 				    "A column group cannot store key column "
 				    "'%.*s' in its value", (int)k.len, k.str);
-			WT_RET_MSG(session, EINVAL,
+			AE_RET_MSG(session, EINVAL,
 			    "Column '%.*s' not found", (int)k.len, k.str);
 		}
 
 		/*
-		 * Check whether we're moving an unsized WT_ITEM from the end
+		 * Check whether we're moving an unsized AE_ITEM from the end
 		 * to the middle, or vice-versa.  This determines whether the
 		 * size needs to be prepended.  This is the only case where the
 		 * destination size can be larger than the source size.
@@ -375,34 +375,34 @@ __wt_struct_reformat(WT_SESSION_IMPL *session, WT_TABLE *table,
 			pv.type = 'u';
 
 		if (pv.havesize)
-			WT_RET(__wt_buf_catfmt(
+			AE_RET(__ae_buf_catfmt(
 			    session, format, "%d%c", (int)pv.size, pv.type));
 		else
-			WT_RET(__wt_buf_catfmt(session, format, "%c", pv.type));
+			AE_RET(__ae_buf_catfmt(session, format, "%c", pv.type));
 	} while (have_next);
 
 	return (0);
 }
 
 /*
- * __wt_struct_truncate --
+ * __ae_struct_truncate --
  *	Return a packing string for the first N columns in a value.
  */
 int
-__wt_struct_truncate(WT_SESSION_IMPL *session,
-    const char *input_fmt, u_int ncols, WT_ITEM *format)
+__ae_struct_truncate(AE_SESSION_IMPL *session,
+    const char *input_fmt, u_int ncols, AE_ITEM *format)
 {
-	WT_DECL_PACK_VALUE(pv);
-	WT_PACK pack;
+	AE_DECL_PACK_VALUE(pv);
+	AE_PACK pack;
 
-	WT_RET(__pack_init(session, &pack, input_fmt));
+	AE_RET(__pack_init(session, &pack, input_fmt));
 	while (ncols-- > 0) {
-		WT_RET(__pack_next(&pack, &pv));
+		AE_RET(__pack_next(&pack, &pv));
 		if (pv.havesize)
-			WT_RET(__wt_buf_catfmt(
+			AE_RET(__ae_buf_catfmt(
 			    session, format, "%d%c", (int)pv.size, pv.type));
 		else
-			WT_RET(__wt_buf_catfmt(session, format, "%c", pv.type));
+			AE_RET(__ae_buf_catfmt(session, format, "%c", pv.type));
 	}
 
 	return (0);

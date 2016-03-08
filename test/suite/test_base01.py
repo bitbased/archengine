@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Public Domain 2014-2015 MongoDB, Inc.
-# Public Domain 2008-2014 WiredTiger, Inc.
+# Public Domain 2008-2014 ArchEngine, Inc.
 #
 # This is free and unencumbered software released into the public domain.
 #
@@ -26,16 +26,16 @@
 # ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 # OTHER DEALINGS IN THE SOFTWARE.
 
-import wiredtiger, wttest
+import archengine, aetest
 
 # test_base01.py
 #    Basic operations
-class test_base01(wttest.WiredTigerTestCase):
+class test_base01(aetest.ArchEngineTestCase):
     """
     Test basic operations
     """
-    table_name1 = 'test_base01a.wt'
-    table_name2 = 'test_base01b.wt'
+    table_name1 = 'test_base01a.ae'
+    table_name2 = 'test_base01b.ae'
 
     def create_table(self, tablename):
         extra_params = ',allocation_size=512,' +\
@@ -62,7 +62,7 @@ class test_base01(wttest.WiredTigerTestCase):
                 self.pr('expect an error message...')
                 self.session.create('table:' + self.table_name1,
                                     'expect_this_error,okay?')
-            except wiredtiger.WiredTigerError as e:
+            except archengine.ArchEngineError as e:
                 gotException = True
                 self.pr('got expected exception: ' + str(e))
                 self.assertTrue(str(e).find('nvalid argument') >= 0)
@@ -77,7 +77,7 @@ class test_base01(wttest.WiredTigerTestCase):
         cursor = self.cursor_s(self.table_name1, 'somekey')
         self.pr('search')
         ret = cursor.search()
-        self.assertTrue(ret == wiredtiger.WT_NOTFOUND)
+        self.assertTrue(ret == archengine.AE_NOTFOUND)
         self.pr('closing cursor')
         cursor.close()
 
@@ -101,4 +101,4 @@ class test_base01(wttest.WiredTigerTestCase):
         getcursor.close()
 
 if __name__ == '__main__':
-    wttest.run()
+    aetest.run()

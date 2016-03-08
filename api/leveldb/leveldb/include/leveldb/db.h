@@ -5,7 +5,7 @@
 #ifndef STORAGE_LEVELDB_INCLUDE_DB_H_
 #define STORAGE_LEVELDB_INCLUDE_DB_H_
 
-#include "leveldb_wt_config.h"
+#include "leveldb_ae_config.h"
 #if defined(HAVE_ROCKSDB) && !defined(leveldb)
 #define leveldb rocksdb
 #endif

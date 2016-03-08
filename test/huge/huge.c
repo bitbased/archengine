@@ -1,6 +1,6 @@
 /*-
  * Public Domain 2014-2015 MongoDB, Inc.
- * Public Domain 2008-2014 WiredTiger, Inc.
+ * Public Domain 2008-2014 ArchEngine, Inc.
  *
  * This is free and unencumbered software released into the public domain.
  *
@@ -92,9 +92,9 @@ usage(void)
 static void
 run(CONFIG *cp, int bigkey, size_t bytes)
 {
-	WT_CONNECTION *conn;
-	WT_SESSION *session;
-	WT_CURSOR *cursor;
+	AE_CONNECTION *conn;
+	AE_SESSION *session;
+	AE_CURSOR *cursor;
 	uint64_t keyno;
 	int ret;
 	void *p;
@@ -117,17 +117,17 @@ run(CONFIG *cp, int bigkey, size_t bytes)
 	 * Open/create the database, connection, session and cursor; set the
 	 * cache size large, we don't want to try and evict anything.
 	 */
-	if ((ret = wiredtiger_open(
+	if ((ret = archengine_open(
 	    home, NULL, "create,cache_size=10GB", &conn)) != 0)
-		testutil_die(ret, "wiredtiger_open");
+		testutil_die(ret, "archengine_open");
 	if ((ret = conn->open_session(conn, NULL, NULL, &session)) != 0)
-		testutil_die(ret, "WT_CONNECTION.open_session");
+		testutil_die(ret, "AE_CONNECTION.open_session");
 	if ((ret = session->create(session, cp->uri, cp->config)) != 0)
 		testutil_die(ret,
-		    "WT_SESSION.create: %s %s", cp->uri, cp->config);
+		    "AE_SESSION.create: %s %s", cp->uri, cp->config);
 	if ((ret =
 	    session->open_cursor(session, cp->uri, NULL, NULL, &cursor)) != 0)
-		testutil_die(ret, "WT_SESSION.open_cursor: %s", cp->uri);
+		testutil_die(ret, "AE_SESSION.open_cursor: %s", cp->uri);
 
 	/* Set the key/value. */
 	if (bigkey)
@@ -141,31 +141,31 @@ run(CONFIG *cp, int bigkey, size_t bytes)
 
 	/* Insert the record (use update, insert discards the key). */
 	if ((ret = cursor->update(cursor)) != 0)
-		testutil_die(ret, "WT_CURSOR.insert");
+		testutil_die(ret, "AE_CURSOR.insert");
 
 	/* Retrieve the record and check it. */
 	if ((ret = cursor->search(cursor)) != 0)
-		testutil_die(ret, "WT_CURSOR.search");
+		testutil_die(ret, "AE_CURSOR.search");
 	if (bigkey && (ret = cursor->get_key(cursor, &p)) != 0)
-		testutil_die(ret, "WT_CURSOR.get_key");
+		testutil_die(ret, "AE_CURSOR.get_key");
 	if ((ret = cursor->get_value(cursor, &p)) != 0)
-		testutil_die(ret, "WT_CURSOR.get_value");
+		testutil_die(ret, "AE_CURSOR.get_value");
 	if (memcmp(p, big, bytes) != 0)
 		testutil_die(0,
 		    "retrieved big key/value item did not match original");
 
 	/* Remove the record. */
 	if ((ret = cursor->remove(cursor)) != 0)
-		testutil_die(ret, "WT_CURSOR.remove");
+		testutil_die(ret, "AE_CURSOR.remove");
 
 	if ((ret = conn->close(conn, NULL)) != 0)
-		testutil_die(ret, "WT_CONNECTION.close");
+		testutil_die(ret, "AE_CONNECTION.close");
 
 	big[bytes - 1] = 'a';
 }
 
-extern int __wt_optind;
-extern char *__wt_optarg;
+extern int __ae_optind;
+extern char *__ae_optarg;
 
 int
 main(int argc, char *argv[])
@@ -183,10 +183,10 @@ main(int argc, char *argv[])
 	small = 0;
 	working_dir = NULL;
 
-	while ((ch = __wt_getopt(progname, argc, argv, "h:s")) != EOF)
+	while ((ch = __ae_getopt(progname, argc, argv, "h:s")) != EOF)
 		switch (ch) {
 		case 'h':
-			working_dir = __wt_optarg;
+			working_dir = __ae_optarg;
 			break;
 		case 's':			/* Gigabytes */
 			small = 1;
@@ -194,8 +194,8 @@ main(int argc, char *argv[])
 		default:
 			usage();
 		}
-	argc -= __wt_optind;
-	argv += __wt_optind;
+	argc -= __ae_optind;
+	argv += __ae_optind;
 	if (argc != 0)
 		usage();
 

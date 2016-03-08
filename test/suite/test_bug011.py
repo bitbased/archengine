@@ -1,7 +1,7 @@
 #!usr/bin/env python
 #
 # Public Domain 2014-2015 MongoDB, Inc.
-# Public Domain 2008-2014 WiredTiger, Inc.
+# Public Domain 2008-2014 ArchEngine, Inc.
 #
 # This is free and unencumbered software released into the public domain.
 #
@@ -26,12 +26,12 @@
 # ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 # OTHER DEALINGS IN THE SOFTWARE.
 
-import helper, random, wiredtiger, wttest
+import helper, random, archengine, aetest
 from helper import simple_populate
 
 # test_bug011.py
 #    Eviction working on more files than there are hazard pointers.
-class test_bug011(wttest.WiredTigerTestCase):
+class test_bug011(aetest.ArchEngineTestCase):
     """
     Test having eviction working on more files than the number of
     allocated hazard pointers.
@@ -41,12 +41,12 @@ class test_bug011(wttest.WiredTigerTestCase):
     nrows = 10000
     nops = 10000
 
-    # Overrides WiredTigerTestCase
+    # Overrides ArchEngineTestCase
     def setUpConnectionOpen(self, dir):
         self.home = dir
         conn_params = 'create,cache_size=10MB,' \
                       'hazard_max=' + str(self.ntables / 2)
-        conn = wiredtiger.wiredtiger_open(dir, conn_params)
+        conn = archengine.archengine_open(dir, conn_params)
         self.pr(`conn`)
         return conn
 
@@ -75,4 +75,4 @@ class test_bug011(wttest.WiredTigerTestCase):
                 cursors[i].reset()
 
 if __name__ == '__main__':
-    wttest.run()
+    aetest.run()

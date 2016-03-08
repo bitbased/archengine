@@ -1,6 +1,6 @@
 /*-
  * Public Domain 2014-2015 MongoDB, Inc.
- * Public Domain 2008-2014 WiredTiger, Inc.
+ * Public Domain 2008-2014 ArchEngine, Inc.
  *
  * This is free and unencumbered software released into the public domain.
  *
@@ -32,14 +32,14 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <wiredtiger.h>
-#include <wiredtiger_ext.h>
+#include <archengine.h>
+#include <archengine_ext.h>
 
 /* Local compressor structure. */
 typedef struct {
-	WT_COMPRESSOR compressor;		/* Must come first */
+	AE_COMPRESSOR compressor;		/* Must come first */
 
-	WT_EXTENSION_API *wt_api;		/* Extension API */
+	AE_EXTENSION_API *ae_api;		/* Extension API */
 
 	int bz_verbosity;			/* Configuration */
 	int bz_blocksize100k;
@@ -52,8 +52,8 @@ typedef struct {
  * we need two handles, package them up.
  */
 typedef struct {
-	WT_COMPRESSOR *compressor;
-	WT_SESSION *session;
+	AE_COMPRESSOR *compressor;
+	AE_SESSION *session;
 } BZIP_OPAQUE;
 
 /*
@@ -62,12 +62,12 @@ typedef struct {
  */
 static int
 bzip2_error(
-    WT_COMPRESSOR *compressor, WT_SESSION *session, const char *call, int bzret)
+    AE_COMPRESSOR *compressor, AE_SESSION *session, const char *call, int bzret)
 {
-	WT_EXTENSION_API *wt_api;
+	AE_EXTENSION_API *ae_api;
 	const char *msg;
 
-	wt_api = ((BZIP_COMPRESSOR *)compressor)->wt_api;
+	ae_api = ((BZIP_COMPRESSOR *)compressor)->ae_api;
 
 	switch (bzret) {
 	case BZ_MEM_ERROR:
@@ -102,9 +102,9 @@ bzip2_error(
 		break;
 	}
 
-	(void)wt_api->err_printf(wt_api, session,
+	(void)ae_api->err_printf(ae_api, session,
 	    "bzip2 error: %s: %s: %d", call, msg, bzret);
-	return (WT_ERROR);
+	return (AE_ERROR);
 }
 
 /*
@@ -115,12 +115,12 @@ static void *
 bzalloc(void *cookie, int number, int size)
 {
 	BZIP_OPAQUE *opaque;
-	WT_EXTENSION_API *wt_api;
+	AE_EXTENSION_API *ae_api;
 
 	opaque = cookie;
-	wt_api = ((BZIP_COMPRESSOR *)opaque->compressor)->wt_api;
-	return (wt_api->scr_alloc(
-	    wt_api, opaque->session, (size_t)(number * size)));
+	ae_api = ((BZIP_COMPRESSOR *)opaque->compressor)->ae_api;
+	return (ae_api->scr_alloc(
+	    ae_api, opaque->session, (size_t)(number * size)));
 }
 
 /*
@@ -131,19 +131,19 @@ static void
 bzfree(void *cookie, void *p)
 {
 	BZIP_OPAQUE *opaque;
-	WT_EXTENSION_API *wt_api;
+	AE_EXTENSION_API *ae_api;
 
 	opaque = cookie;
-	wt_api = ((BZIP_COMPRESSOR *)opaque->compressor)->wt_api;
-	wt_api->scr_free(wt_api, opaque->session, p);
+	ae_api = ((BZIP_COMPRESSOR *)opaque->compressor)->ae_api;
+	ae_api->scr_free(ae_api, opaque->session, p);
 }
 
 /*
  * bzip2_compress --
- *	WiredTiger bzip2 compression.
+ *	ArchEngine bzip2 compression.
  */
 static int
-bzip2_compress(WT_COMPRESSOR *compressor, WT_SESSION *session,
+bzip2_compress(AE_COMPRESSOR *compressor, AE_SESSION *session,
     uint8_t *src, size_t src_len,
     uint8_t *dst, size_t dst_len,
     size_t *result_lenp, int *compression_failed)
@@ -210,7 +210,7 @@ __bzip2_compress_raw_random(void)
  *	Test function for the test/format utility.
  */
 static int
-bzip2_compress_raw(WT_COMPRESSOR *compressor, WT_SESSION *session,
+bzip2_compress_raw(AE_COMPRESSOR *compressor, AE_SESSION *session,
     size_t page_max, int split_pct, size_t extra,
     uint8_t *src, uint32_t *offsets, uint32_t slots,
     uint8_t *dst, size_t dst_len, int final,
@@ -226,7 +226,7 @@ bzip2_compress_raw(WT_COMPRESSOR *compressor, WT_SESSION *session,
 
 	/*
 	 * This function is used by the test/format utility to test the
-	 * WT_COMPRESSOR::compress_raw functionality.
+	 * AE_COMPRESSOR::compress_raw functionality.
 	 *
 	 * I'm trying to mimic how a real application is likely to behave: if
 	 * it's a small number of slots, we're not going to take them because
@@ -280,10 +280,10 @@ bzip2_compress_raw(WT_COMPRESSOR *compressor, WT_SESSION *session,
 
 /*
  * bzip2_decompress --
- *	WiredTiger bzip2 decompression.
+ *	ArchEngine bzip2 decompression.
  */
 static int
-bzip2_decompress(WT_COMPRESSOR *compressor, WT_SESSION *session,
+bzip2_decompress(AE_COMPRESSOR *compressor, AE_SESSION *session,
     uint8_t *src, size_t src_len,
     uint8_t *dst, size_t dst_len,
     size_t *result_lenp)
@@ -334,10 +334,10 @@ bzip2_decompress(WT_COMPRESSOR *compressor, WT_SESSION *session,
 
 /*
  * bzip2_terminate --
- *	WiredTiger bzip2 compression termination.
+ *	ArchEngine bzip2 compression termination.
  */
 static int
-bzip2_terminate(WT_COMPRESSOR *compressor, WT_SESSION *session)
+bzip2_terminate(AE_COMPRESSOR *compressor, AE_SESSION *session)
 {
 	(void)session;					/* Unused parameters */
 
@@ -350,7 +350,7 @@ bzip2_terminate(WT_COMPRESSOR *compressor, WT_SESSION *session)
  *	Add a bzip2 compressor.
  */
 static int
-bzip2_add_compressor(WT_CONNECTION *connection, int raw, const char *name)
+bzip2_add_compressor(AE_CONNECTION *connection, int raw, const char *name)
 {
 	BZIP_COMPRESSOR *bzip_compressor;
 
@@ -369,7 +369,7 @@ bzip2_add_compressor(WT_CONNECTION *connection, int raw, const char *name)
 	bzip_compressor->compressor.pre_size = NULL;
 	bzip_compressor->compressor.terminate = bzip2_terminate;
 
-	bzip_compressor->wt_api = connection->get_extension_api(connection);
+	bzip_compressor->ae_api = connection->get_extension_api(connection);
 
 	/* between 0-4: set the amount of verbosity to stderr */
 	bzip_compressor->bz_verbosity = 0;
@@ -393,15 +393,15 @@ bzip2_add_compressor(WT_CONNECTION *connection, int raw, const char *name)
 	bzip_compressor->bz_small = 0;
 
 	return (connection->add_compressor(	/* Load the compressor */
-	    connection, name, (WT_COMPRESSOR *)bzip_compressor, NULL));
+	    connection, name, (AE_COMPRESSOR *)bzip_compressor, NULL));
 }
 
 /*
- * wiredtiger_extension_init --
- *	WiredTiger bzip2 compression extension.
+ * archengine_extension_init --
+ *	ArchEngine bzip2 compression extension.
  */
 int
-wiredtiger_extension_init(WT_CONNECTION *connection, WT_CONFIG_ARG *config)
+archengine_extension_init(AE_CONNECTION *connection, AE_CONFIG_ARG *config)
 {
 	int ret;
 

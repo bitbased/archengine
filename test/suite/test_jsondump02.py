@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Public Domain 2014-2015 MongoDB, Inc.
-# Public Domain 2008-2014 WiredTiger, Inc.
+# Public Domain 2008-2014 ArchEngine, Inc.
 #
 # This is free and unencumbered software released into the public domain.
 #
@@ -27,16 +27,16 @@
 # OTHER DEALINGS IN THE SOFTWARE.
 
 import os
-import wiredtiger, wttest
+import archengine, aetest
 
 # test_jsondump.py
 # Test dump output from json cursors.
-class test_jsondump02(wttest.WiredTigerTestCase):
+class test_jsondump02(aetest.ArchEngineTestCase):
 
-    table_uri1 = 'table:jsondump02a.wt'
-    table_uri2 = 'table:jsondump02b.wt'
-    table_uri3 = 'table:jsondump02c.wt'
-    basename_uri4 = 'jsondump02d.wt'
+    table_uri1 = 'table:jsondump02a.ae'
+    table_uri2 = 'table:jsondump02b.ae'
+    table_uri3 = 'table:jsondump02c.ae'
+    basename_uri4 = 'jsondump02d.ae'
     table_uri4 = 'table:' + basename_uri4
 
     def set_kv(self, uri, key, val):
@@ -139,50 +139,50 @@ class test_jsondump02(wttest.WiredTigerTestCase):
         self.session.truncate(self.table_uri2, None, None, None)
 
         # bad tokens
-        self.assertRaisesWithMessage(wiredtiger.WiredTigerError,
+        self.assertRaisesWithMessage(archengine.ArchEngineError,
             lambda: self.load_json(self.table_uri2,
               (('<>abc?', '9'),)),
             '/unknown token/')
 
         # bad tokens
-        self.assertRaisesWithMessage(wiredtiger.WiredTigerError,
+        self.assertRaisesWithMessage(archengine.ArchEngineError,
             lambda: self.load_json(self.table_uri2,
               (('"abc\u"', ''),)),
             '/invalid Unicode/')
 
         # bad tokens
-        self.assertRaisesWithMessage(wiredtiger.WiredTigerError,
+        self.assertRaisesWithMessage(archengine.ArchEngineError,
             lambda: self.load_json(self.table_uri2,
               (('"abc', ''),)),
             '/unterminated string/')
 
         # bad syntax
-        self.assertRaisesWithMessage(wiredtiger.WiredTigerError,
+        self.assertRaisesWithMessage(archengine.ArchEngineError,
             lambda: self.load_json(self.table_uri2,
               (('"stuff" "jibberish"', '"value0" "more jibberish"'),)),
             '/expected key name.*\"key0\"/')
 
         # bad types
-        self.assertRaisesWithMessage(wiredtiger.WiredTigerError,
+        self.assertRaisesWithMessage(archengine.ArchEngineError,
             lambda: self.load_json(self.table_uri2,
               (('"key0" : "KEY002"', '"value0" : "xyz",\n"value1" : "str0"'),)),
             '/expected unsigned JSON <int>, got <string>/')
 
         # bad types
-        self.assertRaisesWithMessage(wiredtiger.WiredTigerError,
+        self.assertRaisesWithMessage(archengine.ArchEngineError,
             lambda: self.load_json(self.table_uri2,
               (('"key0" : "KEY002"', '"value0" : 123,\n"value1" : 456'),)),
             '/expected JSON <string>, got <integer>/')
 
         # extra stuff
-        self.assertRaisesWithMessage(wiredtiger.WiredTigerError,
+        self.assertRaisesWithMessage(archengine.ArchEngineError,
             lambda: self.load_json(self.table_uri2,
               (('"key0" : "KEY002"',
                 '"value0" : 123,\n"value1" : "str0",'),)),
             '/expected JSON <EOF>, got \',\'/')
 
         # fields out of order currently not supported
-        self.assertRaisesWithMessage(wiredtiger.WiredTigerError,
+        self.assertRaisesWithMessage(archengine.ArchEngineError,
             lambda: self.load_json(self.table_uri2,
               (('"key0" : "KEY002"', '"value1" : "str0",\n"value0" : 123'),)),
             '/expected value name.*\"value0\"/')
@@ -191,7 +191,7 @@ class test_jsondump02(wttest.WiredTigerTestCase):
         invalid_unicode = (
             '\\u', '\\ux', '\\u0', '\\u0F', '\\u0FA', '\\u0FAx',  '\\u0FA\\x')
         for uni in invalid_unicode:
-            self.assertRaisesWithMessage(wiredtiger.WiredTigerError,
+            self.assertRaisesWithMessage(archengine.ArchEngineError,
                 lambda: self.load_json(self.table_uri2,
                   (('"key0" : "KEY002"', '"value0" : 123,\n"value1" : "'
                     + uni + '"'),)),
@@ -249,4 +249,4 @@ class test_jsondump02(wttest.WiredTigerTestCase):
                  '"S1" : "val16",\n"i2" : 16,\n"S3" : "val64",\n"i4" : 64')))
 
 if __name__ == '__main__':
-    wttest.run()
+    aetest.run()

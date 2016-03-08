@@ -1,6 +1,6 @@
 /*-
  * Copyright (c) 2014-2015 MongoDB, Inc.
- * Copyright (c) 2008-2014 WiredTiger, Inc.
+ * Copyright (c) 2008-2014 ArchEngine, Inc.
  *	All rights reserved.
  *
  * See the file LICENSE for redistribution information.
@@ -25,11 +25,11 @@ static int usage(void);
 int
 main(int argc, char *argv[])
 {
-	WT_CONNECTION *conn;
-	WT_DECL_RET;
-	WT_SESSION *session;
+	AE_CONNECTION *conn;
+	AE_DECL_RET;
+	AE_SESSION *session;
 	size_t len;
-	int ch, major_v, minor_v, tret, (*func)(WT_SESSION *, int, char *[]);
+	int ch, major_v, minor_v, tret, (*func)(AE_SESSION *, int, char *[]);
 	bool logoff, recover;
 	char *p, *secretkey;
 	const char *cmd_config, *config, *p1, *p2, *p3, *rec_config;
@@ -46,14 +46,14 @@ main(int argc, char *argv[])
 	command = "";
 
 	/* Check the version against the library build. */
-	(void)wiredtiger_version(&major_v, & minor_v, NULL);
-	if (major_v != WIREDTIGER_VERSION_MAJOR ||
-	    minor_v != WIREDTIGER_VERSION_MINOR) {
+	(void)archengine_version(&major_v, & minor_v, NULL);
+	if (major_v != ARCHENGINE_VERSION_MAJOR ||
+	    minor_v != ARCHENGINE_VERSION_MINOR) {
 		fprintf(stderr,
 		    "%s: program build version %d.%d does not match "
 		    "library build version %d.%d\n",
 		    progname,
-		    WIREDTIGER_VERSION_MAJOR, WIREDTIGER_VERSION_MINOR,
+		    ARCHENGINE_VERSION_MAJOR, ARCHENGINE_VERSION_MINOR,
 		    major_v,  minor_v);
 		return (EXIT_FAILURE);
 	}
@@ -68,20 +68,20 @@ main(int argc, char *argv[])
 	rec_config = REC_ERROR;
 	logoff = recover = false;
 	/* Check for standard options. */
-	while ((ch = __wt_getopt(progname, argc, argv, "C:E:h:LRVv")) != EOF)
+	while ((ch = __ae_getopt(progname, argc, argv, "C:E:h:LRVv")) != EOF)
 		switch (ch) {
-		case 'C':			/* wiredtiger_open config */
-			cmd_config = __wt_optarg;
+		case 'C':			/* archengine_open config */
+			cmd_config = __ae_optarg;
 			break;
 		case 'E':			/* secret key */
-			if ((secretkey = strdup(__wt_optarg)) == NULL) {
+			if ((secretkey = strdup(__ae_optarg)) == NULL) {
 				ret = util_err(NULL, errno, NULL);
 				goto err;
 			}
-			memset(__wt_optarg, 0, strlen(__wt_optarg));
+			memset(__ae_optarg, 0, strlen(__ae_optarg));
 			break;
 		case 'h':			/* home directory */
-			home = __wt_optarg;
+			home = __ae_optarg;
 			break;
 		case 'L':			/* no logging */
 			rec_config = REC_LOGOFF;
@@ -92,7 +92,7 @@ main(int argc, char *argv[])
 			recover = true;
 			break;
 		case 'V':			/* version */
-			printf("%s\n", wiredtiger_version(NULL, NULL, NULL));
+			printf("%s\n", archengine_version(NULL, NULL, NULL));
 			return (EXIT_SUCCESS);
 		case 'v':			/* verbose */
 			verbose = true;
@@ -105,8 +105,8 @@ main(int argc, char *argv[])
 		fprintf(stderr, "Only one of -L and -R is allowed.\n");
 		return (EXIT_FAILURE);
 	}
-	argc -= __wt_optind;
-	argv += __wt_optind;
+	argc -= __ae_optind;
+	argv += __ae_optind;
 
 	/* The next argument is the command name. */
 	if (argc < 1)
@@ -114,7 +114,7 @@ main(int argc, char *argv[])
 	command = argv[0];
 
 	/* Reset getopt. */
-	__wt_optreset = __wt_optind = 1;
+	__ae_optreset = __ae_optind = 1;
 
 	func = NULL;
 	switch (command[0]) {
@@ -212,7 +212,7 @@ main(int argc, char *argv[])
 	config = p;
 
 	/* Open the database and a session. */
-	if ((ret = wiredtiger_open(home,
+	if ((ret = archengine_open(home,
 	    verbose ? verbose_handler : NULL, config, &conn)) != 0) {
 		ret = util_err(NULL, ret, NULL);
 		goto err;
@@ -240,11 +240,11 @@ static int
 usage(void)
 {
 	fprintf(stderr,
-	    "WiredTiger Data Engine (version %d.%d)\n",
-	    WIREDTIGER_VERSION_MAJOR, WIREDTIGER_VERSION_MINOR);
+	    "ArchEngine Data Engine (version %d.%d)\n",
+	    ARCHENGINE_VERSION_MAJOR, ARCHENGINE_VERSION_MINOR);
 	fprintf(stderr,
 	    "global options:\n"
-	    "\t" "-C\t" "wiredtiger_open configuration\n"
+	    "\t" "-C\t" "archengine_open configuration\n"
 	    "\t" "-h\t" "database directory\n"
 	    "\t" "-L\t" "turn logging off for debug-mode\n"
 	    "\t" "-R\t" "run recovery if configured\n"
@@ -278,14 +278,14 @@ usage(void)
  *	Build a name.
  */
 char *
-util_name(WT_SESSION *session, const char *s, const char *type)
+util_name(AE_SESSION *session, const char *s, const char *type)
 {
 	size_t len;
 	char *name;
 
-	if (WT_PREFIX_MATCH(s, "backup:") ||
-	    WT_PREFIX_MATCH(s, "config:") ||
-	    WT_PREFIX_MATCH(s, "statistics:")) {
+	if (AE_PREFIX_MATCH(s, "backup:") ||
+	    AE_PREFIX_MATCH(s, "config:") ||
+	    AE_PREFIX_MATCH(s, "statistics:")) {
 		fprintf(stderr,
 		    "%s: %s: unsupported object type: %s\n",
 		    progname, command, s);

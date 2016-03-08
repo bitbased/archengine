@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Public Domain 2014-2015 MongoDB, Inc.
-# Public Domain 2008-2014 WiredTiger, Inc.
+# Public Domain 2008-2014 ArchEngine, Inc.
 #
 # This is free and unencumbered software released into the public domain.
 #
@@ -31,21 +31,21 @@
 #       did not write all updates out.
 #
 
-import wiredtiger, wttest, wtthread
+import archengine, aetest, aethread
 import threading, time
 
-class test_bug010(wttest.WiredTigerTestCase):
+class test_bug010(aetest.ArchEngineTestCase):
     name = 'test_bug010'
     uri = 'table:' + name
     num_tables = 1000
 
-    # Overrides WiredTigerTestCase
+    # Overrides ArchEngineTestCase
     def setUpConnectionOpen(self, dir):
         self.home = dir
         # Disable checkpoint sync, to make checkpoints faster and
         # increase the likelyhood of triggering the symptom
         conn_params = ',create,checkpoint_sync=false'
-        conn = wiredtiger.wiredtiger_open(dir, conn_params)
+        conn = archengine.archengine_open(dir, conn_params)
         return conn
 
     def test_checkpoint_dirty(self):
@@ -71,7 +71,7 @@ class test_bug010(wttest.WiredTigerTestCase):
 
             # Create a checkpoint thread
             done = threading.Event()
-            ckpt = wtthread.checkpoint_thread(self.conn, done)
+            ckpt = aethread.checkpoint_thread(self.conn, done)
             ckpt.start()
             try:
                 expected_val += 1
@@ -88,7 +88,7 @@ class test_bug010(wttest.WiredTigerTestCase):
             self.session.checkpoint()
             for i in range(0, self.num_tables):
                 c = self.session.open_cursor(
-                    self.uri + str(i), None, 'checkpoint=WiredTigerCheckpoint')
+                    self.uri + str(i), None, 'checkpoint=ArchEngineCheckpoint')
                 c.next()
                 self.assertEquals(c.get_value(), expected_val,
                     msg='Mismatch on iteration ' + str(its) +\
@@ -96,4 +96,4 @@ class test_bug010(wttest.WiredTigerTestCase):
                 c.close()
 
 if __name__ == '__main__':
-    wttest.run()
+    aetest.run()

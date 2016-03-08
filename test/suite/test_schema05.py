@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Public Domain 2014-2015 MongoDB, Inc.
-# Public Domain 2008-2014 WiredTiger, Inc.
+# Public Domain 2008-2014 ArchEngine, Inc.
 #
 # This is free and unencumbered software released into the public domain.
 #
@@ -27,12 +27,12 @@
 # OTHER DEALINGS IN THE SOFTWARE.
 
 import os
-import wiredtiger, wttest, run
-from wtscenario import check_scenarios, number_scenarios
+import archengine, aetest, run
+from aescenario import check_scenarios, number_scenarios
 
 # test_schema05.py
 #    Test indices using a custom extractor.
-class test_schema05(wttest.WiredTigerTestCase):
+class test_schema05(aetest.ArchEngineTestCase):
     """
     Test indices with a custom extractor.
     This test is the same as test_schema04, except that rows
@@ -57,16 +57,16 @@ class test_schema05(wttest.WiredTigerTestCase):
         ('index-after', { 'create_index' : 2 }),
     ])
 
-    # Return the wiredtiger_open extension argument for a shared library.
+    # Return the archengine_open extension argument for a shared library.
     def extensionArg(self, exts):
         extfiles = []
         for ext in exts:
             (dirname, name, libname) = ext
             if name != None and name != 'none':
                 testdir = os.path.dirname(__file__)
-                extdir = os.path.join(run.wt_builddir, 'ext', dirname)
+                extdir = os.path.join(run.ae_builddir, 'ext', dirname)
                 extfile = os.path.join(
-                    extdir, name, '.libs', 'libwiredtiger_' + libname + '.so')
+                    extdir, name, '.libs', 'libarchengine_' + libname + '.so')
                 if not os.path.exists(extfile):
                     self.skipTest('extension "' + extfile + '" not built')
                 if not extfile in extfiles:
@@ -76,12 +76,12 @@ class test_schema05(wttest.WiredTigerTestCase):
         else:
             return ',extensions=["' + '","'.join(extfiles) + '"]'
 
-    # Override WiredTigerTestCase, we have extensions.
+    # Override ArchEngineTestCase, we have extensions.
     def setUpConnectionOpen(self, dir):
         extarg = self.extensionArg([('extractors', 'csv', 'csv_extractor')])
         connarg = 'create,error_prefix="{0}: ",{1}'.format(
             self.shortid(), extarg)
-        conn = wiredtiger.wiredtiger_open(dir, connarg)
+        conn = archengine.archengine_open(dir, connarg)
         self.pr(`conn`)
         return conn
 
@@ -171,4 +171,4 @@ class test_schema05(wttest.WiredTigerTestCase):
 
 
 if __name__ == '__main__':
-    wttest.run()
+    aetest.run()

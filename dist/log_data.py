@@ -13,7 +13,7 @@ class LogRecordType:
         self.fields = fields
 
     def macro_name(self):
-        return 'WT_LOGREC_%s' % self.name.upper()
+        return 'AE_LOGREC_%s' % self.name.upper()
 
     def prname(self):
         return '__logrec_print_' + self.name
@@ -21,7 +21,7 @@ class LogRecordType:
 rectypes = [
     # A database-wide checkpoint.
     LogRecordType('checkpoint', 'checkpoint', [
-        ('WT_LSN', 'ckpt_lsn'), ('uint32', 'nsnapshot'), ('item', 'snapshot')]),
+        ('AE_LSN', 'ckpt_lsn'), ('uint32', 'nsnapshot'), ('item', 'snapshot')]),
 
     # Common case: a transaction commit
     LogRecordType('commit', 'transaction commit', [('uint64', 'txnid')]),
@@ -44,7 +44,7 @@ class LogOperationType:
         self.fields = fields
 
     def macro_name(self):
-        return 'WT_LOGOP_%s' % self.name.upper()
+        return 'AE_LOGOP_%s' % self.name.upper()
 
 optypes = [
     LogOperationType('col_put', 'column put',

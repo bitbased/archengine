@@ -2,7 +2,7 @@
 #      http://www.gnu.org/software/autoconf-archive/ax_check_junit.html
 # ===========================================================================
 #
-# WiredTiger: Updated to use JUnit 4 call semantics.
+# ArchEngine: Updated to use JUnit 4 call semantics.
 #
 # SYNOPSIS
 #

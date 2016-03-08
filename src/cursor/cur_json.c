@@ -1,34 +1,34 @@
 /*-
  * Copyright (c) 2014-2015 MongoDB, Inc.
- * Copyright (c) 2008-2014 WiredTiger, Inc.
+ * Copyright (c) 2008-2014 ArchEngine, Inc.
  *	All rights reserved.
  *
  * See the file LICENSE for redistribution information.
  */
 
-#include "wt_internal.h"
+#include "ae_internal.h"
 
-static size_t __json_unpack_put(WT_SESSION_IMPL *, void *, u_char *, size_t,
-    WT_CONFIG_ITEM *);
-static inline int __json_struct_size(WT_SESSION_IMPL *, const void *, size_t,
-    const char *, WT_CONFIG_ITEM *, bool, size_t *);
-static inline int __json_struct_unpackv(WT_SESSION_IMPL *, const void *, size_t,
-    const char *, WT_CONFIG_ITEM *, u_char *, size_t, bool, va_list);
-static int json_string_arg(WT_SESSION_IMPL *, const char **, WT_ITEM *);
-static int json_int_arg(WT_SESSION_IMPL *, const char **, int64_t *);
-static int json_uint_arg(WT_SESSION_IMPL *, const char **, uint64_t *);
-static int __json_pack_struct(WT_SESSION_IMPL *, void *, size_t, const char *,
+static size_t __json_unpack_put(AE_SESSION_IMPL *, void *, u_char *, size_t,
+    AE_CONFIG_ITEM *);
+static inline int __json_struct_size(AE_SESSION_IMPL *, const void *, size_t,
+    const char *, AE_CONFIG_ITEM *, bool, size_t *);
+static inline int __json_struct_unpackv(AE_SESSION_IMPL *, const void *, size_t,
+    const char *, AE_CONFIG_ITEM *, u_char *, size_t, bool, va_list);
+static int json_string_arg(AE_SESSION_IMPL *, const char **, AE_ITEM *);
+static int json_int_arg(AE_SESSION_IMPL *, const char **, int64_t *);
+static int json_uint_arg(AE_SESSION_IMPL *, const char **, uint64_t *);
+static int __json_pack_struct(AE_SESSION_IMPL *, void *, size_t, const char *,
     const char *);
-static int __json_pack_size(WT_SESSION_IMPL *, const char *, WT_CONFIG_ITEM *,
+static int __json_pack_size(AE_SESSION_IMPL *, const char *, AE_CONFIG_ITEM *,
     bool, const char *, size_t *);
 
-#define	WT_PACK_JSON_GET(session, pv, jstr) do {			\
+#define	AE_PACK_JSON_GET(session, pv, jstr) do {			\
 	switch (pv.type) {						\
 	case 'x':							\
 		break;							\
 	case 's':							\
 	case 'S':							\
-		WT_RET(json_string_arg(session, &jstr, &pv.u.item));	\
+		AE_RET(json_string_arg(session, &jstr, &pv.u.item));	\
 		pv.type = pv.type == 's' ? 'j' : 'J';			\
 		break;							\
 	case 'b':							\
@@ -36,7 +36,7 @@ static int __json_pack_size(WT_SESSION_IMPL *, const char *, WT_CONFIG_ITEM *,
 	case 'i':							\
 	case 'l':							\
 	case 'q':							\
-		WT_RET(json_int_arg(session, &jstr, &pv.u.i));		\
+		AE_RET(json_int_arg(session, &jstr, &pv.u.i));		\
 		break;							\
 	case 'B':							\
 	case 'H':							\
@@ -46,10 +46,10 @@ static int __json_pack_size(WT_SESSION_IMPL *, const char *, WT_CONFIG_ITEM *,
 	case 'r':							\
 	case 'R':							\
 	case 't':							\
-		WT_RET(json_uint_arg(session, &jstr, &pv.u.u));		\
+		AE_RET(json_uint_arg(session, &jstr, &pv.u.u));		\
 		break;							\
 	/* User format strings have already been validated. */		\
-	WT_ILLEGAL_VALUE(session);					\
+	AE_ILLEGAL_VALUE(session);					\
 	}								\
 } while (0)
 
@@ -58,14 +58,14 @@ static int __json_pack_size(WT_SESSION_IMPL *, const char *, WT_CONFIG_ITEM *,
  *	Calculate the size of a packed byte string as formatted for JSON.
  */
 static size_t
-__json_unpack_put(WT_SESSION_IMPL *session, void *voidpv,
-    u_char *buf, size_t bufsz, WT_CONFIG_ITEM *name)
+__json_unpack_put(AE_SESSION_IMPL *session, void *voidpv,
+    u_char *buf, size_t bufsz, AE_CONFIG_ITEM *name)
 {
-	WT_PACK_VALUE *pv;
+	AE_PACK_VALUE *pv;
 	const char *p, *end;
 	size_t s, n;
 
-	pv = (WT_PACK_VALUE *)voidpv;
+	pv = (AE_PACK_VALUE *)voidpv;
 	s = (size_t)snprintf((char *)buf, bufsz, "\"%.*s\" : ",
 	    (int)name->len, name->str);
 	if (s <= bufsz) {
@@ -90,7 +90,7 @@ __json_unpack_put(WT_SESSION_IMPL *session, void *voidpv,
 		if (pv->type == 's' || pv->havesize) {
 			end = p + pv->size;
 			for (; p < end; p++) {
-				n = __wt_json_unpack_char(
+				n = __ae_json_unpack_char(
 				    *p, buf, bufsz, false);
 				if (n > bufsz)
 					bufsz = 0;
@@ -102,7 +102,7 @@ __json_unpack_put(WT_SESSION_IMPL *session, void *voidpv,
 			}
 		} else
 			for (; *p; p++) {
-				n = __wt_json_unpack_char(
+				n = __ae_json_unpack_char(
 				    *p, buf, bufsz, false);
 				if (n > bufsz)
 					bufsz = 0;
@@ -125,7 +125,7 @@ __json_unpack_put(WT_SESSION_IMPL *session, void *voidpv,
 			bufsz--;
 		}
 		for (; p < end; p++) {
-			n = __wt_json_unpack_char(*p, buf, bufsz, true);
+			n = __ae_json_unpack_char(*p, buf, bufsz, true);
 			if (n > bufsz)
 				bufsz = 0;
 			else {
@@ -155,7 +155,7 @@ __json_unpack_put(WT_SESSION_IMPL *session, void *voidpv,
 		return (s +
 		    (size_t)snprintf((char *)buf, bufsz, "%" PRId64, pv->u.u));
 	}
-	__wt_err(session, EINVAL, "unknown pack-value type: %c", (int)pv->type);
+	__ae_err(session, EINVAL, "unknown pack-value type: %c", (int)pv->type);
 	return ((size_t)-1);
 }
 
@@ -164,15 +164,15 @@ __json_unpack_put(WT_SESSION_IMPL *session, void *voidpv,
  *	Calculate the size of a packed byte string as formatted for JSON.
  */
 static inline int
-__json_struct_size(WT_SESSION_IMPL *session, const void *buffer,
-    size_t size, const char *fmt, WT_CONFIG_ITEM *names, bool iskey,
+__json_struct_size(AE_SESSION_IMPL *session, const void *buffer,
+    size_t size, const char *fmt, AE_CONFIG_ITEM *names, bool iskey,
     size_t *presult)
 {
-	WT_CONFIG_ITEM name;
-	WT_DECL_PACK_VALUE(pv);
-	WT_DECL_RET;
-	WT_PACK pack;
-	WT_PACK_NAME packname;
+	AE_CONFIG_ITEM name;
+	AE_DECL_PACK_VALUE(pv);
+	AE_DECL_RET;
+	AE_PACK pack;
+	AE_PACK_NAME packname;
 	size_t result;
 	bool needcr;
 	const uint8_t *p, *end;
@@ -182,21 +182,21 @@ __json_struct_size(WT_SESSION_IMPL *session, const void *buffer,
 	result = 0;
 	needcr = false;
 
-	WT_RET(__pack_name_init(session, names, iskey, &packname));
-	WT_RET(__pack_init(session, &pack, fmt));
+	AE_RET(__pack_name_init(session, names, iskey, &packname));
+	AE_RET(__pack_init(session, &pack, fmt));
 	while ((ret = __pack_next(&pack, &pv)) == 0) {
 		if (needcr)
 			result += 2;
 		needcr = true;
-		WT_RET(__unpack_read(session, &pv, &p, (size_t)(end - p)));
-		WT_RET(__pack_name_next(&packname, &name));
+		AE_RET(__unpack_read(session, &pv, &p, (size_t)(end - p)));
+		AE_RET(__pack_name_next(&packname, &name));
 		result += __json_unpack_put(session, &pv, NULL, 0, &name);
 	}
-	if (ret == WT_NOTFOUND)
+	if (ret == AE_NOTFOUND)
 		ret = 0;
 
 	/* Be paranoid - __pack_write should never overflow. */
-	WT_ASSERT(session, p <= end);
+	AE_ASSERT(session, p <= end);
 
 	*presult = result;
 	return (ret);
@@ -207,15 +207,15 @@ __json_struct_size(WT_SESSION_IMPL *session, const void *buffer,
  *	Unpack a byte string to JSON (va_list version).
  */
 static inline int
-__json_struct_unpackv(WT_SESSION_IMPL *session,
-    const void *buffer, size_t size, const char *fmt, WT_CONFIG_ITEM *names,
+__json_struct_unpackv(AE_SESSION_IMPL *session,
+    const void *buffer, size_t size, const char *fmt, AE_CONFIG_ITEM *names,
     u_char *jbuf, size_t jbufsize, bool iskey, va_list ap)
 {
-	WT_CONFIG_ITEM name;
-	WT_DECL_PACK_VALUE(pv);
-	WT_DECL_RET;
-	WT_PACK pack;
-	WT_PACK_NAME packname;
+	AE_CONFIG_ITEM name;
+	AE_DECL_PACK_VALUE(pv);
+	AE_DECL_RET;
+	AE_PACK pack;
+	AE_PACK_NAME packname;
 	size_t jsize;
 	bool needcr;
 	const uint8_t *p, *end;
@@ -227,46 +227,46 @@ __json_struct_unpackv(WT_SESSION_IMPL *session,
 	/* Unpacking a cursor marked as json implies a single arg. */
 	*va_arg(ap, const char **) = (char *)jbuf;
 
-	WT_RET(__pack_name_init(session, names, iskey, &packname));
-	WT_RET(__pack_init(session, &pack, fmt));
+	AE_RET(__pack_name_init(session, names, iskey, &packname));
+	AE_RET(__pack_init(session, &pack, fmt));
 	while ((ret = __pack_next(&pack, &pv)) == 0) {
 		if (needcr) {
-			WT_ASSERT(session, jbufsize >= 3);
+			AE_ASSERT(session, jbufsize >= 3);
 			strncat((char *)jbuf, ",\n", jbufsize);
 			jbuf += 2;
 			jbufsize -= 2;
 		}
 		needcr = true;
-		WT_RET(__unpack_read(session, &pv, &p, (size_t)(end - p)));
-		WT_RET(__pack_name_next(&packname, &name));
+		AE_RET(__unpack_read(session, &pv, &p, (size_t)(end - p)));
+		AE_RET(__pack_name_next(&packname, &name));
 		jsize = __json_unpack_put(session,
 		    (u_char *)&pv, jbuf, jbufsize, &name);
-		WT_ASSERT(session, jsize <= jbufsize);
+		AE_ASSERT(session, jsize <= jbufsize);
 		jbuf += jsize;
 		jbufsize -= jsize;
 	}
-	if (ret == WT_NOTFOUND)
+	if (ret == AE_NOTFOUND)
 		ret = 0;
 
 	/* Be paranoid - __unpack_read should never overflow. */
-	WT_ASSERT(session, p <= end);
+	AE_ASSERT(session, p <= end);
 
-	WT_ASSERT(session, jbufsize == 1);
+	AE_ASSERT(session, jbufsize == 1);
 
 	return (ret);
 }
 
 /*
- * __wt_json_alloc_unpack --
+ * __ae_json_alloc_unpack --
  *	Allocate space for, and unpack an entry into JSON format.
  */
 int
-__wt_json_alloc_unpack(WT_SESSION_IMPL *session, const void *buffer,
-    size_t size, const char *fmt, WT_CURSOR_JSON *json,
+__ae_json_alloc_unpack(AE_SESSION_IMPL *session, const void *buffer,
+    size_t size, const char *fmt, AE_CURSOR_JSON *json,
     bool iskey, va_list ap)
 {
-	WT_CONFIG_ITEM *names;
-	WT_DECL_RET;
+	AE_CONFIG_ITEM *names;
+	AE_DECL_RET;
 	size_t needed;
 	char **json_bufp;
 
@@ -278,39 +278,39 @@ __wt_json_alloc_unpack(WT_SESSION_IMPL *session, const void *buffer,
 		json_bufp = &json->value_buf;
 	}
 	needed = 0;
-	WT_RET(__json_struct_size(session, buffer, size, fmt, names,
+	AE_RET(__json_struct_size(session, buffer, size, fmt, names,
 	    iskey, &needed));
-	WT_RET(__wt_realloc(session, NULL, needed + 1, json_bufp));
-	WT_RET(__json_struct_unpackv(session, buffer, size, fmt,
+	AE_RET(__ae_realloc(session, NULL, needed + 1, json_bufp));
+	AE_RET(__json_struct_unpackv(session, buffer, size, fmt,
 	    names, (u_char *)*json_bufp, needed + 1, iskey, ap));
 
 	return (ret);
 }
 
 /*
- * __wt_json_close --
+ * __ae_json_close --
  *	Release any json related resources.
  */
 void
-__wt_json_close(WT_SESSION_IMPL *session, WT_CURSOR *cursor)
+__ae_json_close(AE_SESSION_IMPL *session, AE_CURSOR *cursor)
 {
-	WT_CURSOR_JSON *json;
+	AE_CURSOR_JSON *json;
 
-	if ((json = (WT_CURSOR_JSON *)cursor->json_private) != NULL) {
-		__wt_free(session, json->key_buf);
-		__wt_free(session, json->value_buf);
-		__wt_free(session, json);
+	if ((json = (AE_CURSOR_JSON *)cursor->json_private) != NULL) {
+		__ae_free(session, json->key_buf);
+		__ae_free(session, json->value_buf);
+		__ae_free(session, json);
 	}
 	return;
 }
 
 /*
- * __wt_json_unpack_char --
+ * __ae_json_unpack_char --
  *	Unpack a single character into JSON escaped format.
  *	Can be called with null buf for sizing.
  */
 size_t
-__wt_json_unpack_char(char ch, u_char *buf, size_t bufsz, bool force_unicode)
+__ae_json_unpack_char(char ch, u_char *buf, size_t bufsz, bool force_unicode)
 {
 	char abbrev;
 	u_char h;
@@ -369,19 +369,19 @@ __wt_json_unpack_char(char ch, u_char *buf, size_t bufsz, bool force_unicode)
 }
 
 /*
- * __wt_json_column_init --
+ * __ae_json_column_init --
  *	set json_key_names, json_value_names to comma separated lists
  *	of column names.
  */
 int
-__wt_json_column_init(WT_CURSOR *cursor, const char *keyformat,
-    const WT_CONFIG_ITEM *idxconf, const WT_CONFIG_ITEM *colconf)
+__ae_json_column_init(AE_CURSOR *cursor, const char *keyformat,
+    const AE_CONFIG_ITEM *idxconf, const AE_CONFIG_ITEM *colconf)
 {
-	WT_CURSOR_JSON *json;
+	AE_CURSOR_JSON *json;
 	const char *p, *end, *beginkey;
 	uint32_t keycnt, nkeys;
 
-	json = (WT_CURSOR_JSON *)cursor->json_private;
+	json = (AE_CURSOR_JSON *)cursor->json_private;
 	beginkey = colconf->str;
 	end = beginkey + colconf->len;
 
@@ -406,12 +406,12 @@ __wt_json_column_init(WT_CURSOR *cursor, const char *keyformat,
 		p++;
 	}
 	json->value_names.str = p;
-	json->value_names.len = WT_PTRDIFF(end, p);
+	json->value_names.len = AE_PTRDIFF(end, p);
 	if (idxconf == NULL) {
 		if (p > beginkey)
 			p--;
 		json->key_names.str = beginkey;
-		json->key_names.len = WT_PTRDIFF(p, beginkey);
+		json->key_names.len = AE_PTRDIFF(p, beginkey);
 	}
 	return (0);
 }
@@ -425,13 +425,13 @@ __wt_json_column_init(WT_CURSOR *cursor, const char *keyformat,
 		const char *_bad = in;					\
 		while (isalnum(*in))					\
 			in++;						\
-		__wt_errx(session, "unknown keyword \"%.*s\" in JSON",	\
+		__ae_errx(session, "unknown keyword \"%.*s\" in JSON",	\
 		    (int)(in - _bad), _bad);				\
 	}								\
 } while (0)
 
 /*
- * __wt_json_token --
+ * __ae_json_token --
  *	Return the type, start position and length of the next JSON
  *	token in the input.  String tokens include the quotes.  JSON
  *	can be entirely parsed using calls to this tokenizer, each
@@ -454,17 +454,17 @@ __wt_json_column_init(WT_CURSOR *cursor, const char *keyformat,
  *		'F'	:  false
  */
 int
-__wt_json_token(WT_SESSION *wt_session, const char *src, int *toktype,
+__ae_json_token(AE_SESSION *ae_session, const char *src, int *toktype,
     const char **tokstart, size_t *toklen)
 {
-	WT_SESSION_IMPL *session;
+	AE_SESSION_IMPL *session;
 	int result;
 	bool backslash, isalph, isfloat;
 	const char *bad;
 	char ch;
 
 	result = -1;
-	session = (WT_SESSION_IMPL *)wt_session;
+	session = (AE_SESSION_IMPL *)ae_session;
 	while (isspace(*src))
 		src++;
 	*tokstart = src;
@@ -496,9 +496,9 @@ __wt_json_token(WT_SESSION *wt_session, const char *src, int *toktype,
 					const u_char *uc;
 
 					uc = (const u_char *)src;
-					if (__wt_hex2byte(&uc[1], &ignored) ||
-					    __wt_hex2byte(&uc[3], &ignored)) {
-						__wt_errx(session,
+					if (__ae_hex2byte(&uc[1], &ignored) ||
+					    __ae_hex2byte(&uc[3], &ignored)) {
+						__ae_errx(session,
 				    "invalid Unicode within JSON string");
 						return (-1);
 					}
@@ -509,7 +509,7 @@ __wt_json_token(WT_SESSION *wt_session, const char *src, int *toktype,
 			src++;
 		}
 		if (result != 's')
-			__wt_errx(session, "unterminated string in JSON");
+			__ae_errx(session, "unterminated string in JSON");
 		break;
 	case '-':
 	case '0':
@@ -570,7 +570,7 @@ __wt_json_token(WT_SESSION *wt_session, const char *src, int *toktype,
 		if (isalph)
 			while (*src != '\0' && isalnum(*src))
 				src++;
-		__wt_errx(session, "unknown token \"%.*s\" in JSON",
+		__ae_errx(session, "unknown token \"%.*s\" in JSON",
 		    (int)(src - bad), bad);
 		break;
 	}
@@ -580,12 +580,12 @@ __wt_json_token(WT_SESSION *wt_session, const char *src, int *toktype,
 }
 
 /*
- * __wt_json_tokname --
+ * __ae_json_tokname --
  *	Return a descriptive name from the token type returned by
- *	__wt_json_token.
+ *	__ae_json_token.
  */
 const char *
-__wt_json_tokname(int toktype)
+__ae_json_tokname(int toktype)
 {
 	switch (toktype) {
 	case 0:		return ("<EOF>");
@@ -611,13 +611,13 @@ __wt_json_tokname(int toktype)
  *	The result has not been stripped of escapes.
  */
 static int
-json_string_arg(WT_SESSION_IMPL *session, const char **jstr, WT_ITEM *item)
+json_string_arg(AE_SESSION_IMPL *session, const char **jstr, AE_ITEM *item)
 {
-	WT_DECL_RET;
+	AE_DECL_RET;
 	int tok;
 	const char *tokstart;
 
-	WT_RET(__wt_json_token((WT_SESSION *)session, *jstr, &tok, &tokstart,
+	AE_RET(__ae_json_token((AE_SESSION *)session, *jstr, &tok, &tokstart,
 		&item->size));
 	if (tok == 's') {
 		*jstr = tokstart + item->size;
@@ -626,8 +626,8 @@ json_string_arg(WT_SESSION_IMPL *session, const char **jstr, WT_ITEM *item)
 		item->size -= 2;
 		ret = 0;
 	} else {
-		__wt_errx(session, "expected JSON <string>, got %s",
-		    __wt_json_tokname(tok));
+		__ae_errx(session, "expected JSON <string>, got %s",
+		    __ae_json_tokname(tok));
 		ret = EINVAL;
 	}
 	return (ret);
@@ -639,25 +639,25 @@ json_string_arg(WT_SESSION_IMPL *session, const char **jstr, WT_ITEM *item)
  *	in the JSON string.
  */
 static int
-json_int_arg(WT_SESSION_IMPL *session, const char **jstr, int64_t *ip)
+json_int_arg(AE_SESSION_IMPL *session, const char **jstr, int64_t *ip)
 {
 	char *end;
 	const char *tokstart;
 	size_t toksize;
 	int tok;
 
-	WT_RET(__wt_json_token((WT_SESSION *)session, *jstr, &tok, &tokstart,
+	AE_RET(__ae_json_token((AE_SESSION *)session, *jstr, &tok, &tokstart,
 		&toksize));
 	if (tok == 'i') {
 		/* JSON only allows decimal */
 		*ip = strtoll(tokstart, &end, 10);
 		if (end != tokstart + toksize)
-			WT_RET_MSG(session, EINVAL,
+			AE_RET_MSG(session, EINVAL,
 			    "JSON <int> extraneous input");
 		*jstr = tokstart + toksize;
 	} else {
-		__wt_errx(session, "expected JSON <int>, got %s",
-		    __wt_json_tokname(tok));
+		__ae_errx(session, "expected JSON <int>, got %s",
+		    __ae_json_tokname(tok));
 		return (EINVAL);
 	}
 	return (0);
@@ -669,25 +669,25 @@ json_int_arg(WT_SESSION_IMPL *session, const char **jstr, int64_t *ip)
  *	in the JSON string.
  */
 static int
-json_uint_arg(WT_SESSION_IMPL *session, const char **jstr, uint64_t *up)
+json_uint_arg(AE_SESSION_IMPL *session, const char **jstr, uint64_t *up)
 {
 	size_t toksize;
 	int tok;
 	const char *tokstart;
 	char *end;
 
-	WT_RET(__wt_json_token((WT_SESSION *)session, *jstr, &tok, &tokstart,
+	AE_RET(__ae_json_token((AE_SESSION *)session, *jstr, &tok, &tokstart,
 		&toksize));
 	if (tok == 'i' && *tokstart != '-') {
 		/* JSON only allows decimal */
 		*up = strtoull(tokstart, &end, 10);
 		if (end != tokstart + toksize)
-			WT_RET_MSG(session, EINVAL,
+			AE_RET_MSG(session, EINVAL,
 			    "JSON <int> extraneous input");
 		*jstr = tokstart + toksize;
 	} else {
-		__wt_errx(session, "expected unsigned JSON <int>, got %s",
-		    __wt_json_tokname(tok));
+		__ae_errx(session, "expected unsigned JSON <int>, got %s",
+		    __ae_json_tokname(tok));
 		return (EINVAL);
 	}
 	return (0);
@@ -695,10 +695,10 @@ json_uint_arg(WT_SESSION_IMPL *session, const char **jstr, uint64_t *up)
 
 #define	JSON_EXPECT_TOKEN_GET(session, jstr, tokval, start, sz) do {	\
     int __tok;								\
-    WT_RET(__wt_json_token((WT_SESSION *)session, jstr, &__tok, &start, &sz));\
+    AE_RET(__ae_json_token((AE_SESSION *)session, jstr, &__tok, &start, &sz));\
     if (__tok != tokval) {						\
-	    __wt_errx(session, "expected JSON %s, got %s",		\
-		__wt_json_tokname(tokval), __wt_json_tokname(__tok));	\
+	    __ae_errx(session, "expected JSON %s, got %s",		\
+		__ae_json_tokname(tokval), __ae_json_tokname(__tok));	\
 	    return (EINVAL);						\
     }									\
     jstr = start + sz;							\
@@ -715,12 +715,12 @@ json_uint_arg(WT_SESSION_IMPL *session, const char **jstr, uint64_t *up)
  *	Pack a byte string from a JSON string.
  */
 static int
-__json_pack_struct(WT_SESSION_IMPL *session, void *buffer, size_t size,
+__json_pack_struct(AE_SESSION_IMPL *session, void *buffer, size_t size,
     const char *fmt, const char *jstr)
 {
-	WT_DECL_PACK_VALUE(pv);
-	WT_DECL_RET;
-	WT_PACK pack;
+	AE_DECL_PACK_VALUE(pv);
+	AE_DECL_RET;
+	AE_PACK pack;
 	size_t toksize;
 	bool multi;
 	uint8_t *p, *end;
@@ -735,26 +735,26 @@ __json_pack_struct(WT_SESSION_IMPL *session, void *buffer, size_t size,
 		/* the key name was verified in __json_pack_size */
 		JSON_EXPECT_TOKEN(session, jstr, ':');
 		pv.type = fmt[0];
-		WT_PACK_JSON_GET(session, pv, jstr);
+		AE_PACK_JSON_GET(session, pv, jstr);
 		return (__pack_write(session, &pv, &p, size));
 	}
 
-	WT_RET(__pack_init(session, &pack, fmt));
+	AE_RET(__pack_init(session, &pack, fmt));
 	while ((ret = __pack_next(&pack, &pv)) == 0) {
 		if (multi)
 			JSON_EXPECT_TOKEN(session, jstr, ',');
 		JSON_EXPECT_TOKEN_GET(session, jstr, 's', tokstart, toksize);
 		/* the key name was verified in __json_pack_size */
 		JSON_EXPECT_TOKEN(session, jstr, ':');
-		WT_PACK_JSON_GET(session, pv, jstr);
-		WT_RET(__pack_write(session, &pv, &p, (size_t)(end - p)));
+		AE_PACK_JSON_GET(session, pv, jstr);
+		AE_RET(__pack_write(session, &pv, &p, (size_t)(end - p)));
 		multi = true;
 	}
 
 	/* Be paranoid - __pack_write should never overflow. */
-	WT_ASSERT(session, p <= end);
+	AE_ASSERT(session, p <= end);
 
-	if (ret != WT_NOTFOUND)
+	if (ret != AE_NOTFOUND)
 		return (ret);
 
 	return (0);
@@ -769,33 +769,33 @@ __json_pack_struct(WT_SESSION_IMPL *session, void *buffer, size_t size,
  */
 static int
 __json_pack_size(
-    WT_SESSION_IMPL *session, const char *fmt, WT_CONFIG_ITEM *names,
+    AE_SESSION_IMPL *session, const char *fmt, AE_CONFIG_ITEM *names,
 	bool iskey, const char *jstr, size_t *sizep)
 {
-	WT_CONFIG_ITEM name;
-	WT_DECL_PACK_VALUE(pv);
-	WT_PACK pack;
-	WT_PACK_NAME packname;
+	AE_CONFIG_ITEM name;
+	AE_DECL_PACK_VALUE(pv);
+	AE_PACK pack;
+	AE_PACK_NAME packname;
 	size_t toksize, total;
 	bool multi;
 	const char *tokstart;
 
-	WT_RET(__pack_name_init(session, names, iskey, &packname));
+	AE_RET(__pack_name_init(session, names, iskey, &packname));
 	multi = false;
-	WT_RET(__pack_init(session, &pack, fmt));
+	AE_RET(__pack_init(session, &pack, fmt));
 	for (total = 0; __pack_next(&pack, &pv) == 0;) {
 		if (multi)
 			JSON_EXPECT_TOKEN(session, jstr, ',');
 		JSON_EXPECT_TOKEN_GET(session, jstr, 's', tokstart, toksize);
-		WT_RET(__pack_name_next(&packname, &name));
+		AE_RET(__pack_name_next(&packname, &name));
 		if (toksize - 2 != name.len ||
 		    strncmp(tokstart + 1, name.str, toksize - 2) != 0) {
-			__wt_errx(session, "JSON expected %s name: \"%.*s\"",
+			__ae_errx(session, "JSON expected %s name: \"%.*s\"",
 			    iskey ? "key" : "value", (int)name.len, name.str);
 			return (EINVAL);
 		}
 		JSON_EXPECT_TOKEN(session, jstr, ':');
-		WT_PACK_JSON_GET(session, pv, jstr);
+		AE_PACK_JSON_GET(session, pv, jstr);
 		total += __pack_size(session, &pv);
 		multi = true;
 	}
@@ -807,31 +807,31 @@ __json_pack_size(
 }
 
 /*
- * __wt_json_to_item --
- *	Convert a JSON input string for either key/value to a raw WT_ITEM.
+ * __ae_json_to_item --
+ *	Convert a JSON input string for either key/value to a raw AE_ITEM.
  *	Checks that the input matches the expected format.
  */
 int
-__wt_json_to_item(WT_SESSION_IMPL *session, const char *jstr,
-    const char *format, WT_CURSOR_JSON *json, bool iskey, WT_ITEM *item)
+__ae_json_to_item(AE_SESSION_IMPL *session, const char *jstr,
+    const char *format, AE_CURSOR_JSON *json, bool iskey, AE_ITEM *item)
 {
 	size_t sz;
 	sz = 0; /* Initialize because GCC 4.1 is paranoid */
 
-	WT_RET(__json_pack_size(session, format,
+	AE_RET(__json_pack_size(session, format,
 	    iskey ? &json->key_names : &json->value_names, iskey, jstr, &sz));
-	WT_RET(__wt_buf_initsize(session, item, sz));
-	WT_RET(__json_pack_struct(session, item->mem, sz, format, jstr));
+	AE_RET(__ae_buf_initsize(session, item, sz));
+	AE_RET(__json_pack_struct(session, item->mem, sz, format, jstr));
 	return (0);
 }
 
 /*
- * __wt_json_strlen --
+ * __ae_json_strlen --
  *	Return the number of bytes represented by a string in JSON format,
  *	or -1 if the format is incorrect.
  */
 ssize_t
-__wt_json_strlen(const char *src, size_t srclen)
+__ae_json_strlen(const char *src, size_t srclen)
 {
 	const char *srcend;
 	size_t dstlen;
@@ -843,10 +843,10 @@ __wt_json_strlen(const char *src, size_t srclen)
 		/* JSON can include any UTF-8 expressed in 4 hex chars. */
 		if (*src == '\\') {
 			if (*++src == 'u') {
-				if (__wt_hex2byte((const u_char *)++src, &hi))
+				if (__ae_hex2byte((const u_char *)++src, &hi))
 					return (-1);
 				src += 2;
-				if (__wt_hex2byte((const u_char *)src, &lo))
+				if (__ae_hex2byte((const u_char *)src, &lo))
 					return (-1);
 				src += 2;
 				/* RFC 3629 */
@@ -870,13 +870,13 @@ __wt_json_strlen(const char *src, size_t srclen)
 }
 
 /*
- * __wt_json_strncpy --
+ * __ae_json_strncpy --
  *	Copy bytes of string in JSON format to a destination,
  *	up to dstlen bytes.  If dstlen is greater than the needed size,
  *	the result if zero padded.
  */
 int
-__wt_json_strncpy(char **pdst, size_t dstlen, const char *src, size_t srclen)
+__ae_json_strncpy(char **pdst, size_t dstlen, const char *src, size_t srclen)
 {
 	char *dst;
 	const char *dstend, *srcend;
@@ -889,10 +889,10 @@ __wt_json_strncpy(char **pdst, size_t dstlen, const char *src, size_t srclen)
 		/* JSON can include any UTF-8 expressed in 4 hex chars. */
 		if (*src == '\\') {
 			if (*++src == 'u') {
-				if (__wt_hex2byte((const u_char *)++src, &hi))
+				if (__ae_hex2byte((const u_char *)++src, &hi))
 					return (EINVAL);
 				src += 2;
-				if (__wt_hex2byte((const u_char *)src, &lo))
+				if (__ae_hex2byte((const u_char *)src, &lo))
 					return (EINVAL);
 				src += 2;
 				/* RFC 3629 */

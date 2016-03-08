@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Public Domain 2014-2015 MongoDB, Inc.
-# Public Domain 2008-2014 WiredTiger, Inc.
+# Public Domain 2008-2014 ArchEngine, Inc.
 #
 # This is free and unencumbered software released into the public domain.
 #
@@ -28,11 +28,11 @@
 
 import os, struct
 from suite_subprocess import suite_subprocess
-import wiredtiger, wttest
+import archengine, aetest
 
 # test_salvage.py
-#    Utilities: wt salvage
-class test_salvage(wttest.WiredTigerTestCase, suite_subprocess):
+#    Utilities: ae salvage
+class test_salvage(aetest.ArchEngineTestCase, suite_subprocess):
     tablename = 'test_salvage.a'
     nentries = 1000
     session_params = 'key_format=S,value_format=S'
@@ -115,8 +115,8 @@ class test_salvage(wttest.WiredTigerTestCase, suite_subprocess):
         """
         self.close_conn()
         # we close the connection to guarantee everything is
-        # flushed and closed from the WT point of view.
-        filename = tablename + ".wt"
+        # flushed and closed from the AE point of view.
+        filename = tablename + ".ae"
 
         fp = open(filename, "r+b")
         found = matchpos = 0
@@ -142,22 +142,22 @@ class test_salvage(wttest.WiredTigerTestCase, suite_subprocess):
 
     def test_salvage_process_empty(self):
         """
-        Test salvage in a 'wt' process, using an empty table
+        Test salvage in a 'ae' process, using an empty table
         """
         self.session.create('table:' + self.tablename, self.session_params)
         errfile = "salvageerr.out"
-        self.runWt(["salvage", self.tablename + ".wt"], errfilename=errfile)
+        self.runAe(["salvage", self.tablename + ".ae"], errfilename=errfile)
         self.check_empty_file(errfile)
         self.check_empty_table(self.tablename)
 
     def test_salvage_process(self):
         """
-        Test salvage in a 'wt' process, using a populated table.
+        Test salvage in a 'ae' process, using a populated table.
         """
         self.session.create('table:' + self.tablename, self.session_params)
         self.populate(self.tablename)
         errfile = "salvageerr.out"
-        self.runWt(["salvage", self.tablename + ".wt"], errfilename=errfile)
+        self.runAe(["salvage", self.tablename + ".ae"], errfilename=errfile)
         self.check_empty_file(errfile)
         self.check_populate(self.tablename)
 
@@ -175,7 +175,7 @@ class test_salvage(wttest.WiredTigerTestCase, suite_subprocess):
         """
         self.session.create('table:' + self.tablename, self.session_params)
         self.populate(self.tablename)
-        self.session.salvage('file:' + self.tablename + ".wt", None)
+        self.session.salvage('file:' + self.tablename + ".ae", None)
         self.check_populate(self.tablename)
 
     def test_salvage_api_damaged(self):
@@ -188,25 +188,25 @@ class test_salvage(wttest.WiredTigerTestCase, suite_subprocess):
 
         # damage() closed the session/connection, reopen them now.
         self.open_conn()
-        self.assertRaisesWithMessage(wiredtiger.WiredTigerError,
+        self.assertRaisesWithMessage(archengine.ArchEngineError,
             lambda: self.session.verify('table:' + self.tablename, None),
             "/read checksum error/")
 
-        self.session.salvage('file:' + self.tablename + ".wt", None)
+        self.session.salvage('file:' + self.tablename + ".ae", None)
         self.check_damaged(self.tablename)
 
     def test_salvage_process_damaged(self):
         """
-        Test salvage in a 'wt' process on a table that is purposely damaged.
+        Test salvage in a 'ae' process on a table that is purposely damaged.
         """
         self.session.create('table:' + self.tablename, self.session_params)
         self.populate(self.tablename)
         self.damage(self.tablename)
         errfile = "salvageerr.out"
-        self.runWt(["salvage", self.tablename + ".wt"], errfilename=errfile)
+        self.runAe(["salvage", self.tablename + ".ae"], errfilename=errfile)
         self.check_empty_file(errfile)  # expect no output
         self.check_no_error_in_file(errfile)
         self.check_damaged(self.tablename)
 
 if __name__ == '__main__':
-    wttest.run()
+    aetest.run()

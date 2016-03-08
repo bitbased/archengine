@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-# This program pulls the function names from wiredtiger.in and generates
+# This program pulls the function names from archengine.in and generates
 # an input file for Java SWIG that adds doxygen copydoc comments to functions.
 
 import os, re, sys
@@ -11,9 +11,9 @@ from dist import compare_srcfile
 tmp_file = '__tmp'
 
 #####################################################################
-# Update wiredtiger.in with doxygen comments
+# Update archengine.in with doxygen comments
 #####################################################################
-f='../src/include/wiredtiger.in'
+f='../src/include/archengine.in'
 o='../lang/java/java_doc.i'
 tfile = open(tmp_file, 'w')
 

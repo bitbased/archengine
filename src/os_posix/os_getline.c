@@ -1,15 +1,15 @@
 /*-
  * Copyright (c) 2014-2015 MongoDB, Inc.
- * Copyright (c) 2008-2014 WiredTiger, Inc.
+ * Copyright (c) 2008-2014 ArchEngine, Inc.
  *	All rights reserved.
  *
  * See the file LICENSE for redistribution information.
  */
 
-#include "wt_internal.h"
+#include "ae_internal.h"
 
 /*
- * __wt_getline --
+ * __ae_getline --
  *	Get a line from a stream.
  *
  * Implementation of the POSIX getline or BSD fgetln functions (finding the
@@ -20,7 +20,7 @@
  * (so the caller's EOF marker is a returned line length of 0).
  */
 int
-__wt_getline(WT_SESSION_IMPL *session, WT_ITEM *buf, FILE *fp)
+__ae_getline(AE_SESSION_IMPL *session, AE_ITEM *buf, FILE *fp)
 {
 	int c;
 
@@ -28,11 +28,11 @@ __wt_getline(WT_SESSION_IMPL *session, WT_ITEM *buf, FILE *fp)
 	 * We always NUL-terminate the returned string (even if it's empty),
 	 * make sure there's buffer space for a trailing NUL in all cases.
 	 */
-	WT_RET(__wt_buf_init(session, buf, 100));
+	AE_RET(__ae_buf_init(session, buf, 100));
 
 	while ((c = fgetc(fp)) != EOF) {
 		/* Leave space for a trailing NUL. */
-		WT_RET(__wt_buf_extend(session, buf, buf->size + 2));
+		AE_RET(__ae_buf_extend(session, buf, buf->size + 2));
 		if (c == '\n') {
 			if (buf->size == 0)
 				continue;
@@ -41,7 +41,7 @@ __wt_getline(WT_SESSION_IMPL *session, WT_ITEM *buf, FILE *fp)
 		((char *)buf->mem)[buf->size++] = (char)c;
 	}
 	if (c == EOF && ferror(fp))
-		WT_RET_MSG(session, __wt_errno(), "file read");
+		AE_RET_MSG(session, __ae_errno(), "file read");
 
 	((char *)buf->mem)[buf->size] = '\0';
 

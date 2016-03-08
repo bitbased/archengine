@@ -1,6 +1,6 @@
 /*-
  * Public Domain 2014-2015 MongoDB, Inc.
- * Public Domain 2008-2014 WiredTiger, Inc.
+ * Public Domain 2008-2014 ArchEngine, Inc.
  *
  * This is free and unencumbered software released into the public domain.
  *
@@ -32,23 +32,23 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <wiredtiger.h>
-#include <wiredtiger_ext.h>
+#include <archengine.h>
+#include <archengine_ext.h>
 
 /*
  * We need to include the configuration file to detect whether this extension
- * is being built into the WiredTiger library.
+ * is being built into the ArchEngine library.
  */
-#include "wiredtiger_config.h"
+#include "archengine_config.h"
 #ifdef _MSC_VER
 #define	inline __inline
 #endif
 
 /* Local compressor structure. */
 typedef struct {
-	WT_COMPRESSOR compressor;		/* Must come first */
+	AE_COMPRESSOR compressor;		/* Must come first */
 
-	WT_EXTENSION_API *wt_api;		/* Extension API */
+	AE_EXTENSION_API *ae_api;		/* Extension API */
 
 	int zlib_level;				/* Configuration */
 } ZLIB_COMPRESSOR;
@@ -58,8 +58,8 @@ typedef struct {
  * need two handles, package them up.
  */
 typedef struct {
-	WT_COMPRESSOR *compressor;
-	WT_SESSION *session;
+	AE_COMPRESSOR *compressor;
+	AE_SESSION *session;
 } ZLIB_OPAQUE;
 
 /*
@@ -68,15 +68,15 @@ typedef struct {
  */
 static int
 zlib_error(
-    WT_COMPRESSOR *compressor, WT_SESSION *session, const char *call, int error)
+    AE_COMPRESSOR *compressor, AE_SESSION *session, const char *call, int error)
 {
-	WT_EXTENSION_API *wt_api;
+	AE_EXTENSION_API *ae_api;
 
-	wt_api = ((ZLIB_COMPRESSOR *)compressor)->wt_api;
+	ae_api = ((ZLIB_COMPRESSOR *)compressor)->ae_api;
 
-	(void)wt_api->err_printf(wt_api, session,
+	(void)ae_api->err_printf(ae_api, session,
 	    "zlib error: %s: %s: %d", call, zError(error), error);
-	return (WT_ERROR);
+	return (AE_ERROR);
 }
 
 /*
@@ -87,12 +87,12 @@ static void *
 zalloc(void *cookie, uint32_t number, uint32_t size)
 {
 	ZLIB_OPAQUE *opaque;
-	WT_EXTENSION_API *wt_api;
+	AE_EXTENSION_API *ae_api;
 
 	opaque = cookie;
-	wt_api = ((ZLIB_COMPRESSOR *)opaque->compressor)->wt_api;
-	return (wt_api->scr_alloc(
-	    wt_api, opaque->session, (size_t)(number * size)));
+	ae_api = ((ZLIB_COMPRESSOR *)opaque->compressor)->ae_api;
+	return (ae_api->scr_alloc(
+	    ae_api, opaque->session, (size_t)(number * size)));
 }
 
 /*
@@ -103,19 +103,19 @@ static void
 zfree(void *cookie, void *p)
 {
 	ZLIB_OPAQUE *opaque;
-	WT_EXTENSION_API *wt_api;
+	AE_EXTENSION_API *ae_api;
 
 	opaque = cookie;
-	wt_api = ((ZLIB_COMPRESSOR *)opaque->compressor)->wt_api;
-	wt_api->scr_free(wt_api, opaque->session, p);
+	ae_api = ((ZLIB_COMPRESSOR *)opaque->compressor)->ae_api;
+	ae_api->scr_free(ae_api, opaque->session, p);
 }
 
 /*
  * zlib_compress --
- *	WiredTiger zlib compression.
+ *	ArchEngine zlib compression.
  */
 static int
-zlib_compress(WT_COMPRESSOR *compressor, WT_SESSION *session,
+zlib_compress(AE_COMPRESSOR *compressor, AE_SESSION *session,
     uint8_t *src, size_t src_len,
     uint8_t *dst, size_t dst_len,
     size_t *result_lenp, int *compression_failed)
@@ -155,10 +155,10 @@ zlib_compress(WT_COMPRESSOR *compressor, WT_SESSION *session,
 
 /*
  * zlib_decompress --
- *	WiredTiger zlib decompression.
+ *	ArchEngine zlib decompression.
  */
 static int
-zlib_decompress(WT_COMPRESSOR *compressor, WT_SESSION *session,
+zlib_decompress(AE_COMPRESSOR *compressor, AE_SESSION *session,
     uint8_t *src, size_t src_len,
     uint8_t *dst, size_t dst_len,
     size_t *result_lenp)
@@ -226,7 +226,7 @@ zlib_find_slot(uint64_t target, uint32_t *offsets, uint32_t slots)
  *	Pack records into a specified on-disk page size.
  */
 static int
-zlib_compress_raw(WT_COMPRESSOR *compressor, WT_SESSION *session,
+zlib_compress_raw(AE_COMPRESSOR *compressor, AE_SESSION *session,
     size_t page_max, int split_pct, size_t extra,
     uint8_t *src, uint32_t *offsets, uint32_t slots,
     uint8_t *dst, size_t dst_len, int final,
@@ -262,8 +262,8 @@ zlib_compress_raw(WT_COMPRESSOR *compressor, WT_SESSION *session,
 	 * up a buffer.  If this isn't sufficient, we don't fail but we will be
 	 * inefficient.
 	 */
-#define	WT_ZLIB_RESERVED	24
-	zs.avail_out = (uint32_t)(page_max - (extra + WT_ZLIB_RESERVED));
+#define	AE_ZLIB_RESERVED	24
+	zs.avail_out = (uint32_t)(page_max - (extra + AE_ZLIB_RESERVED));
 
 	/* Save the stream state in case the chosen data doesn't fit. */
 	if ((ret = deflateCopy(&last_zs, &zs)) != Z_OK)
@@ -328,12 +328,12 @@ zlib_compress_raw(WT_COMPRESSOR *compressor, WT_SESSION *session,
 		break;
 	}
 
-	best_zs->avail_out += WT_ZLIB_RESERVED;
+	best_zs->avail_out += AE_ZLIB_RESERVED;
 	ret = deflate(best_zs, Z_FINISH);
 
 	/*
 	 * If the end marker didn't fit, report that we got no work done,
-	 * WiredTiger will compress the (possibly large) page image using
+	 * ArchEngine will compress the (possibly large) page image using
 	 * ordinary compression instead.
 	 */
 	if (ret == Z_OK || ret == Z_BUF_ERROR)
@@ -388,10 +388,10 @@ zlib_compress_raw(WT_COMPRESSOR *compressor, WT_SESSION *session,
 
 /*
  * zlib_terminate --
- *	WiredTiger zlib compression termination.
+ *	ArchEngine zlib compression termination.
  */
 static int
-zlib_terminate(WT_COMPRESSOR *compressor, WT_SESSION *session)
+zlib_terminate(AE_COMPRESSOR *compressor, AE_SESSION *session)
 {
 	(void)session;					/* Unused parameters */
 
@@ -404,7 +404,7 @@ zlib_terminate(WT_COMPRESSOR *compressor, WT_SESSION *session)
  *	Add a zlib compressor.
  */
 static int
-zlib_add_compressor(WT_CONNECTION *connection, int raw, const char *name)
+zlib_add_compressor(AE_CONNECTION *connection, int raw, const char *name)
 {
 	ZLIB_COMPRESSOR *zlib_compressor;
 
@@ -422,7 +422,7 @@ zlib_add_compressor(WT_CONNECTION *connection, int raw, const char *name)
 	zlib_compressor->compressor.pre_size = NULL;
 	zlib_compressor->compressor.terminate = zlib_terminate;
 
-	zlib_compressor->wt_api = connection->get_extension_api(connection);
+	zlib_compressor->ae_api = connection->get_extension_api(connection);
 
 	/*
 	 * Between 0-10: level: see zlib manual.
@@ -431,19 +431,19 @@ zlib_add_compressor(WT_CONNECTION *connection, int raw, const char *name)
 
 	/* Load the compressor. */
 	return (connection->add_compressor(
-	    connection, name, (WT_COMPRESSOR *)zlib_compressor, NULL));
+	    connection, name, (AE_COMPRESSOR *)zlib_compressor, NULL));
 }
 
-int zlib_extension_init(WT_CONNECTION *, WT_CONFIG_ARG *);
+int zlib_extension_init(AE_CONNECTION *, AE_CONFIG_ARG *);
 
 /*
  * zlib_extension_init --
- *	WiredTiger zlib compression extension - called directly when zlib
- * support is built in, or via wiredtiger_extension_init when zlib support
+ *	ArchEngine zlib compression extension - called directly when zlib
+ * support is built in, or via archengine_extension_init when zlib support
  * is included via extension loading.
  */
 int
-zlib_extension_init(WT_CONNECTION *connection, WT_CONFIG_ARG *config)
+zlib_extension_init(AE_CONNECTION *connection, AE_CONFIG_ARG *config)
 {
 	int ret;
 
@@ -462,11 +462,11 @@ zlib_extension_init(WT_CONNECTION *connection, WT_CONFIG_ARG *config)
  */
 #ifndef	HAVE_BUILTIN_EXTENSION_SNAPPY
 /*
- * wiredtiger_extension_init --
- *	WiredTiger zlib compression extension.
+ * archengine_extension_init --
+ *	ArchEngine zlib compression extension.
  */
 int
-wiredtiger_extension_init(WT_CONNECTION *connection, WT_CONFIG_ARG *config)
+archengine_extension_init(AE_CONNECTION *connection, AE_CONFIG_ARG *config)
 {
 	return (zlib_extension_init(connection, config));
 }

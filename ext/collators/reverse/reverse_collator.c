@@ -1,6 +1,6 @@
 /*-
  * Public Domain 2014-2015 MongoDB, Inc.
- * Public Domain 2008-2014 WiredTiger, Inc.
+ * Public Domain 2008-2014 ArchEngine, Inc.
  *
  * This is free and unencumbered software released into the public domain.
  *
@@ -28,15 +28,15 @@
 
 #include <string.h>
 
-#include <wiredtiger_ext.h>
+#include <archengine_ext.h>
 
 /*
  * collate_reverse --
- *	WiredTiger reverse collation.
+ *	ArchEngine reverse collation.
  */
 static int
-collate_reverse(WT_COLLATOR *collator,
-    WT_SESSION *session, const WT_ITEM *k1, const WT_ITEM *k2, int *ret)
+collate_reverse(AE_COLLATOR *collator,
+    AE_SESSION *session, const AE_ITEM *k1, const AE_ITEM *k2, int *ret)
 {
 	size_t len;
 	int cmp;
@@ -59,14 +59,14 @@ collate_reverse(WT_COLLATOR *collator,
 	return (0);
 }
 
-static WT_COLLATOR reverse_collator = { collate_reverse, NULL, NULL };
+static AE_COLLATOR reverse_collator = { collate_reverse, NULL, NULL };
 
 /*
- * wiredtiger_extension_init --
- *	WiredTiger reverse collation extension.
+ * archengine_extension_init --
+ *	ArchEngine reverse collation extension.
  */
 int
-wiredtiger_extension_init(WT_CONNECTION *connection, WT_CONFIG_ARG *config)
+archengine_extension_init(AE_CONNECTION *connection, AE_CONFIG_ARG *config)
 {
 	(void)config;				/* Unused parameters */
 

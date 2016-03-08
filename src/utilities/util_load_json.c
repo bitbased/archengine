@@ -1,6 +1,6 @@
 /*-
  * Copyright (c) 2014-2015 MongoDB, Inc.
- * Copyright (c) 2008-2014 WiredTiger, Inc.
+ * Copyright (c) 2008-2014 ArchEngine, Inc.
  *	All rights reserved.
  *
  * See the file LICENSE for redistribution information.
@@ -25,12 +25,12 @@
  * The raw key/value string is collected in the kvraw field.
  */
 typedef struct {
-	WT_SESSION *session;    /* associated session */
+	AE_SESSION *session;    /* associated session */
 	ULINE line;		/* current line */
 	const char *p;		/* points to cur position in line.mem */
 	bool ateof;		/* current token is EOF */
 	bool peeking;		/* peeking at next token */
-	int toktype;		/* next token, defined by __wt_json_token() */
+	int toktype;		/* next token, defined by __ae_json_token() */
 	const char *tokstart;	/* next token start (points into line.mem) */
 	size_t toklen;		/* next token length */
 	char *kvraw;		/* multiple line raw content collected so far */
@@ -39,16 +39,16 @@ typedef struct {
 	int linenum;		/* line number for error reporting */
 } JSON_INPUT_STATE;
 
-static int json_column_group_index(WT_SESSION *, JSON_INPUT_STATE *,
+static int json_column_group_index(AE_SESSION *, JSON_INPUT_STATE *,
     CONFIG_LIST *, int);
-static int json_data(WT_SESSION *, JSON_INPUT_STATE *, CONFIG_LIST *, uint32_t);
-static int json_expect(WT_SESSION *, JSON_INPUT_STATE *, int);
-static int json_peek(WT_SESSION *, JSON_INPUT_STATE *);
-static int json_skip(WT_SESSION *, JSON_INPUT_STATE *, const char **);
+static int json_data(AE_SESSION *, JSON_INPUT_STATE *, CONFIG_LIST *, uint32_t);
+static int json_expect(AE_SESSION *, JSON_INPUT_STATE *, int);
+static int json_peek(AE_SESSION *, JSON_INPUT_STATE *);
+static int json_skip(AE_SESSION *, JSON_INPUT_STATE *, const char **);
 static int json_kvraw_append(
-	       WT_SESSION *, JSON_INPUT_STATE *, const char *, size_t);
-static int json_strdup(WT_SESSION *, JSON_INPUT_STATE *, char **);
-static int json_top_level(WT_SESSION *, JSON_INPUT_STATE *, uint32_t);
+	       AE_SESSION *, JSON_INPUT_STATE *, const char *, size_t);
+static int json_strdup(AE_SESSION *, JSON_INPUT_STATE *, char **);
+static int json_top_level(AE_SESSION *, JSON_INPUT_STATE *, uint32_t);
 
 #define	JSON_STRING_MATCH(ins, match)					\
 	((ins)->toklen - 2 == strlen(match) &&				\
@@ -67,10 +67,10 @@ static int json_top_level(WT_SESSION *, JSON_INPUT_STATE *, uint32_t);
  *	Parse a column group or index entry from JSON input.
  */
 static int
-json_column_group_index(WT_SESSION *session,
+json_column_group_index(AE_SESSION *session,
     JSON_INPUT_STATE *ins, CONFIG_LIST *clp, int idx)
 {
-	WT_DECL_RET;
+	AE_DECL_RET;
 	bool isconfig;
 	char *config, *p, *uri;
 
@@ -141,7 +141,7 @@ err:		if (ret == 0)
  *	raw key/value pairs from JSON input.
  */
 static int
-json_kvraw_append(WT_SESSION *session,
+json_kvraw_append(AE_SESSION *session,
     JSON_INPUT_STATE *ins, const char *str, size_t len)
 {
 	size_t needsize;
@@ -164,9 +164,9 @@ json_kvraw_append(WT_SESSION *session,
  *	JSON string at the current input position.
  */
 static int
-json_strdup(WT_SESSION *session, JSON_INPUT_STATE *ins, char **resultp)
+json_strdup(AE_SESSION *session, JSON_INPUT_STATE *ins, char **resultp)
 {
-	WT_DECL_RET;
+	AE_DECL_RET;
 	char *result, *resultcpy;
 	const char *src;
 	ssize_t resultlen;
@@ -175,7 +175,7 @@ json_strdup(WT_SESSION *session, JSON_INPUT_STATE *ins, char **resultp)
 	result = NULL;
 	src = ins->tokstart + 1;  /*strip "" from token */
 	srclen = ins->toklen - 2;
-	if ((resultlen = __wt_json_strlen(src, srclen)) < 0) {
+	if ((resultlen = __ae_json_strlen(src, srclen)) < 0) {
 		ret = util_err(session, EINVAL, "Invalid config string");
 		goto err;
 	}
@@ -186,7 +186,7 @@ json_strdup(WT_SESSION *session, JSON_INPUT_STATE *ins, char **resultp)
 	}
 	*resultp = result;
 	resultcpy = result;
-	if ((ret = __wt_json_strncpy(&resultcpy, (size_t)resultlen, src,
+	if ((ret = __ae_json_strncpy(&resultcpy, (size_t)resultlen, src,
 	    srclen))
 	    != 0) {
 		ret = util_err(session, ret, NULL);
@@ -208,11 +208,11 @@ err:		if (ret == 0)
  *	values.
  */
 static int
-json_data(WT_SESSION *session,
+json_data(AE_SESSION *session,
     JSON_INPUT_STATE *ins, CONFIG_LIST *clp, uint32_t flags)
 {
-	WT_CURSOR *cursor;
-	WT_DECL_RET;
+	AE_CURSOR *cursor;
+	AE_DECL_RET;
 	size_t keystrlen;
 	ssize_t gotnolen;
 	uint64_t gotno, recno;
@@ -273,7 +273,7 @@ json_data(WT_SESSION *session,
 			if (isrec && nfield == 0) {
 				/* Verify the dump has recnos in order. */
 				recno++;
-				gotno = __wt_strtouq(ins->tokstart, &endp, 0);
+				gotno = __ae_strtouq(ins->tokstart, &endp, 0);
 				gotnolen = (endp - ins->tokstart);
 				if (recno != gotno ||
 				    ins->toklen != (size_t)gotnolen) {
@@ -342,10 +342,10 @@ err:		if (ret == 0)
  *	Parse the top level JSON input.
  */
 static int
-json_top_level(WT_SESSION *session, JSON_INPUT_STATE *ins, uint32_t flags)
+json_top_level(AE_SESSION *session, JSON_INPUT_STATE *ins, uint32_t flags)
 {
 	CONFIG_LIST cl;
-	WT_DECL_RET;
+	AE_DECL_RET;
 	int toktype;
 	static const char *json_markers[] = {
 	    "\"config\"", "\"colgroups\"", "\"indices\"", "\"data\"", NULL };
@@ -440,12 +440,12 @@ err:		if (ret == 0)
 /*
  * json_peek --
  *	Set the input state to the next available token in the input
- *	and return its token type, a code defined by __wt_json_token().
+ *	and return its token type, a code defined by __ae_json_token().
  */
 static int
-json_peek(WT_SESSION *session, JSON_INPUT_STATE *ins)
+json_peek(AE_SESSION *session, JSON_INPUT_STATE *ins)
 {
-	WT_DECL_RET;
+	AE_DECL_RET;
 
 	if (!ins->peeking) {
 		while (!ins->ateof) {
@@ -473,7 +473,7 @@ json_peek(WT_SESSION *session, JSON_INPUT_STATE *ins)
 		}
 		if (ins->ateof)
 			ins->toktype = 0;
-		else if (__wt_json_token(session, ins->p,
+		else if (__ae_json_token(session, ins->p,
 		    &ins->toktype, &ins->tokstart,
 		    &ins->toklen) != 0)
 			ins->toktype = -1;
@@ -494,7 +494,7 @@ json_peek(WT_SESSION *session, JSON_INPUT_STATE *ins)
  *	can be pulled out after this call.
  */
 static int
-json_expect(WT_SESSION *session, JSON_INPUT_STATE *ins, int wanttok)
+json_expect(AE_SESSION *session, JSON_INPUT_STATE *ins, int wanttok)
 {
 	if (json_peek(session, ins) < 0)
 		return (1);
@@ -502,12 +502,12 @@ json_expect(WT_SESSION *session, JSON_INPUT_STATE *ins, int wanttok)
 	ins->peeking = false;
 	if (ins->toktype != wanttok) {
 		fprintf(stderr,
-		    "%s: %d: %" WT_SIZET_FMT ": expected %s, got %s\n",
+		    "%s: %d: %" AE_SIZET_FMT ": expected %s, got %s\n",
 		    ins->filename,
 		    ins->linenum,
 		    JSON_INPUT_POS(ins) + 1,
-		    __wt_json_tokname(wanttok),
-		    __wt_json_tokname(ins->toktype));
+		    __ae_json_tokname(wanttok),
+		    __ae_json_tokname(ins->toktype));
 		return (1);
 	}
 	return (0);
@@ -520,7 +520,7 @@ json_expect(WT_SESSION *session, JSON_INPUT_STATE *ins, int wanttok)
  *	that string.
  */
 static int
-json_skip(WT_SESSION *session, JSON_INPUT_STATE *ins, const char **matches)
+json_skip(AE_SESSION *session, JSON_INPUT_STATE *ins, const char **matches)
 {
 	const char *hit;
 	const char **match;
@@ -554,13 +554,13 @@ out:
 
 /*
  * load_json --
- *	Load from the JSON format produced by 'wt dump -j'.
+ *	Load from the JSON format produced by 'ae dump -j'.
  */
 int
-util_load_json(WT_SESSION *session, const char *filename, uint32_t flags)
+util_load_json(AE_SESSION *session, const char *filename, uint32_t flags)
 {
 	JSON_INPUT_STATE instate;
-	WT_DECL_RET;
+	AE_DECL_RET;
 
 	memset(&instate, 0, sizeof(instate));
 	instate.session = session;

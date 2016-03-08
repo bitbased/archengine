@@ -25,7 +25,7 @@ http://www.cs.umb.edu/~poneil/lsmtree.pdf
 A logical tree is split into several physical pieces so that the
 most-recently-updated portion of data is in a tree that fits entirely in
 memory.  The size of the in-memory chunk can be configured with the
-\c "lsm=(chunk_size)" configuration key to WT_SESSION::create.
+\c "lsm=(chunk_size)" configuration key to AE_SESSION::create.
 
 Once the in-memory tree reaches a threshold size, a new in-memory tree is
 created and the old tree synced to disk. Once written to disk, trees are
@@ -39,7 +39,7 @@ record into the in-memory tree.
 @section lsm_api Interface to LSM trees
 
 An LSM tree can be created as follows, in much the same way as a
-WiredTiger btree file:
+ArchEngine btree file:
 
 @code
 @m_if{c}
@@ -50,11 +50,11 @@ session.create("table:bucket", "type=lsm,key_format=S,value_format=S");
 @endcode
 
 Once created, the LSM tree can be accessed using the same cursor interface
-as other data sources in WiredTiger:
+as other data sources in ArchEngine:
 
 @code
 @m_if{c}
-WT_CURSOR *c;
+AE_CURSOR *c;
 
 session->open_cursor(session, "table:bucket", NULL, NULL, &c);
 for(;;) {
@@ -73,7 +73,7 @@ for(;;) {
 @endcode
 
 If an LSM cursor is configured with \c "overwrite=false" passed to
-WT_SESSION::open_cursor, the result will be a search through the levels of the
+AE_SESSION::open_cursor, the result will be a search through the levels of the
 LSM tree before every modification.
 
 @section lsm_merge Merging
@@ -86,7 +86,7 @@ automatically by the background thread.
 
 @section lsm_bloom Bloom filters
 
-WiredTiger creates a Bloom filter when merging.  This is an additional file
+ArchEngine creates a Bloom filter when merging.  This is an additional file
 that contains a configurable number of bits per key (default 8).  Keys are
 hashed a configurable number of times (default 4), and the corresponding
 bits set.  The Bloom filter is used to avoid reading from a chunk if the key
@@ -95,13 +95,13 @@ cannot be present.
 With the defaults, the Bloom filter only requires one byte per key, so
 it usually fits in cache.  The Bloom parameters can be configured with
 \c "lsm=(bloom_bit_count)" and \c "lsm=(bloom_hash_count)" configuration
-keys to WT_SESSION::create.  The Bloom file can be configured with the
+keys to AE_SESSION::create.  The Bloom file can be configured with the
 \c "lsm=(bloom_config)" key.
 
 @section lsm_schema Creating tables using LSM trees
 
 Tables or indices can be stored using LSM trees.  Schema support is provided
-for LSM as an extension to the WT_SESSION::create method:
+for LSM as an extension to the AE_SESSION::create method:
 
 @code
 @m_if{c}
@@ -122,7 +122,7 @@ The number of chunks depends on the chunk size, and how many chunks have
 been merged.  There must be at least as many hazard pointers available as
 there are chunks in the tree for each cursor that is open on the LSM tree.
 The number of hazard pointers is configured with the \c "hazard_max"
-configuration key to ::wiredtiger_open.
+configuration key to ::archengine_open.
 
 @subsection lsm_checkpoints Named checkpoints
 

@@ -1,6 +1,6 @@
 /*-
  * Public Domain 2014-2015 MongoDB, Inc.
- * Public Domain 2008-2014 WiredTiger, Inc.
+ * Public Domain 2008-2014 ArchEngine, Inc.
  *
  * This is free and unencumbered software released into the public domain.
  *
@@ -61,7 +61,7 @@ dstrdup(const char *str)
 }
 
 static inline uint32_t
-kv_len(WT_RAND_STATE *rnd, uint64_t keyno, uint32_t min, uint32_t max)
+kv_len(AE_RAND_STATE *rnd, uint64_t keyno, uint32_t min, uint32_t max)
 {
 	/*
 	 * Focus on relatively small key/value items, admitting the possibility
@@ -143,7 +143,7 @@ key_gen(uint8_t *key, size_t *sizep, uint64_t keyno)
 }
 
 void
-key_gen_insert(WT_RAND_STATE *rnd, uint8_t *key, size_t *sizep, uint64_t keyno)
+key_gen_insert(AE_RAND_STATE *rnd, uint8_t *key, size_t *sizep, uint64_t keyno)
 {
 	key_gen_common(key, sizep, keyno, (int)mmrand(rnd, 1, 15));
 }
@@ -151,7 +151,7 @@ key_gen_insert(WT_RAND_STATE *rnd, uint8_t *key, size_t *sizep, uint64_t keyno)
 static uint32_t val_dup_data_len;	/* Length of duplicate data items */
 
 void
-val_gen_setup(WT_RAND_STATE *rnd, uint8_t **valp)
+val_gen_setup(AE_RAND_STATE *rnd, uint8_t **valp)
 {
 	uint8_t *val;
 	size_t i, len;
@@ -177,7 +177,7 @@ val_gen_setup(WT_RAND_STATE *rnd, uint8_t **valp)
 }
 
 void
-val_gen(WT_RAND_STATE *rnd, uint8_t *val, size_t *sizep, uint64_t keyno)
+val_gen(AE_RAND_STATE *rnd, uint8_t *val, size_t *sizep, uint64_t keyno)
 {
 	/*
 	 * Fixed-length records: take the low N bits from the last digit of
@@ -199,7 +199,7 @@ val_gen(WT_RAND_STATE *rnd, uint8_t *val, size_t *sizep, uint64_t keyno)
 	}
 
 	/*
-	 * WiredTiger doesn't store zero-length data items in row-store files,
+	 * ArchEngine doesn't store zero-length data items in row-store files,
 	 * test that by inserting a zero-length data item every so often.
 	 */
 	if (keyno % 63 == 0) {
@@ -360,12 +360,12 @@ path_setup(const char *home)
 #define	CMD								\
 	"cd %s && "							\
 	"rd /q /s slvg.copy & mkdir slvg.copy && "			\
-	"copy WiredTiger* slvg.copy\\ >:nul && copy wt* slvg.copy\\ >:nul"
+	"copy ArchEngine* slvg.copy\\ >:nul && copy ae* slvg.copy\\ >:nul"
 #else
 #define	CMD								\
 	"cd %s > /dev/null && "						\
 	"rm -rf slvg.copy && mkdir slvg.copy && "			\
-	"cp WiredTiger* wt* slvg.copy/"
+	"cp ArchEngine* ae* slvg.copy/"
 #endif
 	len = strlen(g.home) + strlen(CMD) + 1;
 	g.home_salvage_copy = dmalloc(len);
@@ -377,7 +377,7 @@ path_setup(const char *home)
  *	Return a random number.
  */
 uint32_t
-rng(WT_RAND_STATE *rnd)
+rng(AE_RAND_STATE *rnd)
 {
 	char buf[64];
 	uint32_t r;
@@ -398,7 +398,7 @@ rng(WT_RAND_STATE *rnd)
 	 * threaded operation order can't be replayed.
 	 */
 	if (g.rand_log_stop)
-		return (__wt_random(rnd));
+		return (__ae_random(rnd));
 
 	if (g.replay) {
 		if (fgets(buf, sizeof(buf), g.randfp) == NULL) {
@@ -413,7 +413,7 @@ rng(WT_RAND_STATE *rnd)
 		return ((uint32_t)strtoul(buf, NULL, 10));
 	}
 
-	r = __wt_random(rnd);
+	r = __ae_random(rnd);
 
 	/* Save and flush the random number so we're up-to-date on error. */
 	(void)fprintf(g.randfp, "%" PRIu32 "\n", r);

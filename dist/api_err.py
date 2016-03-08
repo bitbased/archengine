@@ -1,4 +1,4 @@
-# Output C #defines for errors into wiredtiger.in and the associated error
+# Output C #defines for errors into archengine.in and the associated error
 # message code in strerror.c.
 
 import re, textwrap
@@ -18,51 +18,51 @@ class Error:
 # These numbers cannot change without breaking backward compatibility,
 # and are listed in error value order.
 errors = [
-    Error('WT_ROLLBACK', -31800,
+    Error('AE_ROLLBACK', -31800,
         'conflict between concurrent operations', '''
         This error is generated when an operation cannot be completed
         due to a conflict with concurrent operations.  The operation
         may be retried; if a transaction is in progress, it should be
         rolled back and the operation retried in a new transaction.'''),
-    Error('WT_DUPLICATE_KEY', -31801,
+    Error('AE_DUPLICATE_KEY', -31801,
         'attempt to insert an existing key', '''
         This error is generated when the application attempts to insert
         a record with the same key as an existing record without the
-        'overwrite' configuration to WT_SESSION::open_cursor.'''),
-    Error('WT_ERROR', -31802,
-        'non-specific WiredTiger error', '''
+        'overwrite' configuration to AE_SESSION::open_cursor.'''),
+    Error('AE_ERROR', -31802,
+        'non-specific ArchEngine error', '''
         This error is returned when an error is not covered by a
         specific error return.'''),
-    Error('WT_NOTFOUND', -31803,
+    Error('AE_NOTFOUND', -31803,
         'item not found', '''
         This error indicates an operation did not find a value to
         return.  This includes cursor search and other operations
         where no record matched the cursor's search key such as
-        WT_CURSOR::update or WT_CURSOR::remove.'''),
-    Error('WT_PANIC', -31804,
-        'WiredTiger library panic', '''
+        AE_CURSOR::update or AE_CURSOR::remove.'''),
+    Error('AE_PANIC', -31804,
+        'ArchEngine library panic', '''
         This error indicates an underlying problem that requires the
         application exit and restart. The application can exit
-        immediately when \c WT_PANIC is returned from a WiredTiger
-        interface, no further WiredTiger calls are required.'''),
-    Error('WT_RESTART', -31805,
+        immediately when \c AE_PANIC is returned from a ArchEngine
+        interface, no further ArchEngine calls are required.'''),
+    Error('AE_RESTART', -31805,
         'restart the operation (internal)', undoc=True),
-    Error('WT_RUN_RECOVERY', -31806,
+    Error('AE_RUN_RECOVERY', -31806,
         'recovery must be run to continue', '''
-        This error is generated when wiredtiger_open is configured
+        This error is generated when archengine_open is configured
         to return an error if recovery is required to use the database.'''),
-    Error('WT_CACHE_FULL', -31807,
+    Error('AE_CACHE_FULL', -31807,
         'operation would overflow cache', '''
-        This error is generated when wiredtiger_open is configured
+        This error is generated when archengine_open is configured
         to run in-memory, and an insert or update operation requires more
         than the configured cache size to complete.''', undoc=True),
 ]
 
-# Update the #defines in the wiredtiger.in file.
+# Update the #defines in the archengine.in file.
 tmp_file = '__tmp'
 tfile = open(tmp_file, 'w')
 skip = 0
-for line in open('../src/include/wiredtiger.in', 'r'):
+for line in open('../src/include/archengine.in', 'r'):
     if not skip:
         tfile.write(line)
     if line.count('Error return section: END'):
@@ -85,35 +85,35 @@ for line in open('../src/include/wiredtiger.in', 'r'):
                 tfile.write('/*! @endcond */\n')
         tfile.write('/*\n')
 tfile.close()
-compare_srcfile(tmp_file, '../src/include/wiredtiger.in')
+compare_srcfile(tmp_file, '../src/include/archengine.in')
 
-# Output the wiredtiger_strerror and wiredtiger_sterror_r code.
+# Output the archengine_strerror and archengine_sterror_r code.
 tmp_file = '__tmp'
 tfile = open(tmp_file, 'w')
 tfile.write('''/* DO NOT EDIT: automatically built by dist/api_err.py. */
 
-#include "wt_internal.h"
+#include "ae_internal.h"
 
 /*
- * Historically, there was only the wiredtiger_strerror call because the POSIX
+ * Historically, there was only the archengine_strerror call because the POSIX
  * port didn't need anything more complex; Windows requires memory allocation
- * of error strings, so we added the WT_SESSION.strerror method. Because we
- * want wiredtiger_strerror to continue to be as thread-safe as possible, errors
- * are split into two categories: WiredTiger's or the system's constant strings
+ * of error strings, so we added the AE_SESSION.strerror method. Because we
+ * want archengine_strerror to continue to be as thread-safe as possible, errors
+ * are split into two categories: ArchEngine's or the system's constant strings
  * and Everything Else, and we check constant strings before Everything Else.
  */
 
 /*
- * __wt_wiredtiger_error --
- *\tReturn a constant string for POSIX-standard and WiredTiger errors.
+ * __ae_archengine_error --
+ *\tReturn a constant string for POSIX-standard and ArchEngine errors.
  */
 const char *
-__wt_wiredtiger_error(int error)
+__ae_archengine_error(int error)
 {
 \tconst char *p;
 
 \t/*
-\t * Check for WiredTiger specific errors.
+\t * Check for ArchEngine specific errors.
 \t */
 \tswitch (error) {
 ''')
@@ -136,15 +136,15 @@ tfile.write('''\t}
 }
 
 /*
- * wiredtiger_strerror --
+ * archengine_strerror --
  *\tReturn a string for any error value, non-thread-safe version.
  */
 const char *
-wiredtiger_strerror(int error)
+archengine_strerror(int error)
 {
 \tstatic char buf[128];
 
-\treturn (__wt_strerror(NULL, error, buf, sizeof(buf)));
+\treturn (__ae_strerror(NULL, error, buf, sizeof(buf)));
 }
 ''')
 tfile.close()

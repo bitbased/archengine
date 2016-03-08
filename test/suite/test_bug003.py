@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Public Domain 2014-2015 MongoDB, Inc.
-# Public Domain 2008-2014 WiredTiger, Inc.
+# Public Domain 2008-2014 ArchEngine, Inc.
 #
 # This is free and unencumbered software released into the public domain.
 #
@@ -29,11 +29,11 @@
 # test_bug003.py
 #       Regression tests.
 
-import wiredtiger, wttest
-from wtscenario import multiply_scenarios, number_scenarios
+import archengine, aetest
+from aescenario import multiply_scenarios, number_scenarios
 
 # Regression tests.
-class test_bug003(wttest.WiredTigerTestCase):
+class test_bug003(aetest.ArchEngineTestCase):
     types = [
         ('file', dict(uri='file:data')),
         ('table', dict(uri='table:data')),
@@ -56,4 +56,4 @@ class test_bug003(wttest.WiredTigerTestCase):
 
 
 if __name__ == '__main__':
-    wttest.run()
+    aetest.run()

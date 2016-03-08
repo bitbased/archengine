@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Public Domain 2014-2015 MongoDB, Inc.
-# Public Domain 2008-2014 WiredTiger, Inc.
+# Public Domain 2008-2014 ArchEngine, Inc.
 #
 # This is free and unencumbered software released into the public domain.
 #
@@ -32,12 +32,12 @@
 import shutil, os
 from helper import confirm_empty, key_populate, value_populate
 from suite_subprocess import suite_subprocess
-from wtscenario import multiply_scenarios, number_scenarios
-import wiredtiger, wttest
+from aescenario import multiply_scenarios, number_scenarios
+import archengine, aetest
 
 # test_bulkload_checkpoint
 #       Test bulk-load with checkpoints.
-class test_bulkload_checkpoint(wttest.WiredTigerTestCase, suite_subprocess):
+class test_bulkload_checkpoint(aetest.ArchEngineTestCase, suite_subprocess):
     types = [
         ('file', dict(uri='file:data')),
         ('table', dict(uri='table:data')),
@@ -74,13 +74,13 @@ class test_bulkload_checkpoint(wttest.WiredTigerTestCase, suite_subprocess):
         if self.ckpt_type == 'named':
             cursor = self.session.open_cursor(
                 self.uri, None, 'checkpoint=myckpt')
-            self.assertEquals(cursor.next(), wiredtiger.WT_NOTFOUND)
+            self.assertEquals(cursor.next(), archengine.AE_NOTFOUND)
             cursor.close()
 
 
 # test_bulkload_backup
 #       Test bulk-load with hot-backup.
-class test_bulkload_backup(wttest.WiredTigerTestCase, suite_subprocess):
+class test_bulkload_backup(aetest.ArchEngineTestCase, suite_subprocess):
     types = [
         ('file', dict(uri='file:data')),
         ('table', dict(uri='table:data')),
@@ -97,17 +97,17 @@ class test_bulkload_backup(wttest.WiredTigerTestCase, suite_subprocess):
     scenarios = number_scenarios(
         multiply_scenarios('.', types, ckpt_type, session_type))
 
-    # Backup a set of chosen tables/files using the wt backup command.
+    # Backup a set of chosen tables/files using the ae backup command.
     # The only files are bulk-load files, so they shouldn't be copied.
     def check_backup(self, session):
         backupdir = 'backup.dir'
         self.backup(backupdir, session)
 
         # Open the target directory, and confirm the object has no contents.
-        conn = wiredtiger.wiredtiger_open(backupdir)
+        conn = archengine.archengine_open(backupdir)
         session = conn.open_session()
         cursor = session.open_cursor(self.uri, None, None)
-        self.assertEqual(cursor.next(), wiredtiger.WT_NOTFOUND)
+        self.assertEqual(cursor.next(), archengine.AE_NOTFOUND)
         conn.close()
 
     def test_bulk_backup(self):
@@ -133,4 +133,4 @@ class test_bulkload_backup(wttest.WiredTigerTestCase, suite_subprocess):
 
 
 if __name__ == '__main__':
-    wttest.run()
+    aetest.run()

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Public Domain 2014-2015 MongoDB, Inc.
-# Public Domain 2008-2014 WiredTiger, Inc.
+# Public Domain 2008-2014 ArchEngine, Inc.
 #
 # This is free and unencumbered software released into the public domain.
 #
@@ -32,11 +32,11 @@
 
 import fnmatch, os, shutil, time
 from suite_subprocess import suite_subprocess
-from wiredtiger import wiredtiger_open
-from wtscenario import multiply_scenarios, number_scenarios, prune_scenarios
-import wttest
+from archengine import archengine_open
+from aescenario import multiply_scenarios, number_scenarios, prune_scenarios
+import aetest
 
-class test_txn02(wttest.WiredTigerTestCase, suite_subprocess):
+class test_txn02(aetest.ArchEngineTestCase, suite_subprocess):
     logmax = "100K"
     tablename = 'test_txn02'
     uri = 'table:' + tablename
@@ -92,12 +92,12 @@ class test_txn02(wttest.WiredTigerTestCase, suite_subprocess):
 
     # Each check_log() call takes a second, so we don't call it for
     # every scenario, we'll limit it to the value of checklog_calls.
-    checklog_calls = 100 if wttest.islongtest() else 2
+    checklog_calls = 100 if aetest.islongtest() else 2
     checklog_mod = (len(scenarios) / checklog_calls + 1)
 
     # scenarios = number_scenarios(multiply_scenarios('.', types,
     # op1s, txn1s, op2s, txn2s, op3s, txn3s, op4s, txn4s)) [:3]
-    # Overrides WiredTigerTestCase
+    # Overrides ArchEngineTestCase
     def setUpConnectionOpen(self, dir):
         self.home = dir
         # Cycle through the different transaction_sync values in a
@@ -112,14 +112,14 @@ class test_txn02(wttest.WiredTigerTestCase, suite_subprocess):
         zerofill = 'false'
         if self.scenario_number % freq == 0:
             zerofill = 'true'
-        self.backup_dir = os.path.join(self.home, "WT_BACKUP")
+        self.backup_dir = os.path.join(self.home, "AE_BACKUP")
         conn_params = \
                 'log=(archive=false,enabled,file_max=%s),' % self.logmax + \
                 'log=(zero_fill=%s),' % zerofill + \
                 'create,error_prefix="%s: ",' % self.shortid() + \
                 'transaction_sync="%s",' % self.txn_sync
         # print "Creating conn at '%s' with config '%s'" % (dir, conn_params)
-        conn = wiredtiger_open(dir, conn_params)
+        conn = archengine_open(dir, conn_params)
         self.pr(`conn`)
         self.session2 = conn.open_session()
         return conn
@@ -154,7 +154,7 @@ class test_txn02(wttest.WiredTigerTestCase, suite_subprocess):
         # recovery and see the committed results.
         self.backup(self.backup_dir)
         backup_conn_params = 'log=(enabled,file_max=%s)' % self.logmax
-        backup_conn = wiredtiger_open(self.backup_dir, backup_conn_params)
+        backup_conn = archengine_open(self.backup_dir, backup_conn_params)
         try:
             self.check(backup_conn.open_session(), None, committed)
         finally:
@@ -178,7 +178,7 @@ class test_txn02(wttest.WiredTigerTestCase, suite_subprocess):
         endcount = 2
         count = 0
         while count < endcount:
-            backup_conn = wiredtiger_open(self.backup_dir, backup_conn_params)
+            backup_conn = archengine_open(self.backup_dir, backup_conn_params)
             try:
                 self.check(backup_conn.open_session(), None, committed)
             finally:
@@ -203,7 +203,7 @@ class test_txn02(wttest.WiredTigerTestCase, suite_subprocess):
         # Printlog should not run recovery nor advance the logs.  Make sure
         # it does not.
         #
-        self.runWt(['-h', self.backup_dir, 'printlog'], outfilename='printlog.out')
+        self.runAe(['-h', self.backup_dir, 'printlog'], outfilename='printlog.out')
         pr_logs = fnmatch.filter(os.listdir(self.backup_dir), "*Log*")
         self.assertEqual(cur_logs, pr_logs)
 
@@ -270,4 +270,4 @@ class test_txn02(wttest.WiredTigerTestCase, suite_subprocess):
             self.check_log(committed)
 
 if __name__ == '__main__':
-    wttest.run()
+    aetest.run()

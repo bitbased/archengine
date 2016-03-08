@@ -11,8 +11,8 @@ tmp_file = '__tmp'
 # (C type, pack type, printf format, printf arg(s), printf setup)
 field_types = {
     'string' : ('const char *', 'S', '%s', 'arg', ''),
-    'item' : ('WT_ITEM *', 'u', '%s', 'escaped',
-        'WT_ERR(__logrec_jsonify_str(session, &escaped, &arg));'),
+    'item' : ('AE_ITEM *', 'u', '%s', 'escaped',
+        'AE_ERR(__logrec_jsonify_str(session, &escaped, &arg));'),
     'recno' : ('uint64_t', 'r', '%" PRIu64 "', 'arg', ''),
     'uint32' : ('uint32_t', 'I', '%" PRIu32 "', 'arg', ''),
     'uint64' : ('uint64_t', 'Q', '%" PRIu64 "', 'arg', ''),
@@ -23,7 +23,7 @@ def cintype(f):
 
 def couttype(f):
     type = cintype(f)
-    # We already have a pointer to a WT_ITEM
+    # We already have a pointer to a AE_ITEM
     if f[0] == 'item':
         return type
     if type[-1] != '*':
@@ -32,7 +32,7 @@ def couttype(f):
 
 def clocaltype(f):
     type = cintype(f)
-    # Allocate a WT_ITEM struct on the stack
+    # Allocate a AE_ITEM struct on the stack
     if f[0] == 'item':
         return type[:-2]
     return type
@@ -82,7 +82,7 @@ log_defines = (
 
 tfile = open(tmp_file, 'w')
 skip = 0
-for line in open('../src/include/wiredtiger.in', 'r'):
+for line in open('../src/include/archengine.in', 'r'):
     if skip:
         if 'Log record declarations: END' in line:
             tfile.write('/*\n' + line)
@@ -93,10 +93,10 @@ for line in open('../src/include/wiredtiger.in', 'r'):
         skip = 1
         tfile.write(' */\n')
         tfile.write('/*! invalid operation */\n')
-        tfile.write('#define\tWT_LOGOP_INVALID\t0\n')
+        tfile.write('#define\tAE_LOGOP_INVALID\t0\n')
         tfile.write(log_defines)
 tfile.close()
-compare_srcfile(tmp_file, '../src/include/wiredtiger.in')
+compare_srcfile(tmp_file, '../src/include/archengine.in')
 
 #####################################################################
 # Create log_auto.c with handlers for each record / operation type.
@@ -107,47 +107,47 @@ tfile = open(tmp_file, 'w')
 tfile.write('/* DO NOT EDIT: automatically built by dist/log.py. */\n')
 
 tfile.write('''
-#include "wt_internal.h"
+#include "ae_internal.h"
 
 int
-__wt_logrec_alloc(WT_SESSION_IMPL *session, size_t size, WT_ITEM **logrecp)
+__ae_logrec_alloc(AE_SESSION_IMPL *session, size_t size, AE_ITEM **logrecp)
 {
-\tWT_ITEM *logrec;
+\tAE_ITEM *logrec;
 
-\tWT_RET(
-\t    __wt_scr_alloc(session, WT_ALIGN(size + 1, WT_LOG_ALIGN), &logrec));
-\tWT_CLEAR(*(WT_LOG_RECORD *)logrec->data);
-\tlogrec->size = offsetof(WT_LOG_RECORD, record);
+\tAE_RET(
+\t    __ae_scr_alloc(session, AE_ALIGN(size + 1, AE_LOG_ALIGN), &logrec));
+\tAE_CLEAR(*(AE_LOG_RECORD *)logrec->data);
+\tlogrec->size = offsetof(AE_LOG_RECORD, record);
 
 \t*logrecp = logrec;
 \treturn (0);
 }
 
 void
-__wt_logrec_free(WT_SESSION_IMPL *session, WT_ITEM **logrecp)
+__ae_logrec_free(AE_SESSION_IMPL *session, AE_ITEM **logrecp)
 {
-\t__wt_scr_free(session, logrecp);
+\t__ae_scr_free(session, logrecp);
 }
 
 int
-__wt_logrec_read(WT_SESSION_IMPL *session,
+__ae_logrec_read(AE_SESSION_IMPL *session,
     const uint8_t **pp, const uint8_t *end, uint32_t *rectypep)
 {
 \tuint64_t rectype;
 
-\tWT_UNUSED(session);
-\tWT_RET(__wt_vunpack_uint(pp, WT_PTRDIFF(end, *pp), &rectype));
+\tAE_UNUSED(session);
+\tAE_RET(__ae_vunpack_uint(pp, AE_PTRDIFF(end, *pp), &rectype));
 \t*rectypep = (uint32_t)rectype;
 \treturn (0);
 }
 
 int
-__wt_logop_read(WT_SESSION_IMPL *session,
+__ae_logop_read(AE_SESSION_IMPL *session,
     const uint8_t **pp, const uint8_t *end,
     uint32_t *optypep, uint32_t *opsizep)
 {
-\treturn (__wt_struct_unpack(
-\t    session, *pp, WT_PTRDIFF(end, *pp), "II", optypep, opsizep));
+\treturn (__ae_struct_unpack(
+\t    session, *pp, AE_PTRDIFF(end, *pp), "II", optypep, opsizep));
 }
 
 static size_t
@@ -159,7 +159,7 @@ __logrec_json_unpack_str(char *dest, size_t destlen, const char *src,
 
 \ttotal = 0;
 \twhile (srclen > 0) {
-\t\tn = __wt_json_unpack_char(
+\t\tn = __ae_json_unpack_char(
 \t\t    *src++, (u_char *)dest, destlen, false);
 \t\tsrclen--;
 \t\tif (n > destlen)
@@ -176,12 +176,12 @@ __logrec_json_unpack_str(char *dest, size_t destlen, const char *src,
 }
 
 static int
-__logrec_jsonify_str(WT_SESSION_IMPL *session, char **destp, WT_ITEM *item)
+__logrec_jsonify_str(AE_SESSION_IMPL *session, char **destp, AE_ITEM *item)
 {
 \tsize_t needed;
 
 \tneeded = __logrec_json_unpack_str(NULL, 0, item->data, item->size);
-\tWT_RET(__wt_realloc(session, NULL, needed, destp));
+\tAE_RET(__ae_realloc(session, NULL, needed, destp));
 \t(void)__logrec_json_unpack_str(*destp, needed, item->data, item->size);
 \treturn (0);
 }
@@ -194,22 +194,22 @@ for optype in log_data.optypes:
 
     tfile.write('''
 int
-__wt_logop_%(name)s_pack(
-    WT_SESSION_IMPL *session, WT_ITEM *logrec,
+__ae_logop_%(name)s_pack(
+    AE_SESSION_IMPL *session, AE_ITEM *logrec,
     %(arg_decls)s)
 {
-\tconst char *fmt = WT_UNCHECKED_STRING(%(fmt)s);
+\tconst char *fmt = AE_UNCHECKED_STRING(%(fmt)s);
 \tsize_t size;
 \tuint32_t optype, recsize;
 
 \toptype = %(macro)s;
-\tWT_RET(__wt_struct_size(session, &size, fmt,
+\tAE_RET(__ae_struct_size(session, &size, fmt,
 \t    optype, 0%(arg_names)s));
 
-\t__wt_struct_size_adjust(session, &size);
-\tWT_RET(__wt_buf_extend(session, logrec, logrec->size + size));
+\t__ae_struct_size_adjust(session, &size);
+\tAE_RET(__ae_buf_extend(session, logrec, logrec->size + size));
 \trecsize = (uint32_t)size;
-\tWT_RET(__wt_struct_pack(session,
+\tAE_RET(__ae_struct_pack(session,
 \t    (uint8_t *)logrec->data + logrec->size, size, fmt,
 \t    optype, recsize%(arg_names)s));
 
@@ -228,16 +228,16 @@ __wt_logop_%(name)s_pack(
 
     tfile.write('''
 int
-__wt_logop_%(name)s_unpack(
-    WT_SESSION_IMPL *session, const uint8_t **pp, const uint8_t *end,
+__ae_logop_%(name)s_unpack(
+    AE_SESSION_IMPL *session, const uint8_t **pp, const uint8_t *end,
     %(arg_decls)s)
 {
-\tconst char *fmt = WT_UNCHECKED_STRING(%(fmt)s);
+\tconst char *fmt = AE_UNCHECKED_STRING(%(fmt)s);
 \tuint32_t optype, size;
 
-\tWT_RET(__wt_struct_unpack(session, *pp, WT_PTRDIFF(end, *pp), fmt,
+\tAE_RET(__ae_struct_unpack(session, *pp, AE_PTRDIFF(end, *pp), fmt,
 \t    &optype, &size%(arg_names)s));
-\tWT_ASSERT(session, optype == %(macro)s);
+\tAE_ASSERT(session, optype == %(macro)s);
 
 \t*pp += size;
 \treturn (0);
@@ -254,50 +254,50 @@ __wt_logop_%(name)s_unpack(
     last_field = optype.fields[-1]
     tfile.write('''
 int
-__wt_logop_%(name)s_print(
-    WT_SESSION_IMPL *session, const uint8_t **pp, const uint8_t *end, FILE *out)
+__ae_logop_%(name)s_print(
+    AE_SESSION_IMPL *session, const uint8_t **pp, const uint8_t *end, FILE *out)
 {
 %(arg_ret)s\t%(arg_decls)s
 
-\t%(arg_init)sWT_RET(__wt_logop_%(name)s_unpack(
+\t%(arg_init)sAE_RET(__ae_logop_%(name)s_unpack(
 \t    session, pp, end%(arg_addrs)s));
 
-\tWT_RET(__wt_fprintf(out, " \\"optype\\": \\"%(name)s\\",\\n"));
+\tAE_RET(__ae_fprintf(out, " \\"optype\\": \\"%(name)s\\",\\n"));
 \t%(print_args)s
 %(arg_fini)s
 }
 ''' % {
     'name' : optype.name,
-    'arg_ret' : ('\tWT_DECL_RET;\n' if has_escape(optype.fields) else ''),
+    'arg_ret' : ('\tAE_DECL_RET;\n' if has_escape(optype.fields) else ''),
     'arg_decls' : ('\n\t'.join('%s%s%s;' %
         (clocaltype(f), '' if clocaltype(f)[-1] == '*' else ' ', f[1])
         for f in optype.fields)) + escape_decl(optype.fields),
     'arg_init' : ('escaped = NULL;\n\t' if has_escape(optype.fields) else ''),
-    'arg_fini' : ('\nerr:\t__wt_free(session, escaped);\n\treturn (ret);'
+    'arg_fini' : ('\nerr:\t__ae_free(session, escaped);\n\treturn (ret);'
     if has_escape(optype.fields) else '\treturn (0);'),
     'arg_addrs' : ''.join(', &%s' % f[1] for f in optype.fields),
     'print_args' : '\n\t'.join(
-        '%s%s(__wt_fprintf(out,\n\t    "        \\"%s\\": \\"%s\\",\\n",%s));' %
+        '%s%s(__ae_fprintf(out,\n\t    "        \\"%s\\": \\"%s\\",\\n",%s));' %
         (printf_setup(f),
-        'WT_ERR' if has_escape(optype.fields) else 'WT_RET',
+        'AE_ERR' if has_escape(optype.fields) else 'AE_RET',
         f[1], printf_fmt(f), printf_arg(f))
         for f in optype.fields[:-1]) + str(
-        '\n\t%s%s(__wt_fprintf(out,\n\t    "        \\"%s\\": \\"%s\\"",%s));' %
+        '\n\t%s%s(__ae_fprintf(out,\n\t    "        \\"%s\\": \\"%s\\"",%s));' %
         (printf_setup(last_field),
-        'WT_ERR' if has_escape(optype.fields) else 'WT_RET',
+        'AE_ERR' if has_escape(optype.fields) else 'AE_RET',
         last_field[1], printf_fmt(last_field), printf_arg(last_field))),
 })
 
 # Emit the printlog entry point
 tfile.write('''
 int
-__wt_txn_op_printlog(
-    WT_SESSION_IMPL *session, const uint8_t **pp, const uint8_t *end, FILE *out)
+__ae_txn_op_printlog(
+    AE_SESSION_IMPL *session, const uint8_t **pp, const uint8_t *end, FILE *out)
 {
 \tuint32_t optype, opsize;
 
 \t/* Peek at the size and the type. */
-\tWT_RET(__wt_logop_read(session, pp, end, &optype, &opsize));
+\tAE_RET(__ae_logop_read(session, pp, end, &optype, &opsize));
 \tend = *pp + opsize;
 
 \tswitch (optype) {''')
@@ -308,15 +308,15 @@ for optype in log_data.optypes:
 
     tfile.write('''
 \tcase %(macro)s:
-\t\tWT_RET(%(print_func)s(session, pp, end, out));
+\t\tAE_RET(%(print_func)s(session, pp, end, out));
 \t\tbreak;
 ''' % {
     'macro' : optype.macro_name(),
-    'print_func' : '__wt_logop_' + optype.name + '_print',
+    'print_func' : '__ae_logop_' + optype.name + '_print',
 })
 
 tfile.write('''
-\tWT_ILLEGAL_VALUE(session);
+\tAE_ILLEGAL_VALUE(session);
 \t}
 
 \treturn (0);

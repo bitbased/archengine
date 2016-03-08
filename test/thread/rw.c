@@ -1,6 +1,6 @@
 /*-
  * Public Domain 2014-2015 MongoDB, Inc.
- * Public Domain 2008-2014 WiredTiger, Inc.
+ * Public Domain 2008-2014 ArchEngine, Inc.
  *
  * This is free and unencumbered software released into the public domain.
  *
@@ -36,7 +36,7 @@ typedef struct {
 	char *name;				/* object name */
 	u_int nops;				/* Thread op count */
 
-	WT_RAND_STATE rnd;			/* RNG */
+	AE_RAND_STATE rnd;			/* RNG */
 
 	int remove;				/* cursor.remove */
 	int update;				/* cursor.update */
@@ -73,7 +73,7 @@ rw_start(u_int readers, u_int writers)
 
 			/* Vary by orders of magnitude */
 			if (vary_nops)
-				run_info[i].nops = WT_MAX(1000, max_nops >> i);
+				run_info[i].nops = AE_MAX(1000, max_nops >> i);
 			load(run_info[i].name);
 		} else
 			run_info[i].name = run_info[0].name;
@@ -98,7 +98,7 @@ rw_start(u_int readers, u_int writers)
 			/* Vary by orders of magnitude */
 			if (vary_nops)
 				run_info[offset].nops =
-				    WT_MAX(1000, max_nops >> name_index);
+				    AE_MAX(1000, max_nops >> name_index);
 		} else
 			run_info[offset].name = run_info[0].name;
 
@@ -159,16 +159,16 @@ rw_start(u_int readers, u_int writers)
  *	Read operation.
  */
 static inline void
-reader_op(WT_SESSION *session, WT_CURSOR *cursor, INFO *s)
+reader_op(AE_SESSION *session, AE_CURSOR *cursor, INFO *s)
 {
-	WT_ITEM *key, _key;
+	AE_ITEM *key, _key;
 	u_int keyno;
 	int ret;
 	char keybuf[64];
 
 	key = &_key;
 
-	keyno = __wt_random(&s->rnd) % nkeys + 1;
+	keyno = __ae_random(&s->rnd) % nkeys + 1;
 	if (ftype == ROW) {
 		key->data = keybuf;
 		key->size = (uint32_t)
@@ -176,7 +176,7 @@ reader_op(WT_SESSION *session, WT_CURSOR *cursor, INFO *s)
 		cursor->set_key(cursor, key);
 	} else
 		cursor->set_key(cursor, (uint32_t)keyno);
-	if ((ret = cursor->search(cursor)) != 0 && ret != WT_NOTFOUND)
+	if ((ret = cursor->search(cursor)) != 0 && ret != AE_NOTFOUND)
 		testutil_die(ret, "cursor.search");
 	if (log_print)
 		(void)session->log_printf(session,
@@ -191,16 +191,16 @@ static void *
 reader(void *arg)
 {
 	INFO *s;
-	WT_CURSOR *cursor;
-	WT_SESSION *session;
+	AE_CURSOR *cursor;
+	AE_SESSION *session;
 	u_int i;
 	int id, ret;
 	char tid[128];
 
 	id = (int)(uintptr_t)arg;
 	s = &run_info[id];
-	__wt_thread_id(tid, sizeof(tid));
-	__wt_random_init(&s->rnd);
+	__ae_thread_id(tid, sizeof(tid));
+	__ae_random_init(&s->rnd);
 
 	printf(" read thread %2d starting: tid: %s, file: %s\n",
 	    id, tid, s->name);
@@ -243,9 +243,9 @@ reader(void *arg)
  *	Write operation.
  */
 static inline void
-writer_op(WT_SESSION *session, WT_CURSOR *cursor, INFO *s)
+writer_op(AE_SESSION *session, AE_CURSOR *cursor, INFO *s)
 {
-	WT_ITEM *key, _key, *value, _value;
+	AE_ITEM *key, _key, *value, _value;
 	u_int keyno;
 	int ret;
 	char keybuf[64], valuebuf[64];
@@ -253,7 +253,7 @@ writer_op(WT_SESSION *session, WT_CURSOR *cursor, INFO *s)
 	key = &_key;
 	value = &_value;
 
-	keyno = __wt_random(&s->rnd) % nkeys + 1;
+	keyno = __ae_random(&s->rnd) % nkeys + 1;
 	if (ftype == ROW) {
 		key->data = keybuf;
 		key->size = (uint32_t)
@@ -264,7 +264,7 @@ writer_op(WT_SESSION *session, WT_CURSOR *cursor, INFO *s)
 	if (keyno % 5 == 0) {
 		++s->remove;
 		if ((ret =
-		    cursor->remove(cursor)) != 0 && ret != WT_NOTFOUND)
+		    cursor->remove(cursor)) != 0 && ret != AE_NOTFOUND)
 			testutil_die(ret, "cursor.remove");
 	} else {
 		++s->update;
@@ -292,16 +292,16 @@ static void *
 writer(void *arg)
 {
 	INFO *s;
-	WT_CURSOR *cursor;
-	WT_SESSION *session;
+	AE_CURSOR *cursor;
+	AE_SESSION *session;
 	u_int i;
 	int id, ret;
 	char tid[128];
 
 	id = (int)(uintptr_t)arg;
 	s = &run_info[id];
-	__wt_thread_id(tid, sizeof(tid));
-	__wt_random_init(&s->rnd);
+	__ae_thread_id(tid, sizeof(tid));
+	__ae_random_init(&s->rnd);
 
 	printf("write thread %2d starting: tid: %s, file: %s\n",
 	    id, tid, s->name);

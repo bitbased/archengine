@@ -1,6 +1,6 @@
 /*-
  * Public Domain 2014-2015 MongoDB, Inc.
- * Public Domain 2008-2014 WiredTiger, Inc.
+ * Public Domain 2008-2014 ArchEngine, Inc.
  *
  * This is free and unencumbered software released into the public domain.
  *
@@ -40,7 +40,7 @@
 
 #include "test_util.i"
 
-#define	URI_BASE	"table:__wt"		/* File name */
+#define	URI_BASE	"table:__ae"		/* File name */
 
 #define	ERR_KEY_MISMATCH	0x200001
 #define	ERR_DATA_MISMATCH	0x200002
@@ -64,7 +64,7 @@ typedef struct {
 typedef struct {
 	char *home;				/* Home directory */
 	const char *checkpoint_name;		/* Checkpoint name */
-	WT_CONNECTION *conn;			/* WiredTiger connection */
+	AE_CONNECTION *conn;			/* ArchEngine connection */
 	u_int nkeys;				/* Keys to load */
 	u_int nops;				/* Operations per thread */
 	FILE *logfp;				/* Message log file. */

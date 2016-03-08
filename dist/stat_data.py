@@ -17,7 +17,7 @@
 #       no_scale        Don't scale value per second in the logging tool script
 #
 # The no_clear flag is a little complicated: it means we don't clear the values
-# when resetting statistics after each run (necessary when the WiredTiger engine
+# when resetting statistics after each run (necessary when the ArchEngine engine
 # is updating values that persist over multiple runs, for example the count of
 # cursors), but it also causes the underlying display routines to not treat the
 # change between displays as relative to the number of seconds, that is, it's an

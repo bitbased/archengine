@@ -1,28 +1,28 @@
 /*-
  * Copyright (c) 2014-2015 MongoDB, Inc.
- * Copyright (c) 2008-2014 WiredTiger, Inc.
+ * Copyright (c) 2008-2014 ArchEngine, Inc.
  *	All rights reserved.
  *
  * See the file LICENSE for redistribution information.
  */
 
-#include "wt_internal.h"
+#include "ae_internal.h"
 
 /*
- * __wt_cond_alloc --
+ * __ae_cond_alloc --
  *	Allocate and initialize a condition variable.
  */
 int
-__wt_cond_alloc(WT_SESSION_IMPL *session,
-    const char *name, bool is_signalled, WT_CONDVAR **condp)
+__ae_cond_alloc(AE_SESSION_IMPL *session,
+    const char *name, bool is_signalled, AE_CONDVAR **condp)
 {
-	WT_CONDVAR *cond;
+	AE_CONDVAR *cond;
 
 	/*
 	 * !!!
 	 * This function MUST handle a NULL session handle.
 	 */
-	WT_RET(__wt_calloc_one(session, &cond));
+	AE_RET(__ae_calloc_one(session, &cond));
 
 	InitializeCriticalSection(&cond->mtx);
 
@@ -37,16 +37,16 @@ __wt_cond_alloc(WT_SESSION_IMPL *session,
 }
 
 /*
- * __wt_cond_wait_signal --
+ * __ae_cond_wait_signal --
  *	Wait on a mutex, optionally timing out.  If we get it
  *	before the time out period expires, let the caller know.
  */
 int
-__wt_cond_wait_signal(
-    WT_SESSION_IMPL *session, WT_CONDVAR *cond, uint64_t usecs, bool *signalled)
+__ae_cond_wait_signal(
+    AE_SESSION_IMPL *session, AE_CONDVAR *cond, uint64_t usecs, bool *signalled)
 {
 	DWORD err, milliseconds;
-	WT_DECL_RET;
+	AE_DECL_RET;
 	uint64_t milliseconds64;
 	bool locked;
 
@@ -54,7 +54,7 @@ __wt_cond_wait_signal(
 
 	/* Fast path if already signalled. */
 	*signalled = true;
-	if (__wt_atomic_addi32(&cond->waiters, 1) == 0)
+	if (__ae_atomic_addi32(&cond->waiters, 1) == 0)
 		return (0);
 
 	/*
@@ -62,9 +62,9 @@ __wt_cond_wait_signal(
 	 * This function MUST handle a NULL session handle.
 	 */
 	if (session != NULL) {
-		WT_RET(__wt_verbose(session, WT_VERB_MUTEX,
+		AE_RET(__ae_verbose(session, AE_VERB_MUTEX,
 			"wait %s cond (%p)", cond->name, cond));
-		WT_STAT_FAST_CONN_INCR(session, cond_wait);
+		AE_STAT_FAST_CONN_INCR(session, cond_wait);
 	}
 
 	EnterCriticalSection(&cond->mtx);
@@ -96,35 +96,35 @@ __wt_cond_wait_signal(
 
 	/*
 	 * SleepConditionVariableCS returns non-zero on success, 0 on timeout
-	 * or failure. Check for timeout, else convert to a WiredTiger error
+	 * or failure. Check for timeout, else convert to a ArchEngine error
 	 * value and fail.
 	 */
 	if (ret == 0) {
 		if ((err = GetLastError()) == ERROR_TIMEOUT)
 			*signalled = false;
 		else
-			ret = __wt_errno();
+			ret = __ae_errno();
 	} else
 		ret = 0;
 
-	(void)__wt_atomic_subi32(&cond->waiters, 1);
+	(void)__ae_atomic_subi32(&cond->waiters, 1);
 
 	if (locked)
 		LeaveCriticalSection(&cond->mtx);
 
 	if (ret == 0)
 		return (0);
-	WT_RET_MSG(session, ret, "SleepConditionVariableCS");
+	AE_RET_MSG(session, ret, "SleepConditionVariableCS");
 }
 
 /*
- * __wt_cond_signal --
+ * __ae_cond_signal --
  *	Signal a waiting thread.
  */
 int
-__wt_cond_signal(WT_SESSION_IMPL *session, WT_CONDVAR *cond)
+__ae_cond_signal(AE_SESSION_IMPL *session, AE_CONDVAR *cond)
 {
-	WT_DECL_RET;
+	AE_DECL_RET;
 	bool locked;
 
 	locked = false;
@@ -134,14 +134,14 @@ __wt_cond_signal(WT_SESSION_IMPL *session, WT_CONDVAR *cond)
 	 * This function MUST handle a NULL session handle.
 	 */
 	if (session != NULL)
-		WT_RET(__wt_verbose(session, WT_VERB_MUTEX,
+		AE_RET(__ae_verbose(session, AE_VERB_MUTEX,
 			"signal %s cond (%p)", cond->name, cond));
 
 	/* Fast path if already signalled. */
 	if (cond->waiters == -1)
 		return (0);
 
-	if (cond->waiters > 0 || !__wt_atomic_casi32(&cond->waiters, 0, -1)) {
+	if (cond->waiters > 0 || !__ae_atomic_casi32(&cond->waiters, 0, -1)) {
 		EnterCriticalSection(&cond->mtx);
 		locked = true;
 		WakeAllConditionVariable(&cond->cond);
@@ -151,18 +151,18 @@ __wt_cond_signal(WT_SESSION_IMPL *session, WT_CONDVAR *cond)
 		LeaveCriticalSection(&cond->mtx);
 	if (ret == 0)
 		return (0);
-	WT_RET_MSG(session, ret, "WakeAllConditionVariable");
+	AE_RET_MSG(session, ret, "WakeAllConditionVariable");
 }
 
 /*
- * __wt_cond_destroy --
+ * __ae_cond_destroy --
  *	Destroy a condition variable.
  */
 int
-__wt_cond_destroy(WT_SESSION_IMPL *session, WT_CONDVAR **condp)
+__ae_cond_destroy(AE_SESSION_IMPL *session, AE_CONDVAR **condp)
 {
-	WT_CONDVAR *cond;
-	WT_DECL_RET;
+	AE_CONDVAR *cond;
+	AE_DECL_RET;
 
 	cond = *condp;
 	if (cond == NULL)
@@ -170,7 +170,7 @@ __wt_cond_destroy(WT_SESSION_IMPL *session, WT_CONDVAR **condp)
 
 	/* Do nothing to delete Condition Variable */
 	DeleteCriticalSection(&cond->mtx);
-	__wt_free(session, *condp);
+	__ae_free(session, *condp);
 
 	return (ret);
 }

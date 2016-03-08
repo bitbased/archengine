@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Public Domain 2014-2015 MongoDB, Inc.
-# Public Domain 2008-2014 WiredTiger, Inc.
+# Public Domain 2008-2014 ArchEngine, Inc.
 #
 # This is free and unencumbered software released into the public domain.
 #
@@ -32,11 +32,11 @@
 
 import fnmatch, os, shutil, time
 from suite_subprocess import suite_subprocess
-from wiredtiger import wiredtiger_open, stat
-from wtscenario import multiply_scenarios, number_scenarios, prune_scenarios
-import wttest
+from archengine import archengine_open, stat
+from aescenario import multiply_scenarios, number_scenarios, prune_scenarios
+import aetest
 
-class test_txn15(wttest.WiredTigerTestCase, suite_subprocess):
+class test_txn15(aetest.ArchEngineTestCase, suite_subprocess):
     uri = 'table:test_txn15_1'
     create_params = 'key_format=i,value_format=i'
     entries = 100
@@ -67,7 +67,7 @@ class test_txn15(wttest.WiredTigerTestCase, suite_subprocess):
     scenarios = multiply_scenarios('.', conn_sync_enabled, conn_sync_method,
         begin_sync, commit_sync)
 
-    # Overrides WiredTigerTestCase, add extra config params
+    # Overrides ArchEngineTestCase, add extra config params
     def setUpConnectionOpen(self, dir):
         self.home = dir
         #
@@ -81,7 +81,7 @@ class test_txn15(wttest.WiredTigerTestCase, suite_subprocess):
             'transaction_sync=(enabled=%s),' % self.conn_enable + \
             'transaction_sync=(method=%s),' % self.conn_method
         # print "Creating conn at '%s' with config '%s'" % (dir, conn_params)
-        conn = wiredtiger_open(dir, conn_params)
+        conn = archengine_open(dir, conn_params)
         return conn
 
     # Given the different configuration settings determine if this group
@@ -160,4 +160,4 @@ class test_txn15(wttest.WiredTigerTestCase, suite_subprocess):
             self.assertEqual(write1, write2)
 
 if __name__ == '__main__':
-    wttest.run()
+    aetest.run()

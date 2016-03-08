@@ -1,23 +1,23 @@
 /*-
  * Copyright (c) 2014-2015 MongoDB, Inc.
- * Copyright (c) 2008-2014 WiredTiger, Inc.
+ * Copyright (c) 2008-2014 ArchEngine, Inc.
  *	All rights reserved.
  *
  * See the file LICENSE for redistribution information.
  */
 
-#include "wt_internal.h"
+#include "ae_internal.h"
 
 /*
- * __wt_upgrade --
+ * __ae_upgrade --
  *	Upgrade a file.
  */
 int
-__wt_upgrade(WT_SESSION_IMPL *session, const char *cfg[])
+__ae_upgrade(AE_SESSION_IMPL *session, const char *cfg[])
 {
-	WT_UNUSED(cfg);
+	AE_UNUSED(cfg);
 
 	/* There's nothing to upgrade, yet. */
-	WT_RET(__wt_progress(session, NULL, 1));
+	AE_RET(__ae_progress(session, NULL, 1));
 	return (0);
 }

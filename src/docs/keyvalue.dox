@@ -1,6 +1,6 @@
 /*! @page keyvalue Key/Value pairs
 
-Underlying WiredTiger files are key/value stores, that is, entries in
+Underlying ArchEngine files are key/value stores, that is, entries in
 the file are paired keys and values.  These keys and values can be
 accessed directly, and a file cursor will only return the data from the
 single file, without reference to any other related files or data.  For

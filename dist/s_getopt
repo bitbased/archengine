@@ -1,6 +1,6 @@
 #! /bin/sh
 
-t=__wt.$$
+t=__ae.$$
 trap 'rm -f $t' 0 1 2 3 13 15
 
 # Complain if someone uses the wrong getopt.

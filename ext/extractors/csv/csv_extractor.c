@@ -1,6 +1,6 @@
 /*-
  * Public Domain 2014-2015 MongoDB, Inc.
- * Public Domain 2008-2014 WiredTiger, Inc.
+ * Public Domain 2008-2014 ArchEngine, Inc.
  *
  * This is free and unencumbered software released into the public domain.
  *
@@ -31,10 +31,10 @@
 #include <errno.h>
 #include <stdlib.h>
 
-#include <wiredtiger_ext.h>
+#include <archengine_ext.h>
 
 /*
- * A simple WiredTiger extractor that separates a single string field,
+ * A simple ArchEngine extractor that separates a single string field,
  * interpreted as column separated values (CSV), into component pieces.
  * When an index is configured with this extractor and app_metadata
  * set to a number N, the Nth field is returned as a string.
@@ -47,33 +47,33 @@
 
 /* Local extractor structure. */
 typedef struct {
-	WT_EXTRACTOR extractor;		/* Must come first */
-	WT_EXTENSION_API *wt_api;	/* Extension API */
+	AE_EXTRACTOR extractor;		/* Must come first */
+	AE_EXTENSION_API *ae_api;	/* Extension API */
 	int field;			/* Field to extract */
 	int format_isnum;		/* Field contents are numeric */
 } CSV_EXTRACTOR;
 
 /*
  * csv_extract --
- *	WiredTiger CSV extraction.
+ *	ArchEngine CSV extraction.
  */
 static int
-csv_extract(WT_EXTRACTOR *extractor, WT_SESSION *session,
-    const WT_ITEM *key, const WT_ITEM *value, WT_CURSOR *result_cursor)
+csv_extract(AE_EXTRACTOR *extractor, AE_SESSION *session,
+    const AE_ITEM *key, const AE_ITEM *value, AE_CURSOR *result_cursor)
 {
 	char *copy, *p, *pend, *valstr;
 	const CSV_EXTRACTOR *csv_extractor;
 	int i, ret, val;
 	size_t len;
-	WT_EXTENSION_API *wtapi;
+	AE_EXTENSION_API *aeapi;
 
 	(void)key;				/* Unused parameters */
 
 	csv_extractor = (const CSV_EXTRACTOR *)extractor;
-	wtapi = csv_extractor->wt_api;
+	aeapi = csv_extractor->ae_api;
 
 	/* Unpack the value. */
-	if ((ret = wtapi->struct_unpack(wtapi,
+	if ((ret = aeapi->struct_unpack(aeapi,
 	    session, value->data, value->size, "S", &valstr)) != 0)
 		return (ret);
 
@@ -118,14 +118,14 @@ csv_extract(WT_EXTRACTOR *extractor, WT_SESSION *session,
  *	needed to save the field number and format.
  */
 static int
-csv_customize(WT_EXTRACTOR *extractor, WT_SESSION *session,
-    const char *uri, WT_CONFIG_ITEM *appcfg, WT_EXTRACTOR **customp)
+csv_customize(AE_EXTRACTOR *extractor, AE_SESSION *session,
+    const char *uri, AE_CONFIG_ITEM *appcfg, AE_EXTRACTOR **customp)
 {
 	const CSV_EXTRACTOR *orig;
 	CSV_EXTRACTOR *csv_extractor;
-	WT_CONFIG_ITEM field, format;
-	WT_CONFIG_PARSER *parser;
-	WT_EXTENSION_API *wtapi;
+	AE_CONFIG_ITEM field, format;
+	AE_CONFIG_PARSER *parser;
+	AE_EXTENSION_API *aeapi;
 	int ret;
 	long field_num;
 
@@ -133,13 +133,13 @@ csv_customize(WT_EXTRACTOR *extractor, WT_SESSION *session,
 	(void)uri;				/* Unused parameters */
 
 	orig = (const CSV_EXTRACTOR *)extractor;
-	wtapi = orig->wt_api;
-	if ((ret = wtapi->config_parser_open(wtapi, session, appcfg->str,
+	aeapi = orig->ae_api;
+	if ((ret = aeapi->config_parser_open(aeapi, session, appcfg->str,
 	    appcfg->len, &parser)) != 0)
 		return (ret);
 	if ((ret = parser->get(parser, "field", &field)) != 0 ||
 	    (ret = parser->get(parser, "format", &format)) != 0) {
-		if (ret == WT_NOTFOUND)
+		if (ret == AE_NOTFOUND)
 			return (EINVAL);
 		return (ret);
 	}
@@ -154,7 +154,7 @@ csv_customize(WT_EXTRACTOR *extractor, WT_SESSION *session,
 	*csv_extractor = *orig;
 	csv_extractor->field = (int)field_num;
 	csv_extractor->format_isnum = (format.str[0] == 'i');
-	*customp = (WT_EXTRACTOR *)csv_extractor;
+	*customp = (AE_EXTRACTOR *)csv_extractor;
 	return (0);
 }
 
@@ -163,7 +163,7 @@ csv_customize(WT_EXTRACTOR *extractor, WT_SESSION *session,
  *	Terminate is called to free the CSV and any associated memory.
  */
 static int
-csv_terminate(WT_EXTRACTOR *extractor, WT_SESSION *session)
+csv_terminate(AE_EXTRACTOR *extractor, AE_SESSION *session)
 {
 	(void)session;				/* Unused parameters */
 
@@ -173,11 +173,11 @@ csv_terminate(WT_EXTRACTOR *extractor, WT_SESSION *session)
 }
 
 /*
- * wiredtiger_extension_init --
- *	WiredTiger CSV extraction extension.
+ * archengine_extension_init --
+ *	ArchEngine CSV extraction extension.
  */
 int
-wiredtiger_extension_init(WT_CONNECTION *connection, WT_CONFIG_ARG *config)
+archengine_extension_init(AE_CONNECTION *connection, AE_CONFIG_ARG *config)
 {
 	CSV_EXTRACTOR *csv_extractor;
 
@@ -189,8 +189,8 @@ wiredtiger_extension_init(WT_CONNECTION *connection, WT_CONFIG_ARG *config)
 	csv_extractor->extractor.extract = csv_extract;
 	csv_extractor->extractor.customize = csv_customize;
 	csv_extractor->extractor.terminate = csv_terminate;
-	csv_extractor->wt_api = connection->get_extension_api(connection);
+	csv_extractor->ae_api = connection->get_extension_api(connection);
 
 	return (connection->add_extractor(
-	    connection, "csv", (WT_EXTRACTOR *)csv_extractor, NULL));
+	    connection, "csv", (AE_EXTRACTOR *)csv_extractor, NULL));
 }

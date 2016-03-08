@@ -1,17 +1,17 @@
 /*-
  * Copyright (c) 2014-2015 MongoDB, Inc.
- * Copyright (c) 2008-2014 WiredTiger, Inc.
+ * Copyright (c) 2008-2014 ArchEngine, Inc.
  *	All rights reserved.
  *
  * See the file LICENSE for redistribution information.
  */
 
-#include "wt_internal.h"
+#include "ae_internal.h"
 
 #define	__HUFFMAN_DETAIL	0	/* Set to 1 for debugging output. */
 
 /* Length of header in compressed message, in bits. */
-#define	WT_HUFFMAN_HEADER 	3
+#define	AE_HUFFMAN_HEADER 	3
 
 /*
  * Maximum allowed length of Huffman code words, which otherwise can range up
@@ -23,7 +23,7 @@
  */
 #define	MAX_CODE_LENGTH		16
 
-typedef struct __wt_freqtree_node {
+typedef struct __ae_freqtree_node {
 	/*
 	 * Data structure representing a node of the huffman tree. It holds a
 	 * 64-bit weight and pointers to the left and right child nodes.  The
@@ -31,18 +31,18 @@ typedef struct __wt_freqtree_node {
 	 */
 	uint8_t  symbol;			/* only used in leaf nodes */
 	uint64_t weight;
-	struct __wt_freqtree_node *left;	/* bit 0 */
-	struct __wt_freqtree_node *right;	/* bit 1 */
-} WT_FREQTREE_NODE;
+	struct __ae_freqtree_node *left;	/* bit 0 */
+	struct __ae_freqtree_node *right;	/* bit 1 */
+} AE_FREQTREE_NODE;
 
-typedef struct __wt_huffman_code {
+typedef struct __ae_huffman_code {
 	uint16_t pattern;		/* requirement: length of field's type
 					 * in bits >= MAX_CODE_LENGTH.
 					 */
 	uint8_t length;
-} WT_HUFFMAN_CODE;
+} AE_HUFFMAN_CODE;
 
-typedef struct __wt_huffman_obj {
+typedef struct __ae_huffman_obj {
 	/*
 	 * Data structure here defines specific instance of the encoder/decoder.
 	 */
@@ -55,7 +55,7 @@ typedef struct __wt_huffman_obj {
 	 * Used in encoding and decoding.
 	 * memory: codes[0-to-(number of symbols - 1)]
 	 */
-	WT_HUFFMAN_CODE *codes;
+	AE_HUFFMAN_CODE *codes;
 
 	/*
 	 * use: code2symbol[Huffman_code] = symbol.
@@ -63,7 +63,7 @@ typedef struct __wt_huffman_obj {
 	 * memory: code2symbol[1 << max_code_length]
 	 */
 	uint8_t *code2symbol;
-} WT_HUFFMAN_OBJ;
+} AE_HUFFMAN_OBJ;
 
 /*
  * Queue element data structure.
@@ -72,7 +72,7 @@ typedef struct __wt_huffman_obj {
  * element in the queue.
  */
 typedef struct node_queue_elem {
-	WT_FREQTREE_NODE *node;
+	AE_FREQTREE_NODE *node;
 	struct node_queue_elem *next;
 } NODE_QUEUE_ELEM;
 
@@ -96,19 +96,19 @@ typedef struct __indexed_byte {
 	uint32_t frequency;
 } INDEXED_SYMBOL;
 
-static int WT_CDECL indexed_freq_compare(const void *, const void *);
-static int WT_CDECL indexed_symbol_compare(const void *, const void *);
+static int AE_CDECL indexed_freq_compare(const void *, const void *);
+static int AE_CDECL indexed_symbol_compare(const void *, const void *);
 static void make_table(
-	WT_SESSION_IMPL *, uint8_t *, uint16_t, WT_HUFFMAN_CODE *, u_int);
-static void node_queue_close(WT_SESSION_IMPL *, NODE_QUEUE *);
+	AE_SESSION_IMPL *, uint8_t *, uint16_t, AE_HUFFMAN_CODE *, u_int);
+static void node_queue_close(AE_SESSION_IMPL *, NODE_QUEUE *);
 static void node_queue_dequeue(
-	WT_SESSION_IMPL *, NODE_QUEUE *, WT_FREQTREE_NODE **);
+	AE_SESSION_IMPL *, NODE_QUEUE *, AE_FREQTREE_NODE **);
 static int  node_queue_enqueue(
-	WT_SESSION_IMPL *, NODE_QUEUE *, WT_FREQTREE_NODE *);
+	AE_SESSION_IMPL *, NODE_QUEUE *, AE_FREQTREE_NODE *);
 static uint32_t profile_tree(
-	WT_FREQTREE_NODE *, uint16_t, uint16_t *, uint16_t *);
-static void recursive_free_node(WT_SESSION_IMPL *, WT_FREQTREE_NODE *);
-static void set_codes(WT_FREQTREE_NODE *, WT_HUFFMAN_CODE *, uint16_t, uint8_t);
+	AE_FREQTREE_NODE *, uint16_t, uint16_t *, uint16_t *);
+static void recursive_free_node(AE_SESSION_IMPL *, AE_FREQTREE_NODE *);
+static void set_codes(AE_FREQTREE_NODE *, AE_HUFFMAN_CODE *, uint16_t, uint8_t);
 
 #define	node_queue_is_empty(queue)					\
 	((queue) == NULL || (queue)->first == NULL)
@@ -117,7 +117,7 @@ static void set_codes(WT_FREQTREE_NODE *, WT_HUFFMAN_CODE *, uint16_t, uint8_t);
  * indexed_symbol_compare --
  *	Qsort comparator to order the table by symbol, lowest to highest.
  */
-static int WT_CDECL
+static int AE_CDECL
 indexed_symbol_compare(const void *a, const void *b)
 {
 	return (((INDEXED_SYMBOL *)a)->symbol >
@@ -131,7 +131,7 @@ indexed_symbol_compare(const void *a, const void *b)
  *	Qsort comparator to order the table by frequency (the most frequent
  * symbols will be at the end of the array).
  */
-static int WT_CDECL
+static int AE_CDECL
 indexed_freq_compare(const void *a, const void *b)
 {
 	return (((INDEXED_SYMBOL *)a)->frequency >
@@ -146,7 +146,7 @@ indexed_freq_compare(const void *a, const void *b)
  *	depth of leaf.
  */
 static uint32_t
-profile_tree(WT_FREQTREE_NODE *node,
+profile_tree(AE_FREQTREE_NODE *node,
     uint16_t len, uint16_t *max_depth, uint16_t *min_depth)
 {
 	uint32_t leaf_cnt;
@@ -180,10 +180,10 @@ profile_tree(WT_FREQTREE_NODE *node,
  * that holds the code pattern.
  */
 static void
-set_codes(WT_FREQTREE_NODE *node,
-    WT_HUFFMAN_CODE *codes, uint16_t pattern, uint8_t len)
+set_codes(AE_FREQTREE_NODE *node,
+    AE_HUFFMAN_CODE *codes, uint16_t pattern, uint8_t len)
 {
-	WT_HUFFMAN_CODE *code;
+	AE_HUFFMAN_CODE *code;
 	uint16_t patternleft, patternright, half;
 	uint8_t remaining;
 
@@ -236,8 +236,8 @@ set_codes(WT_FREQTREE_NODE *node,
  * decoding from a code to a symbol are simple array lookups.
  */
 static void
-make_table(WT_SESSION_IMPL *session, uint8_t *code2symbol,
-    uint16_t max_depth, WT_HUFFMAN_CODE *codes, u_int symcnt)
+make_table(AE_SESSION_IMPL *session, uint8_t *code2symbol,
+    uint16_t max_depth, AE_HUFFMAN_CODE *codes, u_int symcnt)
 {
 	uint32_t j, c1, c2;	/* Exceeds uint16_t bounds at loop boundary. */
 	uint16_t c, i;
@@ -266,7 +266,7 @@ make_table(WT_SESSION_IMPL *session, uint8_t *code2symbol,
 		c1 = (uint32_t)c << shift;
 		c2 = (uint32_t)(c + 1) << shift;
 		for (j = c1; j < c2; j++) {
-			WT_ASSERT(session, code2symbol[j] == 0);
+			AE_ASSERT(session, code2symbol[j] == 0);
 			code2symbol[j] = i;
 		}
 	}
@@ -277,28 +277,28 @@ make_table(WT_SESSION_IMPL *session, uint8_t *code2symbol,
  *	Recursively free the huffman frequency tree's nodes.
  */
 static void
-recursive_free_node(WT_SESSION_IMPL *session, WT_FREQTREE_NODE *node)
+recursive_free_node(AE_SESSION_IMPL *session, AE_FREQTREE_NODE *node)
 {
 	if (node != NULL) {
 		recursive_free_node(session, node->left);
 		recursive_free_node(session, node->right);
-		__wt_free(session, node);
+		__ae_free(session, node);
 	}
 }
 
 /*
- * __wt_huffman_open --
+ * __ae_huffman_open --
  *	Take a frequency table and return a pointer to a descriptor object.
  */
 int
-__wt_huffman_open(WT_SESSION_IMPL *session,
+__ae_huffman_open(AE_SESSION_IMPL *session,
     void *symbol_frequency_array, u_int symcnt, u_int numbytes, void *retp)
 {
 	INDEXED_SYMBOL *indexed_freqs, *sym;
 	NODE_QUEUE *combined_nodes, *leaves;
-	WT_DECL_RET;
-	WT_FREQTREE_NODE *node, *node2, **refnode, *tempnode;
-	WT_HUFFMAN_OBJ *huffman;
+	AE_DECL_RET;
+	AE_FREQTREE_NODE *node, *node2, **refnode, *tempnode;
+	AE_HUFFMAN_OBJ *huffman;
 	uint64_t w1, w2;
 	uint16_t i;
 
@@ -306,7 +306,7 @@ __wt_huffman_open(WT_SESSION_IMPL *session,
 	combined_nodes = leaves = NULL;
 	node = node2 = tempnode = NULL;
 
-	WT_RET(__wt_calloc_one(session, &huffman));
+	AE_RET(__ae_calloc_one(session, &huffman));
 
 	/*
 	 * The frequency table is 4B pairs of symbol and frequency.  The symbol
@@ -315,12 +315,12 @@ __wt_huffman_open(WT_SESSION_IMPL *session,
 	 * input).  Validate the symbols are within range.
 	 */
 	if (numbytes != 1 && numbytes != 2)
-		WT_ERR_MSG(session, EINVAL,
+		AE_ERR_MSG(session, EINVAL,
 		    "illegal number of symbol bytes specified for a huffman "
 		    "table");
 
 	if (symcnt == 0)
-		WT_ERR_MSG(session, EINVAL,
+		AE_ERR_MSG(session, EINVAL,
 		    "illegal number of symbols specified for a huffman table");
 
 	huffman->numSymbols = numbytes == 2 ? UINT16_MAX : UINT8_MAX;
@@ -333,12 +333,12 @@ __wt_huffman_open(WT_SESSION_IMPL *session,
 	qsort(sym, symcnt, sizeof(INDEXED_SYMBOL), indexed_symbol_compare);
 	for (i = 0; i < symcnt; ++i) {
 		if (i > 0 && sym[i].symbol == sym[i - 1].symbol)
-			WT_ERR_MSG(session, EINVAL,
+			AE_ERR_MSG(session, EINVAL,
 			    "duplicate symbol %" PRIu32 " (%#" PRIx32 ") "
 			    "specified in a huffman table",
 			    sym[i].symbol, sym[i].symbol);
 		if (sym[i].symbol > huffman->numSymbols)
-			WT_ERR_MSG(session, EINVAL,
+			AE_ERR_MSG(session, EINVAL,
 			    "out-of-range symbol %" PRIu32 " (%#" PRIx32 ") "
 			    "specified in a huffman table",
 			    sym[i].symbol, sym[i].symbol);
@@ -347,7 +347,7 @@ __wt_huffman_open(WT_SESSION_IMPL *session,
 	/*
 	 * Massage frequencies.
 	 */
-	WT_ERR(__wt_calloc_def(session, 256, &indexed_freqs));
+	AE_ERR(__ae_calloc_def(session, 256, &indexed_freqs));
 
 	/*
 	 * Minimum of frequency==1 so everybody gets a Huffman code, in case
@@ -379,8 +379,8 @@ __wt_huffman_open(WT_SESSION_IMPL *session,
 	    symcnt, sizeof(INDEXED_SYMBOL), indexed_freq_compare);
 
 	/* We need two node queues to build the tree. */
-	WT_ERR(__wt_calloc_one(session, &leaves));
-	WT_ERR(__wt_calloc_one(session, &combined_nodes));
+	AE_ERR(__ae_calloc_one(session, &leaves));
+	AE_ERR(__ae_calloc_one(session, &combined_nodes));
 
 	/*
 	 * Adding the leaves to the queue.
@@ -391,10 +391,10 @@ __wt_huffman_open(WT_SESSION_IMPL *session,
 	 */
 	for (i = 0; i < symcnt; ++i)
 		if (indexed_freqs[i].frequency > 0) {
-			WT_ERR(__wt_calloc_one(session, &tempnode));
+			AE_ERR(__ae_calloc_one(session, &tempnode));
 			tempnode->symbol = (uint8_t)indexed_freqs[i].symbol;
 			tempnode->weight = indexed_freqs[i].frequency;
-			WT_ERR(node_queue_enqueue(session, leaves, tempnode));
+			AE_ERR(node_queue_enqueue(session, leaves, tempnode));
 			tempnode = NULL;
 		}
 
@@ -429,7 +429,7 @@ __wt_huffman_open(WT_SESSION_IMPL *session,
 		 * In every second run, we have both node and node2 initialized.
 		 */
 		if (node != NULL && node2 != NULL) {
-			WT_ERR(__wt_calloc_one(session, &tempnode));
+			AE_ERR(__ae_calloc_one(session, &tempnode));
 
 			/* The new weight is the sum of the two weights. */
 			tempnode->weight = node->weight + node2->weight;
@@ -437,7 +437,7 @@ __wt_huffman_open(WT_SESSION_IMPL *session,
 			tempnode->right = node2;
 
 			/* Enqueue it to the combined nodes queue */
-			WT_ERR(node_queue_enqueue(
+			AE_ERR(node_queue_enqueue(
 			    session, combined_nodes, tempnode));
 			tempnode = NULL;
 
@@ -457,10 +457,10 @@ __wt_huffman_open(WT_SESSION_IMPL *session,
 	if (huffman->max_depth > MAX_CODE_LENGTH)
 		huffman->max_depth = MAX_CODE_LENGTH;
 
-	WT_ERR(__wt_calloc_def(session, huffman->numSymbols, &huffman->codes));
+	AE_ERR(__ae_calloc_def(session, huffman->numSymbols, &huffman->codes));
 	set_codes(node, huffman->codes, 0, 0);
 
-	WT_ERR(__wt_calloc_def(
+	AE_ERR(__ae_calloc_def(
 	    session, 1U << huffman->max_depth, &huffman->code2symbol));
 	make_table(session, huffman->code2symbol,
 	    huffman->max_depth, huffman->codes, huffman->numSymbols);
@@ -473,7 +473,7 @@ __wt_huffman_open(WT_SESSION_IMPL *session,
 	printf("leaf depth %" PRIu16 "..%" PRIu16 ", memory use: "
 	    "codes %u# * %uB  + code2symbol %u# * %uB\n",
 	    huffman->min_depth, huffman->max_depth,
-	    huffman->numSymbols, (u_int)sizeof(WT_HUFFMAN_CODE),
+	    huffman->numSymbols, (u_int)sizeof(AE_HUFFMAN_CODE),
 	    1U << huffman->max_depth, (u_int)sizeof(uint16_t));
 
 	/*
@@ -499,9 +499,9 @@ __wt_huffman_open(WT_SESSION_IMPL *session,
 
 	if (0) {
 err:		if (ret == 0)
-			ret = WT_ERROR;
+			ret = AE_ERROR;
 	}
-	__wt_free(session, indexed_freqs);
+	__ae_free(session, indexed_freqs);
 	if (leaves != NULL)
 		node_queue_close(session, leaves);
 	if (combined_nodes != NULL)
@@ -510,38 +510,38 @@ err:		if (ret == 0)
 		recursive_free_node(session, node);
 	if (node2 != NULL)
 		recursive_free_node(session, node2);
-	__wt_free(session, tempnode);
+	__ae_free(session, tempnode);
 	if (ret != 0)
-		__wt_huffman_close(session, huffman);
+		__ae_huffman_close(session, huffman);
 	return (ret);
 }
 
 /*
- * __wt_huffman_close --
+ * __ae_huffman_close --
  *	Discard a Huffman descriptor object.
  */
 void
-__wt_huffman_close(WT_SESSION_IMPL *session, void *huffman_arg)
+__ae_huffman_close(AE_SESSION_IMPL *session, void *huffman_arg)
 {
-	WT_HUFFMAN_OBJ *huffman;
+	AE_HUFFMAN_OBJ *huffman;
 
 	huffman = huffman_arg;
 
-	__wt_free(session, huffman->code2symbol);
-	__wt_free(session, huffman->codes);
-	__wt_free(session, huffman);
+	__ae_free(session, huffman->code2symbol);
+	__ae_free(session, huffman->codes);
+	__ae_free(session, huffman);
 }
 
 #if __HUFFMAN_DETAIL
 /*
- * __wt_print_huffman_code --
+ * __ae_print_huffman_code --
  *	Prints a symbol's Huffman code.
  */
 int
-__wt_print_huffman_code(void *huffman_arg, uint16_t symbol)
+__ae_print_huffman_code(void *huffman_arg, uint16_t symbol)
 {
-	WT_HUFFMAN_CODE code;
-	WT_HUFFMAN_OBJ *huffman;
+	AE_HUFFMAN_CODE code;
+	AE_HUFFMAN_OBJ *huffman;
 
 	huffman = huffman_arg;
 
@@ -566,12 +566,12 @@ __wt_print_huffman_code(void *huffman_arg, uint16_t symbol)
 #endif
 
 /*
- * __wt_huffman_encode --
+ * __ae_huffman_encode --
  *	Take a byte string, encode it into the target.
  *
  * Translation from symbol to Huffman code is a simple array lookup.
  *
- * WT_HUFFMAN_OBJ contains an array called 'codes' with one WT_HUFFMAN_CODE per
+ * AE_HUFFMAN_OBJ contains an array called 'codes' with one AE_HUFFMAN_CODE per
  * symbol.  Then, given a symbol:
  *	pattern = codes[symbol].pattern;
  *	length = codes[symbol].length;
@@ -583,13 +583,13 @@ __wt_print_huffman_code(void *huffman_arg, uint16_t symbol)
  * and write header bits.
  */
 int
-__wt_huffman_encode(WT_SESSION_IMPL *session, void *huffman_arg,
-    const uint8_t *from_arg, size_t from_len, WT_ITEM *to_buf)
+__ae_huffman_encode(AE_SESSION_IMPL *session, void *huffman_arg,
+    const uint8_t *from_arg, size_t from_len, AE_ITEM *to_buf)
 {
-	WT_DECL_RET;
-	WT_HUFFMAN_CODE code;
-	WT_HUFFMAN_OBJ *huffman;
-	WT_ITEM *tmp;
+	AE_DECL_RET;
+	AE_HUFFMAN_CODE code;
+	AE_HUFFMAN_OBJ *huffman;
+	AE_ITEM *tmp;
 	size_t max_len, outlen, bytes;
 	uint64_t bitpos;
 	const uint8_t *from;
@@ -626,20 +626,20 @@ __wt_huffman_encode(WT_SESSION_IMPL *session, void *huffman_arg,
 	 * system buffer while compressing, then allocate a new buffer of the
 	 * right size and copy the result into it.
 	 */
-	max_len = (WT_HUFFMAN_HEADER +
+	max_len = (AE_HUFFMAN_HEADER +
 	    from_len * huffman->max_depth + 7 /* round up to full byte */) / 8;
-	WT_ERR(__wt_scr_alloc(session, max_len, &tmp));
+	AE_ERR(__ae_scr_alloc(session, max_len, &tmp));
 
 	/*
 	 * Leave the first 3 bits of the encoded value empty, it holds the
 	 * number of bits actually used in the last byte of the encoded value.
 	 */
 	bits = 0;
-	bitpos = WT_HUFFMAN_HEADER;
-	valid = WT_HUFFMAN_HEADER;
+	bitpos = AE_HUFFMAN_HEADER;
+	valid = AE_HUFFMAN_HEADER;
 	out = tmp->mem;
 	for (bytes = 0; bytes < from_len; bytes++) {
-		WT_ASSERT(session, WT_PTR_IN_RANGE(from, from_arg, from_len));
+		AE_ASSERT(session, AE_PTR_IN_RANGE(from, from_arg, from_len));
 
 		symbol = *from++;
 
@@ -650,15 +650,15 @@ __wt_huffman_encode(WT_SESSION_IMPL *session, void *huffman_arg,
 		valid += len;
 		bitpos += len;
 		while (valid >= 8) {
-			WT_ASSERT(session,
-			    WT_PTR_IN_RANGE(out, tmp->mem, tmp->memsize));
+			AE_ASSERT(session,
+			    AE_PTR_IN_RANGE(out, tmp->mem, tmp->memsize));
 			*out++ = (uint8_t)(bits >> (valid - 8));
 			valid -= 8;
 		}
 	}
 	if (valid > 0) {		/* Flush shift register. */
-		WT_ASSERT(session,
-		    WT_PTR_IN_RANGE(out, tmp->mem, tmp->memsize));
+		AE_ASSERT(session,
+		    AE_PTR_IN_RANGE(out, tmp->mem, tmp->memsize));
 		*out = (uint8_t)(bits << (8 - valid));
 	}
 
@@ -671,12 +671,12 @@ __wt_huffman_encode(WT_SESSION_IMPL *session, void *huffman_arg,
 	 * used in the last byte, unless they're 0, in which case there are 8
 	 * bits used in the last byte.
 	 */
-	padding_info = (bitpos % 8) << (8 - WT_HUFFMAN_HEADER);
+	padding_info = (bitpos % 8) << (8 - AE_HUFFMAN_HEADER);
 	((uint8_t *)tmp->mem)[0] |= padding_info;
 
 	/* Copy result of exact known size into caller's buffer. */
 	outlen = (uint32_t)((bitpos + 7) / 8);
-	WT_ERR(__wt_buf_initsize(session, to_buf, outlen));
+	AE_ERR(__ae_buf_initsize(session, to_buf, outlen));
 	memcpy(to_buf->mem, tmp->mem, outlen);
 
 #if __HUFFMAN_DETAIL
@@ -684,18 +684,18 @@ __wt_huffman_encode(WT_SESSION_IMPL *session, void *huffman_arg,
 	    max_len, outlen);
 #endif
 
-err:	__wt_scr_free(session, &tmp);
+err:	__ae_scr_free(session, &tmp);
 	return (ret);
 
 }
 
 /*
- * __wt_huffman_decode --
+ * __ae_huffman_decode --
  *	Take a byte string, decode it into the target.
  *
  * Translation from Huffman code to symbol is a simple array lookup.
  *
- * WT_HUFFMAN_OBJ contains an array called 'code2symbol' indexed by code word
+ * AE_HUFFMAN_OBJ contains an array called 'code2symbol' indexed by code word
  * and whose value is the corresponding symbol.
  * From the symbol, we index into the 'codes' array to get the code length.
  *
@@ -721,12 +721,12 @@ err:	__wt_scr_free(session, &tmp);
  * Finally, subtract off these bits from the shift register.
  */
 int
-__wt_huffman_decode(WT_SESSION_IMPL *session, void *huffman_arg,
-    const uint8_t *from_arg, size_t from_len, WT_ITEM *to_buf)
+__ae_huffman_decode(AE_SESSION_IMPL *session, void *huffman_arg,
+    const uint8_t *from_arg, size_t from_len, AE_ITEM *to_buf)
 {
-	WT_DECL_RET;
-	WT_ITEM *tmp;
-	WT_HUFFMAN_OBJ *huffman;
+	AE_DECL_RET;
+	AE_ITEM *tmp;
+	AE_HUFFMAN_OBJ *huffman;
 	size_t from_bytes, len, max_len, outlen;
 	uint64_t from_len_bits;
 	uint32_t bits, mask, max;
@@ -751,13 +751,13 @@ __wt_huffman_decode(WT_SESSION_IMPL *session, void *huffman_arg,
 	 * The first 3 bits are the number of used bits in the last byte, unless
 	 * they're 0, in which case there are 8 bits used in the last byte.
 	 */
-	padding_info = (*from & 0xE0) >> (8 - WT_HUFFMAN_HEADER);
+	padding_info = (*from & 0xE0) >> (8 - AE_HUFFMAN_HEADER);
 	from_len_bits = from_len * 8;
 	if (padding_info != 0)
 		from_len_bits -= 8U - padding_info;
 
 	/* Number of bits that have codes. */
-	from_len_bits -= WT_HUFFMAN_HEADER;
+	from_len_bits -= AE_HUFFMAN_HEADER;
 
 	/*
 	 * Compute largest uncompressed output size, which is if all symbols are
@@ -767,20 +767,20 @@ __wt_huffman_decode(WT_SESSION_IMPL *session, void *huffman_arg,
 	 * result into it.
 	 */
 	max_len = (uint32_t)(from_len_bits / huffman->min_depth);
-	WT_ERR(__wt_scr_alloc(session, max_len, &tmp));
+	AE_ERR(__ae_scr_alloc(session, max_len, &tmp));
 	to = tmp->mem;
 
 	/* The first byte of input is a special case because of header bits. */
 	bits = *from++;
-	valid = 8 - WT_HUFFMAN_HEADER;
+	valid = 8 - AE_HUFFMAN_HEADER;
 	from_bytes = from_len - 1;
 
 	max = huffman->max_depth;
 	mask = (1U << max) - 1;
 	for (outlen = 0; from_len_bits > 0; outlen++) {
 		while (valid < max && from_bytes > 0) {
-			WT_ASSERT(session,
-			    WT_PTR_IN_RANGE(from, from_arg, from_len));
+			AE_ASSERT(session,
+			    AE_PTR_IN_RANGE(from, from_arg, from_len));
 			bits = (bits << 8) | *from++;
 			valid += 8;
 			from_bytes--;
@@ -801,16 +801,16 @@ __wt_huffman_decode(WT_SESSION_IMPL *session, void *huffman_arg,
 		 * where that's not true.
 		 */
 		if (from_len_bits < len)	/* corrupted */
-			WT_ERR(EINVAL);
+			AE_ERR(EINVAL);
 		from_len_bits -= len;
 
-		WT_ASSERT(session,
-		    WT_PTR_IN_RANGE(to, tmp->mem, tmp->memsize));
+		AE_ASSERT(session,
+		    AE_PTR_IN_RANGE(to, tmp->mem, tmp->memsize));
 		*to++ = symbol;
 	}
 
 	/* Return the number of bytes used. */
-	WT_ERR(__wt_buf_initsize(session, to_buf, outlen));
+	AE_ERR(__ae_buf_initsize(session, to_buf, outlen));
 	memcpy(to_buf->mem, tmp->mem, outlen);
 
 #if __HUFFMAN_DETAIL
@@ -818,7 +818,7 @@ __wt_huffman_decode(WT_SESSION_IMPL *session, void *huffman_arg,
 	    max_len, outlen);
 #endif
 
-err:	__wt_scr_free(session, &tmp);
+err:	__ae_scr_free(session, &tmp);
 	return (ret);
 }
 
@@ -829,18 +829,18 @@ err:	__wt_scr_free(session, &tmp);
  * It does not delete the pointed huffman tree nodes!
  */
 static void
-node_queue_close(WT_SESSION_IMPL *session, NODE_QUEUE *queue)
+node_queue_close(AE_SESSION_IMPL *session, NODE_QUEUE *queue)
 {
 	NODE_QUEUE_ELEM *elem, *next_elem;
 
 	/* Freeing each element of the queue's linked list. */
 	for (elem = queue->first; elem != NULL; elem = next_elem) {
 		next_elem = elem->next;
-		__wt_free(session, elem);
+		__ae_free(session, elem);
 	}
 
 	/* Freeing the queue record itself. */
-	__wt_free(session, queue);
+	__ae_free(session, queue);
 }
 
 /*
@@ -849,12 +849,12 @@ node_queue_close(WT_SESSION_IMPL *session, NODE_QUEUE *queue)
  */
 static int
 node_queue_enqueue(
-    WT_SESSION_IMPL *session, NODE_QUEUE *queue, WT_FREQTREE_NODE *node)
+    AE_SESSION_IMPL *session, NODE_QUEUE *queue, AE_FREQTREE_NODE *node)
 {
 	NODE_QUEUE_ELEM *elem;
 
 	/* Allocating a new linked list element */
-	WT_RET(__wt_calloc_one(session, &elem));
+	AE_RET(__ae_calloc_one(session, &elem));
 
 	/* It holds the tree node, and has no next element yet */
 	elem->node = node;
@@ -884,7 +884,7 @@ node_queue_enqueue(
  */
 static void
 node_queue_dequeue(
-    WT_SESSION_IMPL *session, NODE_QUEUE *queue, WT_FREQTREE_NODE **retp)
+    AE_SESSION_IMPL *session, NODE_QUEUE *queue, AE_FREQTREE_NODE **retp)
 {
 	NODE_QUEUE_ELEM *first_elem;
 
@@ -904,5 +904,5 @@ node_queue_dequeue(
 		queue->last = NULL;
 
 	/* Freeing the linked list element that has been dequeued */
-	__wt_free(session, first_elem);
+	__ae_free(session, first_elem);
 }

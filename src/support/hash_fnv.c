@@ -1,6 +1,6 @@
 /*-
  * Public Domain 2014-2015 MongoDB, Inc.
- * Public Domain 2008-2014 WiredTiger, Inc.
+ * Public Domain 2008-2014 ArchEngine, Inc.
  *
  * This is free and unencumbered software released into the public domain.
  *
@@ -84,14 +84,14 @@
  */
 
 #include <stdlib.h>
-#include "wt_internal.h"
+#include "ae_internal.h"
 
 /*
  * This file contains a 64 bit hash implementation of the FNV 1a 64 bit hash
  * function.  The implementation is from a third party.
  *
  * The code has been updated to remove unnecessary content and better comply
- * with WiredTiger coding standards.  The original source code can be found at:
+ * with ArchEngine coding standards.  The original source code can be found at:
  * FNV 1a 64 bit: http://www.isthe.com/chongo/src/fnv/hash_64a.c
  */
 
@@ -152,11 +152,11 @@ fnv_64a_buf(const void *buf, size_t len, uint64_t hval)
 }
 
 /*
- * __wt_hash_fnv64 --
- *	WiredTiger wrapper around third party hash implementation.
+ * __ae_hash_fnv64 --
+ *	ArchEngine wrapper around third party hash implementation.
  */
 uint64_t
-__wt_hash_fnv64(const void *string, size_t len)
+__ae_hash_fnv64(const void *string, size_t len)
 {
 	return (fnv_64a_buf(string, len, FNV1A_64_INIT));
 }

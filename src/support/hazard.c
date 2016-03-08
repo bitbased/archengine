@@ -1,31 +1,31 @@
 /*-
  * Copyright (c) 2014-2015 MongoDB, Inc.
- * Copyright (c) 2008-2014 WiredTiger, Inc.
+ * Copyright (c) 2008-2014 ArchEngine, Inc.
  *	All rights reserved.
  *
  * See the file LICENSE for redistribution information.
  */
 
-#include "wt_internal.h"
+#include "ae_internal.h"
 
 #ifdef HAVE_DIAGNOSTIC
-static void __hazard_dump(WT_SESSION_IMPL *);
+static void __hazard_dump(AE_SESSION_IMPL *);
 #endif
 
 /*
- * __wt_hazard_set --
+ * __ae_hazard_set --
  *	Set a hazard pointer.
  */
 int
-__wt_hazard_set(WT_SESSION_IMPL *session, WT_REF *ref, bool *busyp
+__ae_hazard_set(AE_SESSION_IMPL *session, AE_REF *ref, bool *busyp
 #ifdef HAVE_DIAGNOSTIC
     , const char *file, int line
 #endif
     )
 {
-	WT_BTREE *btree;
-	WT_CONNECTION_IMPL *conn;
-	WT_HAZARD *hp;
+	AE_BTREE *btree;
+	AE_CONNECTION_IMPL *conn;
+	AE_HAZARD *hp;
 	int restarts = 0;
 
 	btree = S2BT(session);
@@ -33,21 +33,21 @@ __wt_hazard_set(WT_SESSION_IMPL *session, WT_REF *ref, bool *busyp
 	*busyp = false;
 
 	/* If a file can never be evicted, hazard pointers aren't required. */
-	if (F_ISSET(btree, WT_BTREE_IN_MEMORY))
+	if (F_ISSET(btree, AE_BTREE_IN_MEMORY))
 		return (0);
 
 	/*
 	 * Do the dance:
 	 *
-	 * The memory location which makes a page "real" is the WT_REF's state
-	 * of WT_REF_MEM, which can be set to WT_REF_LOCKED at any time by the
+	 * The memory location which makes a page "real" is the AE_REF's state
+	 * of AE_REF_MEM, which can be set to AE_REF_LOCKED at any time by the
 	 * page eviction server.
 	 *
-	 * Add the WT_REF reference to the session's hazard list and flush the
+	 * Add the AE_REF reference to the session's hazard list and flush the
 	 * write, then see if the page's state is still valid.  If so, we can
 	 * use the page because the page eviction server will see our hazard
 	 * pointer before it discards the page (the eviction server sets the
-	 * state to WT_REF_LOCKED, then flushes memory and checks the hazard
+	 * state to AE_REF_LOCKED, then flushes memory and checks the hazard
 	 * pointers).
 	 *
 	 * For sessions with many active hazard pointers, skip most of the
@@ -74,8 +74,8 @@ __wt_hazard_set(WT_SESSION_IMPL *session, WT_REF *ref, bool *busyp
 			else if (session->hazard_size >= conn->hazard_max)
 				break;
 			else
-				WT_PUBLISH(session->hazard_size, WT_MIN(
-				    session->hazard_size + WT_HAZARD_INCR,
+				AE_PUBLISH(session->hazard_size, AE_MIN(
+				    session->hazard_size + AE_HAZARD_INCR,
 				    conn->hazard_max));
 		}
 
@@ -88,11 +88,11 @@ __wt_hazard_set(WT_SESSION_IMPL *session, WT_REF *ref, bool *busyp
 		hp->line = line;
 #endif
 		/* Publish the hazard pointer before reading page's state. */
-		WT_FULL_BARRIER();
+		AE_FULL_BARRIER();
 
 		/*
 		 * Check if the page state is still valid, where valid means a
-		 * state of WT_REF_MEM and the pointer is unchanged.  (The
+		 * state of AE_REF_MEM and the pointer is unchanged.  (The
 		 * pointer can change, it means the page was evicted between
 		 * the time we set our hazard pointer and the publication.  It
 		 * would theoretically be possible for the page to be evicted
@@ -101,7 +101,7 @@ __wt_hazard_set(WT_SESSION_IMPL *session, WT_REF *ref, bool *busyp
 		 * found this page using the tree's key space, whatever page we
 		 * find here is the page for us to use.)
 		 */
-		if (ref->page == hp->page && ref->state == WT_REF_MEM) {
+		if (ref->page == hp->page && ref->state == AE_REF_MEM) {
 			++session->nhazard;
 			return (0);
 		}
@@ -121,7 +121,7 @@ __wt_hazard_set(WT_SESSION_IMPL *session, WT_REF *ref, bool *busyp
 		return (0);
 	}
 
-	__wt_errx(session, "session %p: hazard pointer table full", session);
+	__ae_errx(session, "session %p: hazard pointer table full", session);
 #ifdef HAVE_DIAGNOSTIC
 	__hazard_dump(session);
 #endif
@@ -130,19 +130,19 @@ __wt_hazard_set(WT_SESSION_IMPL *session, WT_REF *ref, bool *busyp
 }
 
 /*
- * __wt_hazard_clear --
+ * __ae_hazard_clear --
  *	Clear a hazard pointer.
  */
 int
-__wt_hazard_clear(WT_SESSION_IMPL *session, WT_PAGE *page)
+__ae_hazard_clear(AE_SESSION_IMPL *session, AE_PAGE *page)
 {
-	WT_BTREE *btree;
-	WT_HAZARD *hp;
+	AE_BTREE *btree;
+	AE_HAZARD *hp;
 
 	btree = S2BT(session);
 
 	/* If a file can never be evicted, hazard pointers aren't required. */
-	if (F_ISSET(btree, WT_BTREE_IN_MEMORY))
+	if (F_ISSET(btree, AE_BTREE_IN_MEMORY))
 		return (0);
 
 	/*
@@ -175,18 +175,18 @@ __wt_hazard_clear(WT_SESSION_IMPL *session, WT_PAGE *page)
 	 * A serious error, we should always find the hazard pointer.  Panic,
 	 * because using a page we didn't have pinned down implies corruption.
 	 */
-	WT_PANIC_RET(session, EINVAL,
+	AE_PANIC_RET(session, EINVAL,
 	    "session %p: clear hazard pointer: %p: not found", session, page);
 }
 
 /*
- * __wt_hazard_close --
+ * __ae_hazard_close --
  *	Verify that no hazard pointers are set.
  */
 void
-__wt_hazard_close(WT_SESSION_IMPL *session)
+__ae_hazard_close(AE_SESSION_IMPL *session)
 {
-	WT_HAZARD *hp;
+	AE_HAZARD *hp;
 	bool found;
 
 	/*
@@ -203,7 +203,7 @@ __wt_hazard_close(WT_SESSION_IMPL *session)
 	if (session->nhazard == 0 && !found)
 		return;
 
-	__wt_errx(session,
+	__ae_errx(session,
 	    "session %p: close hazard pointer table: table not empty", session);
 
 #ifdef HAVE_DIAGNOSTIC
@@ -229,7 +229,7 @@ __wt_hazard_close(WT_SESSION_IMPL *session)
 		}
 
 	if (session->nhazard != 0)
-		__wt_errx(session,
+		__ae_errx(session,
 		    "session %p: close hazard pointer table: count didn't "
 		    "match entries",
 		    session);
@@ -241,14 +241,14 @@ __wt_hazard_close(WT_SESSION_IMPL *session)
  *	Display the list of hazard pointers.
  */
 static void
-__hazard_dump(WT_SESSION_IMPL *session)
+__hazard_dump(AE_SESSION_IMPL *session)
 {
-	WT_HAZARD *hp;
+	AE_HAZARD *hp;
 
 	for (hp = session->hazard;
 	    hp < session->hazard + session->hazard_size; ++hp)
 		if (hp->page != NULL)
-			__wt_errx(session,
+			__ae_errx(session,
 			    "session %p: hazard pointer %p: %s, line %d",
 			    session, hp->page, hp->file, hp->line);
 }

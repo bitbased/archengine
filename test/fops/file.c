@@ -1,6 +1,6 @@
 /*-
  * Public Domain 2014-2015 MongoDB, Inc.
- * Public Domain 2008-2014 WiredTiger, Inc.
+ * Public Domain 2008-2014 ArchEngine, Inc.
  *
  * This is free and unencumbered software released into the public domain.
  *
@@ -33,8 +33,8 @@ static u_int uid = 1;
 void
 obj_bulk(void)
 {
-	WT_CURSOR *c;
-	WT_SESSION *session;
+	AE_CURSOR *c;
+	AE_SESSION *session;
 	int ret;
 
 	if ((ret = conn->open_session(conn, NULL, NULL, &session)) != 0)
@@ -60,8 +60,8 @@ obj_bulk(void)
 void
 obj_bulk_unique(int force)
 {
-	WT_CURSOR *c;
-	WT_SESSION *session;
+	AE_CURSOR *c;
+	AE_SESSION *session;
 	int ret;
 	char new_uri[64];
 
@@ -98,8 +98,8 @@ obj_bulk_unique(int force)
 void
 obj_cursor(void)
 {
-	WT_SESSION *session;
-	WT_CURSOR *cursor;
+	AE_SESSION *session;
+	AE_CURSOR *cursor;
 	int ret;
 
 	if ((ret = conn->open_session(conn, NULL, NULL, &session)) != 0)
@@ -120,7 +120,7 @@ obj_cursor(void)
 void
 obj_create(void)
 {
-	WT_SESSION *session;
+	AE_SESSION *session;
 	int ret;
 
 	if ((ret = conn->open_session(conn, NULL, NULL, &session)) != 0)
@@ -137,7 +137,7 @@ obj_create(void)
 void
 obj_create_unique(int force)
 {
-	WT_SESSION *session;
+	AE_SESSION *session;
 	int ret;
 	char new_uri[64];
 
@@ -167,7 +167,7 @@ obj_create_unique(int force)
 void
 obj_drop(int force)
 {
-	WT_SESSION *session;
+	AE_SESSION *session;
 	int ret;
 
 	if ((ret = conn->open_session(conn, NULL, NULL, &session)) != 0)
@@ -184,7 +184,7 @@ obj_drop(int force)
 void
 obj_checkpoint(void)
 {
-	WT_SESSION *session;
+	AE_SESSION *session;
 	int ret;
 
 	if ((ret = conn->open_session(conn, NULL, NULL, &session)) != 0)
@@ -202,7 +202,7 @@ obj_checkpoint(void)
 void
 obj_upgrade(void)
 {
-	WT_SESSION *session;
+	AE_SESSION *session;
 	int ret;
 
 	if ((ret = conn->open_session(conn, NULL, NULL, &session)) != 0)
@@ -219,7 +219,7 @@ obj_upgrade(void)
 void
 obj_verify(void)
 {
-	WT_SESSION *session;
+	AE_SESSION *session;
 	int ret;
 
 	if ((ret = conn->open_session(conn, NULL, NULL, &session)) != 0)

@@ -1,7 +1,7 @@
-PACKAGE=wiredtiger
+PACKAGE=archengine
 AC_PREREQ(2.63)
-AC_INIT(WiredTiger, m4_normalize(m4_include([build_posix/aclocal/version.m4])),
-	[support@wiredtiger.com])
+AC_INIT(ArchEngine, m4_normalize(m4_include([build_posix/aclocal/version.m4])),
+	[support@archengine.com])
 
 m4_include([build_posix/aclocal/version-set.m4])
 
@@ -46,12 +46,12 @@ else
 fi
 
 # Java and Python APIs
-if test "$wt_cv_enable_java" = "yes" -o "$wt_cv_enable_python" = "yes"; then
+if test "$ae_cv_enable_java" = "yes" -o "$ae_cv_enable_python" = "yes"; then
 	AX_PKG_SWIG(2.0.4, [],
 	    [AC_MSG_WARN([SWIG is required to rebuild Java or Python APIs.])])
 fi
 
-if test "$wt_cv_enable_java" = "yes"; then
+if test "$ae_cv_enable_java" = "yes"; then
 	JAVAC=${JAVAC-javac}
 	AX_PROG_JAVAC
 	AX_PROG_JAR
@@ -63,7 +63,7 @@ if test "$wt_cv_enable_java" = "yes"; then
 	AC_SUBST(JNI_CPPFLAGS)
 fi
 
-if test "$wt_cv_enable_python" = "yes"; then
+if test "$ae_cv_enable_python" = "yes"; then
 	AM_PATH_PYTHON([2.6])
 	if test -n "$with_python_prefix" ; then
 		PYTHON_INSTALL_ARG="-d $with_python_prefix"
@@ -108,7 +108,7 @@ if test "$ac_cv_func_posix_memalign" = "yes" ; then
 	linux*)	BUFFER_ALIGNMENT=4096 ;;
 	esac
 fi
-AC_DEFINE_UNQUOTED(WT_BUFFER_ALIGNMENT_DEFAULT, $BUFFER_ALIGNMENT,
+AC_DEFINE_UNQUOTED(AE_BUFFER_ALIGNMENT_DEFAULT, $BUFFER_ALIGNMENT,
 	[Default alignment of buffers used for I/O])
 
 AC_SUBST(AM_CFLAGS)
@@ -143,7 +143,7 @@ AM_COND_IF([LEVELDB], [
 
 
 # Warn that diagnostic builds should not be used in production
-if test "$wt_cv_enable_diagnostic" = "yes"; then
+if test "$ae_cv_enable_diagnostic" = "yes"; then
 	AC_MSG_WARN(
 	    [DIAGNOSTIC BUILDS ARE NOT RECOMMENDED FOR PRODUCTION DEPLOYMENT.])
 fi
@@ -151,35 +151,35 @@ fi
 # If we are building in a tree without documentation, check if doxygen is
 # available.
 if test -f "$srcdir/docs/index.html" ; then
-	wt_cv_docs_exist=yes
+	ae_cv_docs_exist=yes
 else
-	wt_cv_docs_exist=no
+	ae_cv_docs_exist=no
 fi
 
-if test "$wt_cv_docs_exist" = "no"; then
+if test "$ae_cv_docs_exist" = "no"; then
 	AC_CHECK_PROG([DOXYGEN], [doxygen], [doxygen], [false])
 fi
 
-if test "$wt_cv_docs_exist" = "yes" -o "$DOXYGEN" = "doxygen" ; then
-	MAN1_PAGES="$srcdir/docs/man/man1/wt.1"
+if test "$ae_cv_docs_exist" = "yes" -o "$DOXYGEN" = "doxygen" ; then
+	MAN1_PAGES="$srcdir/docs/man/man1/ae.1"
 	AC_SUBST(MAN1_PAGES)
-	MAN3_PAGES="$srcdir/docs/man/man3/wiredtiger.3"
+	MAN3_PAGES="$srcdir/docs/man/man3/archengine.3"
 	AC_SUBST(MAN3_PAGES)
 fi
 
 # Output files
-AC_CONFIG_HEADERS([wiredtiger_config.h:build_posix/config.hin])
+AC_CONFIG_HEADERS([archengine_config.h:build_posix/config.hin])
 
 # The LevelDB API needs some configuration knowledge
 AM_COND_IF([LEVELDB],
-    AC_CONFIG_HEADERS([api/leveldb/leveldb_wt_config.h:api/leveldb/config.hin]))
+    AC_CONFIG_HEADERS([api/leveldb/leveldb_ae_config.h:api/leveldb/config.hin]))
 
 # BEGIN check existence -- maintained by reconf and Make.subdirs
 # END check existence
 
 AC_CONFIG_FILES([
 	Makefile
-	wiredtiger.h:src/include/wiredtiger.in
-	wiredtiger.pc:build_posix/wiredtiger.pc.in
+	archengine.h:src/include/archengine.in
+	archengine.pc:build_posix/archengine.pc.in
 ])
 AC_OUTPUT
